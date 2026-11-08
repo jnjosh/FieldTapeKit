@@ -1,0 +1,49 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# Xcode: per-user state and build output
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+DerivedData/
+build/
+*.xcresult
+*.xcarchive
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.hmap
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+.build/
+.swiftpm/xcode/package.xcworkspace/
+.swiftpm/xcode/xcuserdata/
+
+# Mac tools in research/tools/, compiled by hand with xcrun swiftc: keep only the sources
+/research/tools/*
+!/research/tools/*.swift
+!/research/tools/*.md
+
+# Audio copied off the OP-1 during probe runs: kept locally, not committed for now
+/research/**/*.wav
+/research/**/*.aif
+
+# Signing and secrets: never committed (CLAUDE.md)
+*.p12
+*.cer
+*.mobileprovision
+*.provisionprofile
+.env
+.env.*
+
+# Claude Code: per-person settings (shared settings in .claude/settings.json stay tracked)
+.claude/settings.local.json

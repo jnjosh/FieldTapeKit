@@ -1,0 +1,30 @@
+[   0.39] iPad, iPadOS 27.2
+[   0.42] Contents authorization: ICAuthorizationStatusAuthorized
+[   0.93] Control authorization: ICAuthorizationStatusAuthorized
+[   0.95] OP-1 found over USB MIDI (not in MTP mode)
+[   1.24] Browsing for cameras
+[   1.61] MIDI → greet request 960: f0 00 20 76 02 40 67 40 01 f7
+[   1.63] MIDI ← reply to 960, command 0x01, status 0, 128 data bytes
+[   1.63] Greet: product:OP-1;mode:normal;serial:L1PXE14W;dsp_serial:830000597253000062;os_version:1.7.3;sw_version:1.7.3;hw_rev:6;sku:TE002AS002
+[   4.67] OP-1 left USB MIDI
+[  35.74] OP-1 found over USB MIDI (not in MTP mode)
+[  35.74] MIDI → greet request 2417: f0 00 20 76 02 40 72 71 01 f7
+[  35.76] MIDI ← reply to 2417, command 0x01, status 0, 128 data bytes
+[  35.76] Greet: product:OP-1;mode:normal;serial:L1PXE14W;dsp_serial:830000597253000062;os_version:1.7.3;sw_version:1.7.3;hw_rev:6;sku:TE002AS002
+[  58.69] MIDI → greet request 2139: f0 00 20 76 02 40 70 5b 01 f7
+[  58.71] MIDI ← reply to 2139, command 0x01, status 0, 128 data bytes
+[  58.71] Greet: product:OP-1;mode:normal;serial:L1PXE14W;dsp_serial:830000597253000062;os_version:1.7.3;sw_version:1.7.3;hw_rev:6;sku:TE002AS002
+[  58.71] Entering MTP mode: firmware 1.7.3, mode value 2
+[  58.71] MIDI → mode request 521: f0 00 20 76 02 40 64 09 04 00 01 02 f7
+[  58.73] MIDI ← reply to 521, command 0x04, status 0, 0 data bytes
+[  58.73] Mode command accepted; waiting for the OP-1 to leave MIDI and appear over MTP
+[  59.56] OP-1 left USB MIDI
+[  70.92] OP-1 found over USB MIDI (not in MTP mode)
+[  70.92] MIDI → greet request 4067: f0 00 20 76 02 40 7f 63 01 f7
+[  70.94] MIDI ← reply to 4067, command 0x01, status 0, 128 data bytes
+[  70.94] Greet: product:OP-1;mode:normal;serial:L1PXE14W;dsp_serial:830000597253000062;os_version:1.7.3;sw_version:1.7.3;hw_rev:6;sku:TE002AS002
+[  79.82] MTP SWITCH: ImageCaptureCore hasn't reported the OP-1 20 s after the mode command (MIDI still present)
+[  79.82] Browser lists 0 device(s)
+[  79.82] Restarting the device browser with all device types and locations
+[  90.49] Browser lists 0 device(s)
+[  90.49] MTP SWITCH FAIL: no MTP device, even after restarting the browser

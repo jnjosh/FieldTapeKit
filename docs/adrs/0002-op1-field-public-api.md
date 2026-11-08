@@ -1,0 +1,593 @@
+# ADR-0002: Public API for FieldTapeKit, the OP-1 Field framework
+
+**Status:** Accepted
+**Date:** 2026-11-08
+
+- **Builds on:** [ADR 0001](0001-op1-field-ios-transport.md) (ImageCaptureCore and raw PTP as the transport, accepted)
+- **Inputs:** the probe results in [PROBE-NOTES.md](../../research/PROBE-NOTES.md), and the research notes on Swift disk-access APIs ([swift-disk-access-guide.md](../swift-disk-access-guide.md), written in another session)
+
+## Context
+
+ADR 0001 showed that an iOS or iPadOS app can read, write, create and delete everything on the OP-1 Field over ImageCaptureCore. FieldTapeKit should make that feel like ordinary file access to Swift developers. It should also make the main use case a single call: taking tapes off the OP-1 and putting them back.
+
+Who it's for, and what follows from that (decided 2026-11-08):
+- **First user:** the framework is for the user's own app first, an app that makes it easy to offload tapes from the OP-1 and load them back on. Wider use can come later.
+- **Platforms:** iOS, iPadOS and macOS, all at version 27 minimum. Older versions can be added if they're ever needed.
+- **Safety:** "as harmless as possible." People's music lives on the OP-1, often in no other copy. The API makes losing a tape hard to do by accident (section 6).
+
+The research notes describe how Swift file APIs are usually shaped:
+- A pure path type (`FilePath`) that does no I/O, and a separate service that does the I/O.
+- Async I/O, scoped handles, typed error codes, and option sets for behavior.
+- Protocol-first designs with a live and a simulated implementation, so code can be tested without the real thing.
+- Names that follow `FileManager`: `contentsOfDirectory(at:)`, `createDirectory(at:)`, `removeItem(at:)`, `copyItem(at:to:)`.
+
+Some of this applies to the OP-1 directly, and some doesn't, because the OP-1 isn't a disk. The probe found these differences, and the API has to respect them:
+
+| OP-1 behavior (from the probe) | What it means for the API |
+| --- | --- |
+| Every request is one PTP transaction at a time over USB. Reads run at about 20 MB/s and writes at about 7 MB/s. | Everything is async. There is no sync API, because no call is ever cheap. One actor per device serializes requests. |
+| No open, close or seek. Files are read whole (GetObject) or in ranges (GetPartialObject), and written whole (SendObjectInfo then SendObject). | No file handles. Reads take an optional byte range, and large files stream in chunks. |
+| The OP-1 doesn't list MoveObject (0x1019) or CopyObject (0x101A) among its operations. Overwriting means delete, then send. | No `moveItem`. Replacing a file can't be atomic, so anything that replaces a file keeps a verified copy first. |
+| Object handles change after the OP-1 leaves MTP mode, and names come back lowercased. | Paths are the public identity, and handles stay private. Paths match ignoring case. |
+| A file the OP-1 rewrites mid-session (such as `tape.json`) reads back truncated to its old size. | The framework fetches fresh object info before every read. Nothing cached is trusted for size. |
+| Each folder has its own rules: fixed names in `tapes/` and `mixdown/`, while `synth/user/` and `drum/user/` convert what they receive. | Writes are checked against the folder rules before sending. Conversions aren't treated as failures. |
+| At most 8 tapes, and each tape at most 6 minutes, so a track is at most 127,008,044 bytes. Tape names use A–Z, 0–9, `#`, `-` and space, and are stored lowercase. | A validated `TapeName` type, and limit checks before any write. |
+| A tape is four WAVs plus `tape.json`. Without `tape.json` the clip layout is lost, and the OP-1 rebuilds `tape.json` when a track changes. | Restoring a tape always writes the tracks first and `tape.json` last, as one operation. |
+| One request hung for 60 seconds and never recurred. | Every request has a timeout, followed by a ping and a reconnect. |
+| Unplugging or leaving MTP mode removes the device. | Connection is a stream of events. Any call can fail with `disconnected`. |
+
+## Decision
+
+FieldTapeKit has three public layers on one device type. The file layer is shaped like `FileManager`. The tape and album layers are built only on the file layer's public API. Below both, the PTP layer stays internal.
+
+```
+Your app
+  ├─ Tape layer    tapes(), copyTape(_:to:), moveTape(_:to:), restoreTape(from:), …     ← the app's main calls
+  ├─ Album layer   album(), copySide(_:to:), restoreSide(_:from:), …
+  ├─ File layer    contentsOfDirectory(at:), copyItem(at:to:), …                         ← FileManager-shaped
+  └─ (internal)    MTP operations → transport: ImageCaptureCore | simulated
+```
+
+### 1. Finding the device
+
+```swift
+for await event in FieldDevice.connections {     // requests ImageCaptureCore authorization on first use
+    switch event {
+    case .connected(let device):    await show(device)
+    case .disconnected(let id):     forget(id)
+    }
+}
+```
+
+The same stream works without SwiftUI. In UIKit or AppKit, a controller keeps the task and cancels it:
+
+```swift
+final class DevicesViewController: UIViewController {
+    private var watching: Task<Void, Never>?
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        watching = Task { [weak self] in
+            for await event in FieldDevice.connections { self?.handle(event) }
+        }
+    }
+
+    deinit { watching?.cancel() }
+}
+```
+
+- **No browser type.** `FieldDevice.connections` is a static `AsyncSequence` of connect and disconnect events. Watching starts when something iterates it and stops when that task is cancelled. In SwiftUI that's `.task {}`; in UIKit, AppKit, a command-line tool or a background service, it's a `Task` the caller keeps.
+- **Current state first.** Each new iteration begins with a `.connected` event for every OP-1 already attached, so a listener that starts late doesn't miss one. That's what `NWPathMonitor` does with the current path.
+- **Several listeners are fine.** They share one `ICDeviceBrowser` underneath, which is filtered to the OP-1 (USB vendor 0x2367, MTP product 0x0102, or the name). The browser stops when the last listener goes away.
+- **Callback or Combine code** can wrap the stream in a few lines. FieldTapeKit doesn't ship those wrappers. If apps need an object to hold, a `FieldDeviceMonitor` can be added later on top of the same stream without changing it.
+- `FieldDevice` exposes `info` (firmware version, whether that firmware is tested, serial number, storage) and `isConnected`. Untested firmware is described in section 11.
+- **Free space** comes from GetStorageInfo (0x1005), in `info`. The OP-1 lists the operation, but whether its figure is accurate is untested. FieldCheck's `device.storage` check answers that ([ADR 0003](0003-firmware-check-tool.md)). Until a baseline confirms it:
+  - No call refuses to start because of the reported free space. The 8-tape and 6-minute limits are the checks before a write.
+  - If the OP-1 runs out of space mid-write, the call throws `.insufficientSpace`, with `changed` listing what was written. That code comes from PTP's Store Full response (0x200C). If the OP-1 answers with something else, the error is `.deviceRefused` with the response code, and FieldCheck records which.
+  - Once a baseline shows the figure is accurate, the free-space check joins the other checks before the first change (section 6, rule 3).
+- After a disconnect, every call throws `.disconnected`. A reconnect produces a **new** `FieldDevice`, because object handles don't survive.
+- Entering MTP mode stays the user's job, on the OP-1. Switching it over USB MIDI is a possible later feature (`research/PROBE-NOTES.md`, "Entering MTP mode from the app").
+
+### 2. Paths
+
+- **Device paths** are `FilePath`, **relative to the device root**: `"tapes/2026-220#02/track_1.wav"`.
+  - `FilePath` is the currency type the research recommends, and it does no I/O.
+  - Use the standard library's `FilePath` (SE-0529) if the Xcode 27 toolchain has it, otherwise `System`'s. Check when the package is created.
+- **Local files** are `URL`, because that is what the Files app, document pickers, `fileExporter` and `FileManager` hand an app.
+- **Case:** the device matches paths **ignoring case**, because the OP-1 lowercases names. `FilePath` equality is still case-sensitive, so the framework returns the device's spelling from listings, and apps should use the paths they get back.
+- **Well-known locations** are static members, so nobody types them:
+
+```swift
+extension FilePath {
+    static let op1Tapes:   FilePath = "tapes"
+    static let op1Mixdown: FilePath = "mixdown"
+    static let op1Synth:   FilePath = "synth"
+    static let op1Drum:    FilePath = "drum"
+}
+```
+
+### 3. The file layer
+
+`FieldDevice` is an `actor`. Names follow `FileManager`, and the overloads of `copyItem` read as download or upload, depending on which side is a `URL`:
+
+```swift
+public actor FieldDevice {
+    // Inspecting
+    func contentsOfDirectory(at path: FilePath) async throws -> [FieldItem]
+    func item(at path: FilePath) async throws -> FieldItem?           // nil if missing
+    func fileExists(at path: FilePath) async throws -> Bool
+
+    // Reading into memory
+    func contents(of path: FilePath, maximumSize: Int = 32 << 20) async throws -> Data
+    func contents(of path: FilePath, range: Range<Int>) async throws -> Data
+    func bytes(of path: FilePath, chunkSize: Int = 1 << 20) -> some AsyncSequence<Data, any Error>
+
+    // Downloading and uploading (device ↔ local file)
+    func copyItem(at source: FilePath, to destination: URL,
+                  progress: consuming Subprogress? = nil) async throws
+    func copyItem(at source: URL, to destination: FilePath,
+                  options: UploadOptions = .init(), progress: consuming Subprogress? = nil) async throws -> FieldItem
+
+    // Writing from memory
+    func write(_ data: Data, to path: FilePath, options: UploadOptions = .init()) async throws -> FieldItem
+
+    // Folders and deleting
+    func createDirectory(at path: FilePath) async throws -> FieldItem
+    func removeItem(at path: FilePath, keepingCopyAt backup: URL) async throws   // copy, verify, delete
+    func prepareToRemove(at path: FilePath) async throws -> FileDeletion         // for a person to confirm
+    func removeItem(_ deletion: FileDeletion) async throws                       // confirmed; see section 6
+}
+
+public struct FieldItem: Sendable, Hashable, Identifiable {
+    var path: FilePath            // as the device spells it
+    var name: String
+    var isDirectory: Bool
+    var size: Int                 // fresh from the device at listing time
+    var format: FieldFormat         // .wav, .aiff, .json, .text, .folder, .other(UInt16)
+    var id: FilePath { path }
+}
+
+public struct UploadOptions: Sendable {
+    var existing: ExistingFile = .fail   // .fail, .replace(keepingCopyAt: URL) or .replace(confirmed: FileDeletion)
+    var verify: Bool = true              // read back and compare; on by default
+}
+```
+
+Choices, and why:
+
+- **No file handles.** A range read and a chunked `bytes(of:)` sequence cover what a read handle would do. Why not handles is under Alternatives Considered.
+- **`maximumSize` on whole reads**, as in NIO, because a tape track can be 127 MB. `bytes(of:)` and `copyItem(at:to:)` stream instead, using GetPartialObject in chunks.
+- **Uploads hold the file in memory.** `requestSendPTPCommand` takes the whole data phase as one `Data`, so an upload holds at most one track (127 MB) at a time. That's acceptable on current iPads, iPhones and Macs, and the framework never holds two.
+- **Every write is read back by default.** That costs about 4 extra seconds on a 78 MB tape. It's on because harmless matters more than fast here.
+- **Folder rules are checked before sending.** Writing `mixdown/probe.wav` fails locally with `.notAllowed` and the folder's rule, rather than with the OP-1's `0x2002` General Error. The rules come from the `readme.txt` files, encoded in the framework.
+- **Preset folders convert files.** A write to `synth/user/` or `drum/user/` returns the `FieldItem` as the OP-1 stored it (AIFC, possibly shorter). A byte-for-byte read-back can't apply there, so those writes check the audio length instead.
+- **Progress uses Foundation's `ProgressManager` and `Subprogress`**, the pattern the 2026 document APIs use. They're available at the version 27 minimum. A caller that doesn't care passes nothing. Check the exact signatures when building.
+- **Removing a folder deletes its contents first.** The probe only showed that order working. Whether one DeleteObject on a full folder works is untested, so the framework doesn't depend on it.
+
+### 4. The tape layer
+
+These are extensions on `FieldDevice`, written only against the file layer, so they can be tested on the simulator (section 8).
+
+The names follow `FileManager`, as the file layer does: `copyTape` takes a tape off the OP-1 and leaves it there, and `moveTape` takes it off and frees its slot, as `copyItem` and `moveItem` do. `restoreTape` puts an archive back. Tapes made on the OP-1 itself are `createTape` (empty) and `duplicateTape` (from another tape).
+
+```swift
+extension FieldDevice {
+    func tapes() async throws -> [Tape]
+    func tape(named name: TapeName) async throws -> Tape?
+
+    func tapeSlots() async throws -> TapeSlots       // used, available, limit (8)
+
+    // Off the OP-1: writes <tape name>.reelarchive into a folder, and verifies it
+    func copyTape(_ tape: Tape, to folder: URL,
+                  progress: consuming Subprogress? = nil) async throws -> ReelArchive
+
+    // Off the OP-1 and free the slot: copy, verify, then delete the tape
+    func moveTape(_ tape: Tape, to folder: URL,
+                  progress: consuming Subprogress? = nil) async throws -> ReelArchive
+
+    // Onto the OP-1: as a new tape, or over an existing one (copied off first)
+    func restoreTape(from archive: ReelArchive, as name: TapeName? = nil,   // nil: the archived name
+                     conflict: TapeConflict = .fail,
+                     progress: consuming Subprogress? = nil) async throws -> Tape
+
+    // New tapes on the OP-1; each needs a free slot
+    func createTape(named name: TapeName, type: TapeType = .studio) async throws -> Tape
+    func duplicateTape(_ tape: Tape, as name: TapeName,
+                       progress: consuming Subprogress? = nil) async throws -> Tape
+
+    // Delete with a verified copy: no prompt needed
+    func deleteTape(_ tape: Tape, keeping copy: TapeCopy) async throws
+
+    // Delete with no copy: describe it, a person confirms, then delete (section 6)
+    func prepareToDelete(_ tape: Tape) async throws -> TapeDeletion
+    func deleteTape(_ deletion: TapeDeletion) async throws
+}
+
+public struct TapeDeletion: Sendable, Identifiable {
+    let id: UUID
+    let tape: Tape                     // as read fresh by prepareToDelete
+    var audio: Duration                // how much audio would be lost
+    var clipCount: Int
+    var losesNothing: Bool             // every track blank and no clips: safe to skip the prompt
+    // Internal: a fingerprint of the track sizes and tape.json, and the device it belongs to
+}
+
+public struct TapeSlots: Sendable {
+    var used: Int
+    var limit: Int { 8 }
+    var available: Int { limit - used }
+}
+
+public enum TapeCopy: Sendable {
+    case archive(ReelArchive)          // a .reelarchive that matches the tape
+    case tape(Tape)                    // another tape on the OP-1 that matches it, such as a duplicate
+}
+
+public struct Tape: Sendable, Identifiable, Hashable {
+    var name: TapeName
+    var path: FilePath                 // tapes/<name>
+    var type: TapeType
+    var tracks: [TapeTrack]            // always four, blank ones included
+    var manifest: TapeManifest         // parsed tape.json
+    var duration: Duration             // end of the last clip, at most 6 minutes
+    var isEmpty: Bool                  // every track blank and no clips
+    var recordedTracks: [Int]          // 1–4, the tracks with audio
+}
+
+public struct TapeName: Sendable, Hashable, CustomStringConvertible {
+    static let maximumLength = 15      // for new names; see below
+    init(_ string: String) throws      // .invalidName: lists the characters not allowed, or says it's too long
+    // Stored lowercase; compares ignoring case
+}
+
+public struct TapeType: Sendable, Hashable, RawRepresentable {   // not an enum: a later firmware may add types
+    static let studio   = TapeType(rawValue: 0)
+    static let vintage  = TapeType(rawValue: 1)
+    static let porta    = TapeType(rawValue: 2)
+    static let diskMini = TapeType(rawValue: 3)
+}
+
+public enum TapeConflict: Sendable {
+    case fail                              // default: .alreadyExists if the name is taken
+    case replace(archivingExistingTo: URL) // archive and verify the tape that's there, then overwrite
+    case replace(confirmed: TapeDeletion)  // overwrite with no archive, because a person confirmed losing it
+}
+```
+
+**The 8-tape limit is checked in one place.** Every call that adds a tape checks `tapeSlots()` from a fresh listing of `tapes/` before it changes anything, and throws `.tapeLimitReached` if none is free. That's `createTape`, `duplicateTape`, and `restoreTape` when the name is new. Replacing an existing tape doesn't need a slot. The file layer's `createDirectory(at:)` runs the same check for a new folder in `tapes/`, so the limit can't be bypassed from below. The error's recovery suggestion says to move a tape off the OP-1 first.
+
+**Tape names are at most 15 characters, when FieldTapeKit makes them.**
+- The allowed characters are A–Z, 0–9, `#`, `-` and space, stored lowercase.
+- 15 is FieldTapeKit's own limit, not the OP-1's. The OP-1's name editor doesn't scroll, so the owner couldn't find where it stops, but past about 13 or 14 characters a name can't be read on the OP-1's screen. A limit of 15 keeps every name FieldTapeKit makes readable, or nearly so, on the device. It may be stricter than the OP-1 needs, and it can be raised later without breaking anything.
+- The limit applies only to names for a new tape: `createTape`, `duplicateTape`, and `restoreTape(from:as:)` with a new name. A name that's already on the OP-1, or in an archive, is accepted at any length, so a longer tape named on the OP-1 itself can still be listed, copied off and restored under its own name.
+- FieldCheck creates its scratch tape with a 15-character name, which confirms the OP-1 accepts one over MTP (ADR 0003, `names.maximum`).
+
+**Filtering is left to the app.** `tapes()` returns an array, and Swift's own collection methods already do the job:
+
+```swift
+let miniDisks = try await device.tapes().filter { $0.type == .diskMini }
+let byType    = Dictionary(grouping: try await device.tapes(), by: \.type)
+let recorded  = try await device.tapes().filter { !$0.isEmpty }
+```
+
+A filter parameter on `tapes()` wouldn't save any work: there are at most 8 tapes, and listing them reads each small `tape.json` whatever the filter is. What the framework does owe apps is properties worth filtering on, so `Tape` has `type`, `duration`, `isEmpty` and `recordedTracks`, and `TapeType` is `Hashable` for grouping. If apps keep writing the same filter, it can become a convenience later without changing `tapes()`.
+
+**`TapeManifest` is `tape.json` with nothing dropped.**
+- It has typed properties for the fields the probe decoded: clips (`track`, `start` and `end` frames, `id`), loop, tempo, mixer, and tape type.
+- It keeps the original JSON and writes back every key it doesn't understand. `padding` and unknown keys round-trip untouched, because the probe showed the OP-1 accepts copied values and their meaning is unknown.
+- Editing a manifest is out of scope for now. It's read for display and written back as it was archived.
+
+**`ReelArchive` is a `.reelarchive` file: one file per tape, named after it**, for example `2026-276#01.reelarchive`. Inside, it's an Apple Archive (`.aar` format):
+
+```
+2026-276#01.reelarchive   (Apple Archive, no compression by default)
+  track_1.wav … track_4.wav     exactly as stored on the OP-1
+  tape.json                     exactly as stored on the OP-1
+  reel.json                     FieldTapeKit metadata: format version, tape name and type, OP-1 serial
+                                and firmware, date, and the size and SHA-256 of every file
+```
+
+- **Apple Archive, with no dependency and no archive code of our own.** `import AppleArchive` is public on iOS, iPadOS and macOS, well below the version 27 minimum.
+- **No compression by default.** Uncompressed PCM barely shrinks, and skipping compression keeps archiving at the speed of the USB read. An option allows Apple Archive's compressors (LZ4, LZFSE, zlib, LZMA) for an app that wants smaller files.
+- **Streaming:** FieldTapeKit writes each entry's header and then its data as it arrives from the OP-1, so tracks go straight into the archive with the SHA-256 computed on the way. Nothing is staged in a temporary folder.
+- **It's one ordinary file,** so it survives AirDrop, email, iCloud, Dropbox and USB drives unchanged.
+- **Getting the WAVs out needs a tool that reads Apple Archive.** On a Mac that's Archive Utility or the `aa` command. iOS has no built-in way that we know of. FieldTapeKit itself can read them (`ReelArchive` exposes each track), so an app can offer "save the tracks".
+- **For apps that share archives:** the person receiving one may not have an app that reads `.aar`. An app that offers sharing should decide how people get at the audio. It could export the WAVs alongside, or add its own dependency to export another format, such as zip. FieldTapeKit stays dependency-free and documents this.
+- **The file type:** FieldTapeKit defines `UTType.reelArchive`, conforming to `public.data` and `public.archive`. The app declares the type in its Info.plist, because a framework can't, so the app can open `.reelarchive` files from Files and from other apps.
+- **Opening one checks it:** `ReelArchive(contentsOf: URL)` reads the archive and checks every file against `reel.json`. It also runs the consistency check the probe uses: every clip names a real track, and each track is `44 + 8 × last clip end` bytes.
+
+**`copyTape` and `moveTape`:**
+1. Read `tape.json` fresh, and check it against the track sizes.
+2. Stream each track and `tape.json` into a temporary archive next to the destination.
+3. Reopen the archive from disk with Apple Archive's decoder and check every SHA-256 against what came off the OP-1.
+4. Move it into place. An archive is never overwritten: if the name is taken, a number is added, as Finder does.
+5. `moveTape` only: check the tape on the OP-1 still matches the archive by name, sizes and `tape.json`, then delete its files and its folder.
+
+**`createTape`** makes a complete empty tape, not just a folder:
+1. Check the name is valid and not taken, ignoring case, and that a slot is free.
+2. Create `tapes/<name>`, lowercase.
+3. Write four blank tracks (the 44-byte header) and a blank `tape.json` with the chosen type. The template is the blank Disk Mini tape the probe read (2026-312#01).
+4. Read everything back.
+
+It writes the files because the OP-1 has only been seen with a folder that was filled before it left MTP mode. What it does with an empty tape folder is untested.
+
+**`duplicateTape`** copies a tape on the OP-1 to a new name. The OP-1 has no CopyObject, so this reads each track through memory and writes it to the new tape, one track at a time:
+1. Check the new name and that a slot is free.
+2. Read the source `tape.json` fresh and check it against the track sizes.
+3. Create the new tape, then write and read back each track, and `tape.json` last.
+
+The copy keeps the source's `padding` values. Two tapes sharing them was fine in the probe, but its long-term effect is untested. The source is never written to.
+
+**`restoreTape`** follows the order the probe proved, and stops at the first failure:
+1. Open and check the archive, the name, and the 6-minute limit.
+2. If the tape doesn't exist, check there's a free slot of the 8 (`.tapeLimitReached`). If it does, apply `conflict`. With `.replace(archivingExistingTo:)`, archive and verify the existing tape before changing anything. With `.replace(confirmed:)`, check the confirmation still matches the tape.
+3. Create `tapes/<name>` if needed, lowercase.
+4. Write each track, read it back and compare it: delete, then send. Skip a track that's blank on both sides.
+5. Write `tape.json` **last**, because the OP-1 rebuilds it when a track changes, and read it back.
+6. List the tape again and check every size.
+
+If a step fails after the OP-1 has been changed, the error says which files were written, and any archive made in step 2 is left in place. Over an existing tape, the framework does **not** try an automatic rollback: a second round of writes to a device that just failed is more likely to make things worse. The app can offer to restore again from the same archive.
+
+**A half-made new tape is removed.** If `createTape`, `duplicateTape`, or `restoreTape` under a new name fails partway, the new tape holds nothing that isn't somewhere else, and it would use up a slot. FieldTapeKit deletes what it created in that call, once. If that delete fails too, the tape is listed in the error's `changed`.
+
+### 5. The album layer
+
+The OP-1 Field's album is `mixdown/side_a.wav` and `mixdown/side_b.wav`. Unlike tapes, it's always exactly those two files: `mixdown/readme.txt` allows only those names, and the OP-1 replaces a side whenever the person records to it. So the album layer has no names, no slots and no creating or deleting, just two sides that change over time.
+
+```swift
+extension FieldDevice {
+    func album() async throws -> Album
+
+    // Off the OP-1: writes a WAV into a folder, and verifies it
+    func copySide(_ side: Album.Side, to folder: URL,
+                  progress: consuming Subprogress? = nil) async throws -> AlbumSideCopy
+    func copyAlbum(to folder: URL,
+                   progress: consuming Subprogress? = nil) async throws -> [AlbumSideCopy]   // the recorded sides
+
+    // Has the person recorded over this side since it was copied?
+    func side(_ side: Album.Side, matches copy: AlbumSideCopy) async throws -> Bool
+
+    // Onto the OP-1: a WAV becomes side A or B
+    func restoreSide(_ side: Album.Side, from file: URL,
+                     conflict: SideConflict = .fail,
+                     progress: consuming Subprogress? = nil) async throws -> AlbumSide
+    func prepareToReplace(_ side: Album.Side) async throws -> SideReplacement   // for a person to confirm
+}
+
+public struct Album: Sendable {
+    enum Side: Sendable, Hashable, CaseIterable { case a, b }
+    var a: AlbumSide
+    var b: AlbumSide
+    subscript(side: Side) -> AlbumSide
+}
+
+public struct AlbumSide: Sendable, Hashable {
+    var side: Album.Side
+    var path: FilePath                 // mixdown/side_a.wav or side_b.wav
+    var isEmpty: Bool                  // the 44-byte header only
+    var duration: Duration
+    var size: Int
+    var format: AudioFormat            // sample rate, bit depth, channels, from the WAV header
+}
+
+public struct AlbumSideCopy: Sendable, Hashable, Codable {   // an app can store it
+    var side: Album.Side
+    var url: URL
+    var size: Int
+    var sha256: String
+    var copiedAt: Date
+}
+
+public enum SideConflict: Sendable {
+    case fail                               // default: .alreadyExists if the side has audio
+    case replace(copyingExistingTo: URL)    // copy and verify the side first
+    case replace(confirmed: SideReplacement)
+}
+
+public struct SideReplacement: Sendable, Identifiable {
+    let id: UUID
+    let side: AlbumSide                // as read fresh by prepareToReplace
+    var audio: Duration                // how much audio would be lost
+    var losesNothing: Bool             // the side is empty: safe to skip the prompt
+    // Internal: a fingerprint of the side's size, and the device it belongs to
+}
+```
+
+- **Copies are plain WAV files,** not archives. A side is one file with no metadata of its own, so a WAV is the most natural thing to hand an app or a person. Copies are named for the side and the date, such as `Side A 2026-11-08.wav`. As with archives, a copy never overwrites a local file: if the name is taken, a number is added.
+- **Sides change, so copies remember what they copied.** `AlbumSideCopy` records the size and SHA-256 of what came off the OP-1. `side(_:matches:)` compares the size first, and reads the side again only when the sizes are equal. That lets an app show "recorded since your last copy" or skip a copy it already has.
+- **An empty side is skipped.** `copyAlbum` copies only sides with audio. `copySide` on an empty side throws `.notFound`, because there's nothing to copy.
+- **Restoring follows the same safety rules as tapes** (section 6). Writing over a side that has audio needs either a verified copy of it or a person's confirmation, through `prepareToReplace`. An empty side can be written to freely. Before sending, FieldTapeKit checks the file is a 44.1 kHz WAV, as the readme requires.
+- **What the probe showed:** reading and writing a side back byte for byte worked on 1.7.3. Writing a side in a different format from the one the OP-1 records, and what the OP-1 does with a side written while it's playing the album, are untested. FieldCheck should cover both (ADR 0003).
+- **No erasing.** Whether deleting a side file is safe, or whether the OP-1 recreates it, is untested, so there's no call for it. Restoring from a short silent WAV does the same job.
+
+### 6. Safety rules
+
+These hold across both layers. The tests check each one against the simulator.
+
+1. **Nothing on the OP-1 is deleted or overwritten unless a verified copy exists, or a person confirmed losing it.** Every destructive call takes one of two forms:
+   - **With a copy:** `deleteTape(_:keeping:)` needs a copy that matches the tape: an archive, or a matching tape on the OP-1 such as a duplicate. `moveTape` makes the archive first. Restore's `.replace(archivingExistingTo:)` and the file layer's `keepingCopyAt:` make and verify one before changing anything.
+   - **Confirmed by a person:** `prepareToDelete(_:)` (or `prepareToRemove(at:)` in the file layer) reads the item fresh and returns a `TapeDeletion` (or `FileDeletion`) describing what would be lost. The app shows that to the person however it likes: SwiftUI's `confirmationDialog(item:)`, a UIKit alert, or a prompt in a command-line tool. If they agree, the app passes it to `deleteTape(_:)`, `removeItem(_:)`, or a `.replace(confirmed:)` option.
+   - **A confirmation can't go stale or be reused.** It records a fingerprint of what it described: the track sizes and `tape.json` for a tape, the size for a file or an album side. If anything changed before it's used, the call refuses with `.changedSinceConfirmation`. It works once, and only on the `FieldDevice` that made it, so it doesn't survive a reconnect.
+   - **Skipping the prompt is possible, by choice.** Nothing stops an app from calling `prepareToDelete` and deleting straight away. That's deliberate: it's visible in the code and can't happen by accident. `losesNothing` tells an app when skipping is harmless, as for a new empty tape from `createTape`.
+   - Album sides follow the same two forms: `.replace(copyingExistingTo:)` or `.replace(confirmed:)` with a `SideReplacement` (section 5).
+   - The only file layer write with nothing at risk is a new file at a free path, so it needs neither.
+2. **A copy counts as verified only after it has been read back from where it was stored and matched by SHA-256.** Writes to the OP-1 are read back too, unless the caller opts out.
+3. **Everything is checked before the first change:** names, folder rules, the 8-tape and 6-minute limits, archive consistency, and, once a FieldCheck baseline shows it's accurate, free space (section 1). A refusal changes nothing.
+4. **FieldTapeKit never touches files it didn't name.** It deletes only the paths it was asked to and that it listed. It never writes `readme.txt` or anything outside `tapes/`, `mixdown/`, `synth/user/` and `drum/user/`.
+5. **It never overwrites a local file.** Archives get a new name rather than replacing one.
+6. **It stops at the first failure and reports exactly what changed.** There's no automatic retry of writes and no rollback of an existing tape, and a timeout is followed only by a read-only ping. The only cleanup is deleting a half-made new tape, which holds nothing that isn't elsewhere.
+7. **It sends only the standard MTP operations it uses:**
+   - Reads: GetDeviceInfo, GetStorageIDs, GetStorageInfo, GetObjectHandles, GetObjectInfo, GetObject, GetPartialObject.
+   - Writes: SendObjectInfo, SendObject, DeleteObject.
+   - Nothing vendor-specific, and no MIDI.
+
+### 7. Errors
+
+One error type with a code, NIO style:
+
+```swift
+public struct FieldError: Error, Sendable, LocalizedError {
+    var code: Code
+    var path: FilePath?
+    var responseCode: UInt16?          // the PTP response, when the device refused
+    var changed: [FilePath]            // what was already written or deleted, if anything
+    var underlying: (any Error & Sendable)?   // Sendable, so FieldError can be
+
+    public struct Code: Sendable, Hashable {
+        static let disconnected, timedOut, notFound, alreadyExists,
+                   notADirectory, notAllowed, invalidName,
+                   tapeLimitReached, tapeTooLong, insufficientSpace,
+                   invalidArchive, archiveMismatch,
+                   changedSinceConfirmation, confirmationAlreadyUsed,
+                   verificationFailed, deviceRefused, deviceInUse, notAuthorized
+    }
+}
+```
+
+- **`insufficientSpace`:** the OP-1 answered a write with Store Full (0x200C), or, once free space is trusted, a check before the first change found too little (section 1).
+- **`deviceInUse`:** another app holds the OP-1, so ImageCaptureCore won't open it for this one. On a Mac that's likely Teenage Engineering's app or Image Capture (section 9). The recovery suggestion names them.
+
+- **Untyped `throws`, documented per method.** Swift 6 typed throws (`throws(FieldError)`) can't also throw `CancellationError`, and every long transfer here has to cancel the normal Swift way when a view disappears. So methods throw `FieldError` or `CancellationError`, and each method's doc comment lists the codes it can throw, as NIO does.
+- **`LocalizedError`** gives every error a readable description and recovery suggestion, so SwiftUI's `.alert(error:)` works as is. For example, `notAllowed` explains the folder rule, and `tapeLimitReached` says to move a tape off the OP-1 first.
+- **`changed`** is empty whenever the OP-1 wasn't touched, so an app can tell "nothing happened" from "half-restored" at a glance.
+- **Timeouts:** a `timedOut` request is followed by a ping (GetDeviceInfo). If the device answers, the call can be retried. If not, the device is treated as disconnected.
+
+### 8. Testing without an OP-1
+
+The research recommends a protocol with live and simulated implementations. Here the swap goes one level lower, **inside** `FieldDevice`:
+
+```swift
+let device = FieldDevice.simulated {
+    Tape("2026-220#02", type: .vintage, tracks: [.audio(seconds: 12), .blank, .blank, .blank])
+    Directory("mixdown") { File("side_a.wav", seconds: 69) }
+}
+```
+
+- **One concrete type.** `FieldDevice.simulated` is the same type, backed by a simulated MTP device instead of ImageCaptureCore. App code never deals with `any FieldFileSystem`, and the tape layer, archives, path matching, folder rules and PTP encoding all run for real in tests.
+- **The OP-1's quirks:** the simulator reproduces what the probe found. That's lowercased names, `tape.json` rebuilt after a track write, stale sizes within a session, preset conversion, the 8-tape limit, `0x2002` for names a folder doesn't allow, and new handles after a reconnect.
+- **Fault injection:** a timeout on the nth request, a disconnect mid-transfer, a corrupted read, and slow transfers at the real 20 and 7 MB/s. These test the safety rules.
+- **Previews:** it ships in the main module rather than a test-only one, because SwiftUI previews in an app target need it. A preview can show a populated OP-1 with no hardware.
+- **Conformance suite:** the same tests run against the simulator and against a real OP-1 from the probe app. That keeps the simulator honest, which the research calls its most important feature.
+
+### 9. Platforms, concurrency and packaging
+
+- **Platforms:** iOS 27, iPadOS 27 and macOS 27. The API is the same on all three. Raw PTP to the OP-1 on macOS is **not yet tested**, so the first framework milestone includes a Mac run of the conformance suite. Things to watch on the Mac:
+  - Only one app can hold the device. Teenage Engineering's own Mac app, and macOS's Image Capture, may grab it first, so FieldTapeKit must report that clearly, as `.deviceInUse`, rather than hang. How ImageCaptureCore signals this is unknown until the first Mac run.
+  - A sandboxed Mac app may need a USB or camera entitlement for ImageCaptureCore. Find out which on the first run.
+- **Concurrency:** `FieldDevice` is an `actor`, because PTP allows one transaction at a time. Every value type is `Sendable`, and nothing depends on the app's default `MainActor` isolation.
+- **Cancellation** is checked between chunks and between tracks. A cancelled restore deletes the partial file it was sending, reports what it had finished in `changed`, and leaves any archive in place.
+- **Packaging:**
+  - One Swift package, `FieldTapeKit`, with one library product, plus a test target with the conformance suite.
+  - No SwiftUI or UIKit module for now: `AsyncSequence`, `Subprogress` and `LocalizedError` already work with both. An `@Observable` connection model can come later if the app needs it.
+- **Foundation is required,** unlike the Foundation-free core the research suggests: ImageCaptureCore is Apple-only and works in `Data` and `URL`.
+- **The PTP layer stays internal:** containers, operations and dataset parsing, carried over from the probe. Making a raw MTP escape hatch public would freeze it early.
+
+### 10. Not in this API yet
+
+These are possible later features, deliberately left out for now:
+- Editing `tape.json` (moving clips, retitling).
+- Copy and restore for presets, like the tape and album layers.
+- Erasing an album side.
+- Renaming a tape (probably MTP object properties, untested).
+- Entering MTP mode over USB MIDI.
+
+### 11. Versioning and firmware support
+
+**FieldTapeKit follows [Semantic Versioning 2.0.0](https://semver.org) strictly.**
+- **Pre-releases come first.** Releases start at `1.0.0-alpha.1`. They move to `1.0.0-beta.1` once the API is ready to try for real, and reach `1.0.0` at the full release. Semver sorts them in that order: `1.0.0-alpha.1` < `1.0.0-alpha.2` < `1.0.0-beta.1` < `1.0.0`.
+- **Pre-releases carry no compatibility promise,** as semver allows. The release notes list every break between them. An app that depends on an alpha or beta names that pre-release in its package requirement, for example `exact: "1.0.0-alpha.1"`.
+- **From 1.0.0, any of these needs a new major version:**
+  - **The Swift API:** anything that breaks source compatibility. That includes removing or renaming anything public, changing a signature, and adding a case to a public enum: the connection events, `TapeConflict`, `SideConflict` and `Album.Side`. A new case breaks an app's exhaustive `switch`. New `FieldError.Code` or `TapeType` values only need a minor version, because those types are structs.
+  - **The archive format:** every version reads every earlier `.reelarchive` format. Writing a format that earlier 1.x versions can't open is major. The format version in `reel.json` says which format an archive uses.
+  - **Supported firmware:** adding support for a firmware is minor. Dropping one is major.
+  - **Safety behavior:** loosening a rule in section 6, or a default that protects music, such as read-back, is major even when no API changes. Tightening one is minor, and the release notes say what is newly refused.
+- **A minor version** adds API, firmware support, or the ability to read a new archive format. **A patch** fixes bugs without changing any of the above.
+- **Checked before every release:**
+  - `swift package diagnose-api-breaking-changes` against the previous release's tag. That needs the repository in git.
+  - The archive fixtures still open. The tests keep one archive of every format version.
+  - The safety-rule tests pass on the simulator for every supported firmware.
+
+**Firmware support is additive.** Supporting a new firmware never drops an old one, except in a major version with an ADR of its own.
+- **Telling firmwares apart:** `FieldDevice.info` has `firmware`, from GetDeviceInfo, and `isFirmwareTested`. It's `true` when this release ships a FieldCheck baseline for that exact version ([ADR 0003](0003-firmware-check-tool.md)).
+- **A profile for each tested firmware,** built from its baseline, holds the behaviors that differ between firmwares, such as tape types or folder rules. Where firmwares differ, the code branches on the profile. Most code doesn't branch at all.
+- **The simulator can act as any tested firmware** (`FieldDevice.simulated(firmware:)`), and the conformance suite runs against each one. That keeps an old firmware tested after the owner's OP-1 has moved on from it.
+- **Untested firmware works, with a warning.** On a firmware with no baseline, such as 1.8 the day it ships, everything works using the profile of the newest tested firmware older than it, or the oldest profile if it's older than all of them. `isFirmwareTested` is `false`, so the app can warn the person.
+  - The safety rules still hold. Read-back catches a write that didn't land as written, and nothing is deleted without a verified copy or a confirmation.
+  - What they can't catch is a change the read-back doesn't see, such as the OP-1 treating a restored `tape.json` differently after a reconnect.
+- **Archives can cross firmwares.** `ReelArchive` exposes the firmware it was made on, which is already in `reel.json`. Restoring onto a different firmware isn't refused, so an app can warn. Whether a particular firmware change makes that unsafe is one of the questions FieldCheck's draft ADR asks (ADR 0003, section 5).
+
+**What breaks for someone who doesn't update their OP-1** after FieldTapeKit supports a newer firmware? Nothing, as long as the change can be supported on both firmwares: theirs keeps its profile and its tests. Only a change FieldTapeKit can't support on both would drop the old firmware, and that's a major version with its own ADR.
+
+## Alternatives Considered
+
+**Shape of the API**
+- **A protocol with live and simulated implementations** (`any FieldFileSystem`), as the research recommends. Rejected: app code would carry an existential, and the tape layer, archives, folder rules and PTP encoding wouldn't run in tests. The swap happens inside `FieldDevice` instead, below the PTP encoding (section 8).
+- **A browser object,** like `ICDeviceBrowser`. Rejected for a static `AsyncSequence`, which works the same in SwiftUI, UIKit, AppKit and command-line tools, and starts and stops with the task that iterates it. A `FieldDeviceMonitor` can still be added on top later (section 1).
+- **File handles** (scoped `withFileHandle` closures, as the research recommends). Rejected: MTP has nothing to open, close or seek, so handles would invent state the device doesn't have.
+- **A filter parameter on `tapes()`.** Rejected: with at most 8 tapes it saves no work, and Swift's collection methods already filter (section 4).
+- **A public raw MTP layer.** Rejected for now: it would freeze the PTP layer before it has settled.
+- **A SwiftUI or UIKit module.** Not now: `AsyncSequence`, `Subprogress` and `LocalizedError` already work with both.
+- **A Foundation-free core,** as the research suggests. Rejected: ImageCaptureCore is Apple-only and works in `Data` and `URL`.
+- **Tape name length: the OP-1's own limit, or no limit.** The editor's limit couldn't be read, because it doesn't scroll. No limit would let FieldTapeKit make names the OP-1's screen can't show. Rejected for FieldTapeKit's own limit of 15 (section 4).
+- **Typed throws** (`throws(FieldError)`). Rejected: a method with typed throws can't also throw `CancellationError`, and every long transfer has to cancel the normal Swift way (section 7).
+
+**What the OP-1 can't do**
+- **`moveItem` and an atomic replace.** Not possible: the OP-1 doesn't list MoveObject or CopyObject. Replacing is delete, then send, guarded by a verified copy.
+- **Deleting a folder with one DeleteObject.** Not relied on, because it's untested. FieldCheck tries it (`delete.folder-with-files`, ADR 0003). If it works, `deleteTape` can get simpler.
+
+**Backups**
+- **Zip or tar archives.** Rejected: zip has no public API on iOS, and tar's (libarchive) is macOS-only, so either would mean owning a format or adding a dependency.
+- **A folder of WAVs and `tape.json`,** with no archive. Rejected: a folder doesn't travel through AirDrop, email or cloud storage as one item, and one file of it can be lost or changed without anyone noticing.
+- **Compression on by default.** Rejected: PCM barely shrinks, and compressing would slow archiving below the speed of the USB read. It stays an option.
+- **Staging tracks in a temporary folder** before writing the archive. Rejected for streaming each track straight into the archive, with the SHA-256 computed on the way.
+
+**Safety**
+- **Read-back off by default,** for speed. Rejected: it costs about 4 seconds on a 78 MB tape, and harmless matters more than fast here.
+- **Automatic rollback** of a failed restore over an existing tape. Rejected: a second round of writes to a device that just failed is more likely to make things worse. The archive taken first stays in place, and the app can restore from it again (section 4).
+- **Refusing writes on the reported free space** before it's verified. Rejected for now: an inaccurate figure would refuse writes that fit, or allow ones that don't. The OP-1's own Store Full answer is the check until a baseline confirms the figure (section 1).
+
+**Versioning and firmware**
+- **0.y.z versions while the framework is built.** Rejected for `1.0.0` pre-releases, which make it plain that 1.0.0 is the goal and sort correctly before it.
+- **Untested firmware read-only.** Rejected by the owner: copying tapes off would still work, but the app couldn't restore anything until a release supported the firmware. The safety rules guard writes instead.
+- **Refusing untested firmware.** Rejected: people couldn't even copy their tapes off.
+- **Supporting only the latest firmware.** Rejected: people who don't update their OP-1 would lose support with each release.
+
+## Consequences
+
+**Positive**
+- Anyone who knows `FileManager` can use the file layer without reading the docs. Copying, moving, restoring, creating and duplicating a tape are each one call, and so are copying and restoring an album side.
+- A tape can't be deleted or overwritten through FieldTapeKit without a verified archive of it, or a person's confirmation of exactly that tape as it was.
+- Archives are single files, written with a first-party Apple framework, that the user can keep or share.
+- The OP-1's quirks (lowercasing, stale sizes, rebuilt `tape.json`, folder rules, write order) are handled once, in the framework, not rediscovered by every app.
+- Apps and the framework itself can be tested and previewed without an OP-1, against a simulator that the conformance suite checks against real hardware.
+
+**Negative / risks**
+- Replacing can't be atomic. The archive taken first means nothing is lost, but a failure mid-restore still leaves the tape half-written on the OP-1 until it's restored again.
+- Safety costs time. Reading back every write adds about 4 seconds on a 78 MB tape, and archiving before a replace adds a full read.
+- An upload holds a whole track in memory, up to 127 MB.
+- An archive can't be opened on iOS without an app that reads Apple Archive. Apps that share archives have to plan for the person receiving one (section 4).
+- macOS is committed to but untested.
+- The simulator is only as faithful as what the probe observed. Firmware updates may change OP-1 behavior. [ADR 0003](0003-firmware-check-tool.md) proposes FieldCheck, a repeatable check against a saved baseline, for that.
+- `TapeManifest` passes `padding` through without knowing what it means. If it refers to data stored elsewhere on the OP-1, restoring onto a different OP-1, or after other changes, could behave differently. Copies on the same device were fine. Deleting one of two tapes that share `padding` values is untested, and FieldCheck deliberately doesn't try it (ADR 0003).
+- Untested firmware is allowed to write. The safety rules catch writes that didn't land, but not every change in how the OP-1 treats what was written.
+- Once the owner's OP-1 updates, an old firmware is checked only against its baseline and the simulator, not on hardware. Whether an OP-1 can go back to an older firmware is unknown.
+- Each firmware profile that differs from the others adds a code path to keep tested.
+
+## Change Log
+
+- **2026-11-08:** Decided by the owner:
+  - **Name:** FieldTapeKit.
+  - **Minimum OS:** 27 on every platform.
+  - **macOS:** supported.
+  - **Backup format:** `.reelarchive`, an Apple Archive with no compression by default. No zip or tar code of our own. Apps that share archives decide how people extract them.
+  - **Read-back:** on by default.
+- **2026-11-08:** Restructured to the ADR template: the alternatives the Decision rejected are collected under Alternatives Considered, and the later features are in section 10.
+- **2026-11-08:** Free space settled. FieldCheck's `device.storage` check tests whether GetStorageInfo's figure is accurate. Until a baseline confirms it, nothing refuses a write on it, and Store Full (0x200C) is reported as `.insufficientSpace`.
+- **2026-11-08:** Tape name length settled. The OP-1's name editor doesn't scroll, so its limit couldn't be read, and names past about 13 or 14 characters can't be read on the OP-1's screen. FieldTapeKit limits new names to 15 characters, by its own choice, and accepts names already on the OP-1 or in an archive at any length.
+- **2026-11-08:** API gaps fixed. `FieldError.underlying` is `(any Error & Sendable)?`, so the error can be `Sendable`. The codes `insufficientSpace` and `deviceInUse` are added, and `SideReplacement` is defined, mirroring `TapeDeletion`.
+- **2026-11-08:** Accepted by the owner.
+- **2026-11-08:** Section 11 added, decided by the owner:
+  - Strict semantic versioning, starting at `1.0.0-alpha.1`.
+  - A major version protects the Swift API, the archive format, supported firmware and safety behavior.
+  - Firmware support is additive, with a profile for each tested firmware.
+  - Untested firmware works, with a warning.

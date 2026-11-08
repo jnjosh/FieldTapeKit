@@ -1,0 +1,36 @@
+Device: Bluetooth, manufacturer Apple Inc., model Bluetooth MIDI Driver, offline 0
+Device: OP-1, manufacturer teenage engineering, model OP-1, offline 0
+Device: Network, manufacturer , model , offline 0
+Device: UMP Network, manufacturer , model , offline 0
+Listening to source: OP-1
+[   0.02] Listening for 120 s
+[   1.10] from OP-1, 11 bytes: f0 00 20 76 02 40 21 15 04 00 f7
+[   3.86] MIDI setup changed, message ID 4
+[   3.86] MIDI setup changed, message ID 3
+[   3.86] MIDI setup changed, message ID 3
+[   3.86] MIDI setup changed, message ID 1
+[   8.99] MIDI setup changed, message ID 4
+[   8.99] MIDI setup changed, message ID 2
+[   8.99] MIDI setup changed, message ID 2
+[   8.99] MIDI setup changed, message ID 1
+[   9.51] from OP-1, 158 bytes: f0 00 20 76 02 40 21 0c 01 00 00 70 72 6f 64 75 63 74 00 3a 4f 50 2d 31 3b 6d 00 6f 64 65 3a 6e 6f 72 00 6d 61 6c 3b 73 65 72 00 69 61 6c 3a 4c 31 50 00 58 45 31 34 57 3b 64 00 73 70 5f 73 65 72 69 00 61 6c 3a 38 33 30 30 00 30 30 35 39 37 32 35 00 33 30 30 30 30 36 32 00 3b 6f 73 5f 76 65 72 00 73 69 6f 6e 3a 31 2e 00 37 2e 33 3b 73 77 5f 00 76 65 72 73 69 6f 6e 00 3a 31 2e 37 2e 33 3b 00 68 77 5f 72 65 76 3a 00 36 3b 73 6b 75 3a 54 00 45 30 30 32 41 53 30 00 30 32 f7
+[  15.68] MIDI setup changed, message ID 4
+[  15.68] MIDI setup changed, message ID 3
+[  15.68] MIDI setup changed, message ID 3
+[  15.68] MIDI setup changed, message ID 1
+[  18.91] MIDI setup changed, message ID 4
+[  18.91] MIDI setup changed, message ID 2
+[  18.91] MIDI setup changed, message ID 2
+[  18.91] MIDI setup changed, message ID 1
+[  19.55] from OP-1, 158 bytes: f0 00 20 76 02 40 21 7e 01 00 00 70 72 6f 64 75 63 74 00 3a 4f 50 2d 31 3b 6d 00 6f 64 65 3a 6e 6f 72 00 6d 61 6c 3b 73 65 72 00 69 61 6c 3a 4c 31 50 00 58 45 31 34 57 3b 64 00 73 70 5f 73 65 72 69 00 61 6c 3a 38 33 30 30 00 30 30 35 39 37 32 35 00 33 30 30 30 30 36 32 00 3b 6f 73 5f 76 65 72 00 73 69 6f 6e 3a 31 2e 00 37 2e 33 3b 73 77 5f 00 76 65 72 73 69 6f 6e 00 3a 31 2e 37 2e 33 3b 00 68 77 5f 72 65 76 3a 00 36 3b 73 6b 75 3a 54 00 45 30 30 32 41 53 30 00 30 32 f7
+[  27.30] from OP-1, 11 bytes: f0 00 20 76 02 40 20 06 04 00 f7
+[  30.07] MIDI setup changed, message ID 4
+[  30.07] MIDI setup changed, message ID 3
+[  30.07] MIDI setup changed, message ID 3
+[  30.07] MIDI setup changed, message ID 1
+[  33.94] MIDI setup changed, message ID 4
+[  33.94] MIDI setup changed, message ID 2
+[  33.94] MIDI setup changed, message ID 2
+[  33.94] MIDI setup changed, message ID 1
+[  34.59] from OP-1, 158 bytes: f0 00 20 76 02 40 21 07 01 00 00 70 72 6f 64 75 63 74 00 3a 4f 50 2d 31 3b 6d 00 6f 64 65 3a 6e 6f 72 00 6d 61 6c 3b 73 65 72 00 69 61 6c 3a 4c 31 50 00 58 45 31 34 57 3b 64 00 73 70 5f 73 65 72 69 00 61 6c 3a 38 33 30 30 00 30 30 35 39 37 32 35 00 33 30 30 30 30 36 32 00 3b 6f 73 5f 76 65 72 00 73 69 6f 6e 3a 31 2e 00 37 2e 33 3b 73 77 5f 00 76 65 72 73 69 6f 6e 00 3a 31 2e 37 2e 33 3b 00 68 77 5f 72 65 76 3a 00 36 3b 73 6b 75 3a 54 00 45 30 30 32 41 53 30 00 30 32 f7
+[ 120.02] Done

@@ -1,0 +1,5 @@
+[   0.45] iPad, iPadOS 27.2
+[   0.49] Contents authorization: ICAuthorizationStatusAuthorized
+[   1.06] Control authorization: ICAuthorizationStatusAuthorized
+[   1.06] MIDI off for this run
+[   1.40] Browsing for cameras

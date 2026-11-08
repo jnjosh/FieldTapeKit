@@ -1,0 +1,4 @@
+[  0.02] → f0 00 20 76 02 40 7d 30 04 00 01 02 f7 (request 3760)
+[  0.02] MIDISend status 0
+[  0.02] ← f0 00 20 76 02 40 3d 30 04 00 f7
+[  0.02]   reply to request 3760 (ours), command 0x04, status 0

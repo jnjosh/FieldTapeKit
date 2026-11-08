@@ -1,0 +1,54 @@
+name: OP1Probe
+options:
+  bundleIdPrefix: com.jnjosh
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    DEVELOPMENT_TEAM: Q285243259
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+targets:
+  OP1Probe:
+    type: application
+    platform: iOS
+    sources: [OP1Probe]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jnjosh.OP1Probe
+    info:
+      path: OP1Probe/Info.plist
+      properties:
+        CFBundleDisplayName: OP-1 Probe
+        UILaunchScreen: {}
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        NSCameraUsageDescription: OP-1 Probe talks to the OP-1 Field, which connects as a camera device.
+        NSPhotoLibraryUsageDescription: OP-1 Probe reads the contents of the connected OP-1 Field.
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+  OP1ProbeTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [OP1ProbeTests]
+    dependencies:
+      - target: OP1Probe
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  OP1Probe:
+    build:
+      targets:
+        OP1Probe: all
+        OP1ProbeTests: [test]
+    test:
+      targets: [OP1ProbeTests]

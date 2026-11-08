@@ -1,0 +1,10 @@
+[   0.52] iPad, iPadOS 27.2
+[   0.56] Contents authorization: ICAuthorizationStatusAuthorized
+[   1.20] Control authorization: ICAuthorizationStatusAuthorized
+[   1.81] MIDI ports open
+[   2.12] Browsing for cameras
+[ 110.27] OP-1 found over USB MIDI (not in MTP mode)
+[ 110.28] MIDI → greet request 1044: f0 00 20 76 02 40 68 14 01 f7
+[ 110.29] MIDI ← reply to 1044, command 0x01, status 0, 128 data bytes
+[ 110.30] Greet: product:OP-1;mode:normal;serial:L1PXE14W;dsp_serial:830000597253000062;os_version:1.7.3;sw_version:1.7.3;hw_rev:6;sku:TE002AS002
+[ 113.21] OP-1 left USB MIDI

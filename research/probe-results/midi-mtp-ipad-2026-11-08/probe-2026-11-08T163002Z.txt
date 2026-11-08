@@ -1,0 +1,25 @@
+[   0.42] iPad, iPadOS 27.2
+[   0.47] Contents authorization: ICAuthorizationStatusAuthorized
+[   1.06] Control authorization: ICAuthorizationStatusAuthorized
+[   1.91] Browsing for cameras
+[   5.62] OP-1 found over USB MIDI (not in MTP mode)
+[   5.64] MIDI → greet request 2771: f0 00 20 76 02 40 75 53 01 f7
+[   5.65] MIDI ← reply to 2771, command 0x01, status 0, 128 data bytes
+[   5.65] Greet: product:OP-1;mode:normal;serial:L1PXE14W;dsp_serial:830000597253000062;os_version:1.7.3;sw_version:1.7.3;hw_rev:6;sku:TE002AS002
+[  11.11] MIDI → greet request 2988: f0 00 20 76 02 40 77 2c 01 f7
+[  11.13] MIDI ← reply to 2988, command 0x01, status 0, 128 data bytes
+[  11.13] Greet: product:OP-1;mode:normal;serial:L1PXE14W;dsp_serial:830000597253000062;os_version:1.7.3;sw_version:1.7.3;hw_rev:6;sku:TE002AS002
+[  11.13] Entering MTP mode: firmware 1.7.3, mode value 2
+[  11.13] MIDI → mode request 3293: f0 00 20 76 02 40 79 5d 04 00 01 02 f7
+[  11.15] MIDI ← reply to 3293, command 0x04, status 0, 0 data bytes
+[  11.15] Mode command accepted; waiting for the OP-1 to leave MIDI and appear over MTP
+[  13.92] OP-1 left USB MIDI
+[  30.85] OP-1 found over USB MIDI (not in MTP mode)
+[  30.87] MIDI → greet request 2614: f0 00 20 76 02 40 74 36 01 f7
+[  30.88] MIDI ← reply to 2614, command 0x01, status 0, 128 data bytes
+[  30.88] Greet: product:OP-1;mode:normal;serial:L1PXE14W;dsp_serial:830000597253000062;os_version:1.7.3;sw_version:1.7.3;hw_rev:6;sku:TE002AS002
+[  37.44] OP-1 left USB MIDI
+[  41.29] OP-1 found over USB MIDI (not in MTP mode)
+[  41.29] MIDI → greet request 3185: f0 00 20 76 02 40 78 71 01 f7
+[  41.31] MIDI ← reply to 3185, command 0x01, status 0, 128 data bytes
+[  41.31] Greet: product:OP-1;mode:normal;serial:L1PXE14W;dsp_serial:830000597253000062;os_version:1.7.3;sw_version:1.7.3;hw_rev:6;sku:TE002AS002

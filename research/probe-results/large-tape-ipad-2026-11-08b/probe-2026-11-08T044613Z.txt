@@ -1,0 +1,513 @@
+[   0.38] iPad, iPadOS 27.2
+[   0.42] Contents authorization: ICAuthorizationStatusAuthorized
+[   0.88] Control authorization: ICAuthorizationStatusAuthorized
+[   1.10] Browsing for cameras
+[   4.11] Found OP-1, type 257, transport ICTransportTypeUSB
+[   4.11] Capabilities: ["ICCameraDeviceCanDeleteOneFile", "ICCameraDeviceCanSyncClock", "ICCameraDeviceCanAcceptPTPCommands"]
+[   4.11] Session open
+[   4.47] Catalog ready: 0 media files, 0 top-level items
+[   4.48] → getDeviceInfo [] tx 1
+[   4.50] ← 0x2001, 225 data bytes, response 0c 00 00 00 03 00 01 20 0d 00 00 00
+[   4.50] DeviceInfo raw: 64 00 06 00 00 00 64 00 14 6d 00 69 00 63 00 72 00 6f 00 73 00 6f 00 66 00 74 00 2e 00 63 00 6f 00 6d 00 3a 00 20 00 31 00 2e 00 30 00 3b 00 00 00 00 00 15 00 00 00 02 10 03 10 01 10 04 10 05 10 09 10 14 10 15 10 16 10 0b 10 0d 10 06 10 07 10 08 10 0c 10 1b 10 01 98 02 98 03 98 04 98 05 98 01 00 00 00 05 40 02 00 00 00 01 50 11 50 06 00 00 00 00 30 01 30 07 30 08 30 00 b9 04 30 05 … (225 bytes)
+[   4.50] Device: teenage engineering OP-1 1.7.3, serial L1PXE14W
+[   4.50] Standard 100, vendor extension 0x00000006: microsoft.com: 1.0;
+[   4.50] Operations: 0x1002 0x1003 0x1001 0x1004 0x1005 0x1009 0x1014 0x1015 0x1016 0x100B 0x100D 0x1006 0x1007 0x1008 0x100C 0x101B 0x9801 0x9802 0x9803 0x9804 0x9805
+[   4.50]   DeleteObject: yes
+[   4.50]   SendObjectInfo: yes
+[   4.50]   SendObject: yes
+[   4.50]   GetPartialObject: yes
+[   4.50]   GetObjectPropList: yes
+[   4.50] → getStorageIDs [] tx 2
+[   4.51] ← 0x2001, 8 data bytes, response 0c 00 00 00 03 00 01 20 0e 00 00 00
+[   4.51] Storages: ["0x00010001"]
+[   4.51] → getObjectHandles ["0xFFFFFFFF", "0x00000000", "0xFFFFFFFF"] tx 3
+[   4.51] ← 0x2001, 20 data bytes, response 0c 00 00 00 03 00 01 20 0f 00 00 00
+[   4.51] All storages, root: 4 handles
+[   4.51] 0x000000E4 0x3001 0 synth/
+[   4.52] 0x000000F9 0x3001 0 drum/
+[   4.52] 0x0000010E 0x3001 0 tapes/
+[   4.52] 0x0000012B 0x3001 0 mixdown/
+[   4.52] 0x0000012C 0x3008 12235308 mixdown/side_a.wav
+[   4.52] 0x0000012D 0x3008 16076844 mixdown/side_b.wav
+[   4.53] 0x0000012E 0x3000 78 mixdown/readme.txt
+[   4.53] 0x0000010F 0x3001 0 tapes/2026-220#01/
+[   4.53] 0x00000116 0x3001 0 tapes/2026-220#02/
+[   4.53] 0x0000011D 0x3001 0 tapes/2026-276#01/
+[   4.53] 0x00000124 0x3001 0 tapes/2026-286#01/
+[   4.54] 0x00000125 0x3004 398 tapes/2026-286#01/tape.json
+[   4.54] 0x00000126 0x3000 104 tapes/2026-286#01/readme.txt
+[   4.54] 0x00000127 0x3008 1521204 tapes/2026-286#01/track_1.wav
+[   4.54] 0x00000128 0x3008 1514988 tapes/2026-286#01/track_2.wav
+[   4.54] 0x00000129 0x3008 44 tapes/2026-286#01/track_3.wav
+[   4.54] 0x0000012A 0x3008 44 tapes/2026-286#01/track_4.wav
+[   4.55] 0x0000011E 0x3004 1456 tapes/2026-276#01/tape.json
+[   4.55] 0x0000011F 0x3000 104 tapes/2026-276#01/readme.txt
+[   4.55] 0x00000120 0x3008 21168044 tapes/2026-276#01/track_1.wav
+[   4.55] 0x00000121 0x3008 17992844 tapes/2026-276#01/track_2.wav
+[   4.55] 0x00000122 0x3008 17992844 tapes/2026-276#01/track_3.wav
+[   4.55] 0x00000123 0x3008 21172100 tapes/2026-276#01/track_4.wav
+[   4.56] 0x00000117 0x3004 386 tapes/2026-220#02/tape.json
+[   4.56] 0x00000118 0x3000 104 tapes/2026-220#02/readme.txt
+[   4.56] 0x00000119 0x3008 1164852 tapes/2026-220#02/track_1.wav
+[   4.56] 0x0000011A 0x3008 1206836 tapes/2026-220#02/track_2.wav
+[   4.57] 0x0000011B 0x3008 44 tapes/2026-220#02/track_3.wav
+[   4.57] 0x0000011C 0x3008 44 tapes/2026-220#02/track_4.wav
+[   4.57] 0x00000110 0x3004 319 tapes/2026-220#01/tape.json
+[   4.57] 0x00000111 0x3000 104 tapes/2026-220#01/readme.txt
+[   4.58] 0x00000112 0x3008 44 tapes/2026-220#01/track_1.wav
+[   4.58] 0x00000113 0x3008 44 tapes/2026-220#01/track_2.wav
+[   4.58] 0x00000114 0x3008 44 tapes/2026-220#01/track_3.wav
+[   4.58] 0x00000115 0x3008 22056500 tapes/2026-220#01/track_4.wav
+[   4.58] 0x000000FA 0x3001 0 drum/user/
+[   4.58] 0x000000FC 0x3001 0 drum/slots/
+[   4.58] 0x0000010D 0x3000 0 drum/you may create folders here
+[   4.59] 0x000000FD 0x3001 0 drum/slots/1/
+[   4.59] 0x000000FF 0x3001 0 drum/slots/2/
+[   4.59] 0x00000101 0x3001 0 drum/slots/3/
+[   4.59] 0x00000103 0x3001 0 drum/slots/4/
+[   4.59] 0x00000105 0x3001 0 drum/slots/5/
+[   4.59] 0x00000107 0x3001 0 drum/slots/6/
+[   4.60] 0x00000109 0x3001 0 drum/slots/7/
+[   4.60] 0x0000010B 0x3001 0 drum/slots/8/
+[   4.60] 0x0000010C 0x3007 62012 drum/slots/8/applefly.aif
+[   4.60] 0x0000010A 0x3007 3007700 drum/slots/7/lubowa.aif
+[   4.61] 0x00000108 0x3007 2545072 drum/slots/6/yamalog.aif
+[   4.61] 0x00000106 0x3007 3444028 drum/slots/5/exoex.aif
+[   4.61] 0x00000104 0x3007 3244616 drum/slots/4/apes are us.aif
+[   4.62] 0x00000102 0x3007 3472664 drum/slots/3/workshop.aif
+[   4.62] 0x00000100 0x3007 3490544 drum/slots/2/vinyl.aif
+[   4.62] 0x000000FE 0x3007 3425808 drum/slots/1/cherry.aif
+[   4.63] 0x000000FB 0x3000 230 drum/user/readme.txt
+[   4.63] 0x000000E5 0x3001 0 synth/user/
+[   4.63] 0x000000E7 0x3001 0 synth/slots/
+[   4.63] 0x000000F8 0x3000 0 synth/you may create folders here
+[   4.63] 0x000000E8 0x3001 0 synth/slots/1/
+[   4.63] 0x000000EA 0x3001 0 synth/slots/2/
+[   4.64] 0x000000EC 0x3001 0 synth/slots/3/
+[   4.64] 0x000000EE 0x3001 0 synth/slots/4/
+[   4.64] 0x000000F0 0x3001 0 synth/slots/5/
+[   4.64] 0x000000F2 0x3001 0 synth/slots/6/
+[   4.64] 0x000000F4 0x3001 0 synth/slots/7/
+[   4.64] 0x000000F6 0x3001 0 synth/slots/8/
+[   4.65] 0x000000F7 0x3007 89468 synth/slots/8/vibrates.aif
+[   4.65] 0x000000F5 0x3007 89468 synth/slots/7/xyz files.aif
+[   4.65] 0x000000F3 0x3007 89468 synth/slots/6/afterglow.aif
+[   4.65] 0x000000F1 0x3007 89468 synth/slots/5/silky way.aif
+[   4.66] 0x000000EF 0x3007 530356 synth/slots/4/suitcase.aif
+[   4.66] 0x000000ED 0x3007 89468 synth/slots/3/pianistic.aif
+[   4.66] 0x000000EB 0x3007 89468 synth/slots/2/dissolver.aif
+[   4.67] 0x000000E9 0x3007 89468 synth/slots/1/panned out.aif
+[   4.67] 0x000000E6 0x3000 230 synth/user/readme.txt
+[   4.67] Catalog: 47 files, 28 folders, 157955261 bytes
+[   4.67] Audio files: 34, tape/album files: 27
+[   4.67] mixdown/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: side_a.wav side_b.wav
+
+[   4.67] tapes/2026-286#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[   4.68] tapes/2026-276#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[   4.68] tapes/2026-220#02/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[   4.68] tapes/2026-220#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[   4.68] drum/user/readme.txt: this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.
+the OP-1 sample rate is 44100 Hz.
+other sample rates change the maximum sample time.
+
+to keep your sounds in different folders,
+create new folders in 'synth' or 'drum'.
+
+[   4.68] synth/user/readme.txt: this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.
+the OP-1 sample rate is 44100 Hz.
+other sample rates change the maximum sample time.
+
+to keep your sounds in different folders,
+create new folders in 'synth' or 'drum'.
+
+[   4.68] Downloading drum/slots/8/applefly.aif, 62012 bytes expected
+[   4.68] → getObject ["0x0000010C"] tx 115
+[   4.73] ← 0x2001, 62012 data bytes, response 0c 00 00 00 03 00 01 20 7f 00 00 00
+[   4.73] Received 62012 bytes in 0.05s, starts 46 4f 52 4d 00 00 f2 34 41 49 46 43 46 56 45 52 … (62012 bytes)
+[   4.73] SHA-256 3c8297b60b2b28b6393f9141ff13383e47aab365fa8e697736f80120573ee8c0
+[   4.73] Saved 0x0000010C-applefly.aif. Size matches: true
+[   4.73] Verdict: PASS
+[   9.17] Partial read test: synth/slots/8/vibrates.aif, 89468 bytes, 16384-byte chunks
+[   9.86] Whole read 89468 bytes
+[   9.86] → getPartialObject ["0x000000F7", "0x00004000", "0x00004000"] tx 117
+[   9.88] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 81 00 00 00 00 40 00 00
+[   9.88] Step 1, first request, nonzero offset: 16384 bytes in 0.02s, params ["0x00004000"], matches: true
+[   9.88] → getPartialObject ["0x000000F7", "0x00000000", "0x00004000"] tx 118
+[   9.89] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 82 00 00 00 00 40 00 00
+[   9.89] Step 2, offset 0: 16384 bytes in 0.01s, params ["0x00004000"], matches: true
+[   9.89] → getPartialObject ["0x000000F7", "0x00000000", "0x00004000"] tx 119
+[   9.90] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 83 00 00 00 00 40 00 00
+[   9.90] Step 3, offset 0 again: 16384 bytes in 0.01s, params ["0x00004000"], matches: true
+[   9.91] → getPartialObject ["0x000000F7", "0x00004000", "0x00004000"] tx 120
+[   9.92] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 84 00 00 00 00 40 00 00
+[   9.92] Step 4, next chunk after offset 0: 16384 bytes in 0.01s, params ["0x00004000"], matches: true
+[   9.92] → getPartialObject ["0x000000F7", "0x0000C000", "0x00004000"] tx 121
+[   9.93] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 85 00 00 00 00 40 00 00
+[   9.93] Step 5, skip ahead: 16384 bytes in 0.01s, params ["0x00004000"], matches: true
+[   9.93] PARTIAL PASS: all 5 requests matched
+[  20.94] PTP event: 18 00 00 00 04 00 06 40 00 00 00 00 01 50 00 00 00 00 00 00 00 00 00 00
+[  67.41] Removed OP-1
+[  70.20] Found OP-1, type 257, transport ICTransportTypeUSB
+[  70.20] Capabilities: ["ICCameraDeviceCanDeleteOneFile", "ICCameraDeviceCanSyncClock", "ICCameraDeviceCanAcceptPTPCommands"]
+[  70.20] Session open
+[  70.57] Catalog ready: 0 media files, 0 top-level items
+[  70.57] → getDeviceInfo [] tx 1
+[  70.59] ← 0x2001, 225 data bytes, response 0c 00 00 00 03 00 01 20 0d 00 00 00
+[  70.59] DeviceInfo raw: 64 00 06 00 00 00 64 00 14 6d 00 69 00 63 00 72 00 6f 00 73 00 6f 00 66 00 74 00 2e 00 63 00 6f 00 6d 00 3a 00 20 00 31 00 2e 00 30 00 3b 00 00 00 00 00 15 00 00 00 02 10 03 10 01 10 04 10 05 10 09 10 14 10 15 10 16 10 0b 10 0d 10 06 10 07 10 08 10 0c 10 1b 10 01 98 02 98 03 98 04 98 05 98 01 00 00 00 05 40 02 00 00 00 01 50 11 50 06 00 00 00 00 30 01 30 07 30 08 30 00 b9 04 30 05 … (225 bytes)
+[  70.59] Device: teenage engineering OP-1 1.7.3, serial L1PXE14W
+[  70.59] Standard 100, vendor extension 0x00000006: microsoft.com: 1.0;
+[  70.59] Operations: 0x1002 0x1003 0x1001 0x1004 0x1005 0x1009 0x1014 0x1015 0x1016 0x100B 0x100D 0x1006 0x1007 0x1008 0x100C 0x101B 0x9801 0x9802 0x9803 0x9804 0x9805
+[  70.59]   DeleteObject: yes
+[  70.59]   SendObjectInfo: yes
+[  70.59]   SendObject: yes
+[  70.59]   GetPartialObject: yes
+[  70.59]   GetObjectPropList: yes
+[  70.59] → getStorageIDs [] tx 2
+[  70.60] ← 0x2001, 8 data bytes, response 0c 00 00 00 03 00 01 20 0e 00 00 00
+[  70.61] Storages: ["0x00010001"]
+[  70.61] → getObjectHandles ["0xFFFFFFFF", "0x00000000", "0xFFFFFFFF"] tx 3
+[  70.61] ← 0x2001, 20 data bytes, response 0c 00 00 00 03 00 01 20 0f 00 00 00
+[  70.61] All storages, root: 4 handles
+[  70.61] 0x0000012F 0x3001 0 synth/
+[  70.62] 0x00000144 0x3001 0 drum/
+[  70.62] 0x00000159 0x3001 0 tapes/
+[  70.62] 0x00000176 0x3001 0 mixdown/
+[  70.63] 0x00000177 0x3008 12235308 mixdown/side_a.wav
+[  70.63] 0x00000178 0x3008 16076844 mixdown/side_b.wav
+[  70.63] 0x00000179 0x3000 78 mixdown/readme.txt
+[  70.63] 0x0000015A 0x3001 0 tapes/2026-220#01/
+[  70.64] 0x00000161 0x3001 0 tapes/2026-220#02/
+[  70.64] 0x00000168 0x3001 0 tapes/2026-276#01/
+[  70.64] 0x0000016F 0x3001 0 tapes/2026-286#01/
+[  70.64] 0x00000170 0x3004 398 tapes/2026-286#01/tape.json
+[  70.64] 0x00000171 0x3000 104 tapes/2026-286#01/readme.txt
+[  70.65] 0x00000172 0x3008 1521204 tapes/2026-286#01/track_1.wav
+[  70.65] 0x00000173 0x3008 1514988 tapes/2026-286#01/track_2.wav
+[  70.65] 0x00000174 0x3008 44 tapes/2026-286#01/track_3.wav
+[  70.65] 0x00000175 0x3008 44 tapes/2026-286#01/track_4.wav
+[  70.65] 0x00000169 0x3004 1456 tapes/2026-276#01/tape.json
+[  70.66] 0x0000016A 0x3000 104 tapes/2026-276#01/readme.txt
+[  70.66] 0x0000016B 0x3008 21168044 tapes/2026-276#01/track_1.wav
+[  70.66] 0x0000016C 0x3008 17992844 tapes/2026-276#01/track_2.wav
+[  70.66] 0x0000016D 0x3008 17992844 tapes/2026-276#01/track_3.wav
+[  70.66] 0x0000016E 0x3008 21172100 tapes/2026-276#01/track_4.wav
+[  70.67] 0x00000162 0x3004 386 tapes/2026-220#02/tape.json
+[  70.67] 0x00000163 0x3000 104 tapes/2026-220#02/readme.txt
+[  70.67] 0x00000164 0x3008 1164852 tapes/2026-220#02/track_1.wav
+[  70.67] 0x00000165 0x3008 1206836 tapes/2026-220#02/track_2.wav
+[  70.67] 0x00000166 0x3008 44 tapes/2026-220#02/track_3.wav
+[  70.67] 0x00000167 0x3008 44 tapes/2026-220#02/track_4.wav
+[  70.68] 0x0000015B 0x3004 319 tapes/2026-220#01/tape.json
+[  70.68] 0x0000015C 0x3000 104 tapes/2026-220#01/readme.txt
+[  70.68] 0x0000015D 0x3008 44 tapes/2026-220#01/track_1.wav
+[  70.68] 0x0000015E 0x3008 44 tapes/2026-220#01/track_2.wav
+[  70.68] 0x0000015F 0x3008 44 tapes/2026-220#01/track_3.wav
+[  70.68] 0x00000160 0x3008 22056500 tapes/2026-220#01/track_4.wav
+[  70.69] 0x00000145 0x3001 0 drum/user/
+[  70.69] 0x00000147 0x3001 0 drum/slots/
+[  70.69] 0x00000158 0x3000 0 drum/you may create folders here
+[  70.69] 0x00000148 0x3001 0 drum/slots/1/
+[  70.69] 0x0000014A 0x3001 0 drum/slots/2/
+[  70.70] 0x0000014C 0x3001 0 drum/slots/3/
+[  70.70] 0x0000014E 0x3001 0 drum/slots/4/
+[  70.70] 0x00000150 0x3001 0 drum/slots/5/
+[  70.70] 0x00000152 0x3001 0 drum/slots/6/
+[  70.70] 0x00000154 0x3001 0 drum/slots/7/
+[  70.70] 0x00000156 0x3001 0 drum/slots/8/
+[  70.71] 0x00000157 0x3007 62012 drum/slots/8/applefly.aif
+[  70.71] 0x00000155 0x3007 3007700 drum/slots/7/lubowa.aif
+[  70.71] 0x00000153 0x3007 2545072 drum/slots/6/yamalog.aif
+[  70.72] 0x00000151 0x3007 3444028 drum/slots/5/exoex.aif
+[  70.72] 0x0000014F 0x3007 3244616 drum/slots/4/apes are us.aif
+[  70.72] 0x0000014D 0x3007 3472664 drum/slots/3/workshop.aif
+[  70.72] 0x0000014B 0x3007 3490544 drum/slots/2/vinyl.aif
+[  70.73] 0x00000149 0x3007 3425808 drum/slots/1/cherry.aif
+[  70.73] 0x00000146 0x3000 230 drum/user/readme.txt
+[  70.73] 0x00000130 0x3001 0 synth/user/
+[  70.73] 0x00000132 0x3001 0 synth/slots/
+[  70.73] 0x00000143 0x3000 0 synth/you may create folders here
+[  70.74] 0x00000133 0x3001 0 synth/slots/1/
+[  70.74] 0x00000135 0x3001 0 synth/slots/2/
+[  70.74] 0x00000137 0x3001 0 synth/slots/3/
+[  70.74] 0x00000139 0x3001 0 synth/slots/4/
+[  70.74] 0x0000013B 0x3001 0 synth/slots/5/
+[  70.74] 0x0000013D 0x3001 0 synth/slots/6/
+[  70.75] 0x0000013F 0x3001 0 synth/slots/7/
+[  70.75] 0x00000141 0x3001 0 synth/slots/8/
+[  70.75] 0x00000142 0x3007 89468 synth/slots/8/vibrates.aif
+[  70.75] 0x00000140 0x3007 89468 synth/slots/7/xyz files.aif
+[  70.75] 0x0000013E 0x3007 89468 synth/slots/6/afterglow.aif
+[  70.76] 0x0000013C 0x3007 89468 synth/slots/5/silky way.aif
+[  70.76] 0x0000013A 0x3007 530356 synth/slots/4/suitcase.aif
+[  70.77] 0x00000138 0x3007 89468 synth/slots/3/pianistic.aif
+[  70.77] 0x00000136 0x3007 89468 synth/slots/2/dissolver.aif
+[  70.77] 0x00000134 0x3007 89468 synth/slots/1/panned out.aif
+[  70.77] 0x00000131 0x3000 230 synth/user/readme.txt
+[  70.77] Catalog: 47 files, 28 folders, 157955261 bytes
+[  70.77] Audio files: 34, tape/album files: 27
+[  70.78] mixdown/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: side_a.wav side_b.wav
+
+[  70.78] tapes/2026-286#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[  70.78] tapes/2026-276#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[  70.78] tapes/2026-220#02/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[  70.78] tapes/2026-220#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[  70.79] drum/user/readme.txt: this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.
+the OP-1 sample rate is 44100 Hz.
+other sample rates change the maximum sample time.
+
+to keep your sounds in different folders,
+create new folders in 'synth' or 'drum'.
+
+[  70.79] synth/user/readme.txt: this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.
+the OP-1 sample rate is 44100 Hz.
+other sample rates change the maximum sample time.
+
+to keep your sounds in different folders,
+create new folders in 'synth' or 'drum'.
+
+[  70.79] Downloading drum/slots/8/applefly.aif, 62012 bytes expected
+[  70.79] → getObject ["0x00000157"] tx 115
+[  70.83] ← 0x2001, 62012 data bytes, response 0c 00 00 00 03 00 01 20 7f 00 00 00
+[  70.83] Received 62012 bytes in 0.05s, starts 46 4f 52 4d 00 00 f2 34 41 49 46 43 46 56 45 52 … (62012 bytes)
+[  70.83] SHA-256 3c8297b60b2b28b6393f9141ff13383e47aab365fa8e697736f80120573ee8c0
+[  70.83] Saved 0x00000157-applefly.aif. Size matches: true
+[  70.83] Verdict: PASS
+[  74.03] Partial read test: synth/slots/8/vibrates.aif, 89468 bytes, 16384-byte chunks
+[  74.71] Whole read 89468 bytes
+[  74.71] → getPartialObject ["0x00000142", "0x00004000", "0x00004000"] tx 117
+[  74.73] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 81 00 00 00 00 40 00 00
+[  74.74] Step 1, first request, nonzero offset: 16384 bytes in 0.02s, params ["0x00004000"], matches: true
+[  74.74] → getPartialObject ["0x00000142", "0x00000000", "0x00004000"] tx 118
+[  74.75] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 82 00 00 00 00 40 00 00
+[  74.75] Step 2, offset 0: 16384 bytes in 0.01s, params ["0x00004000"], matches: true
+[  74.75] → getPartialObject ["0x00000142", "0x00000000", "0x00004000"] tx 119
+[  74.76] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 83 00 00 00 00 40 00 00
+[  74.76] Step 3, offset 0 again: 16384 bytes in 0.01s, params ["0x00004000"], matches: true
+[  74.76] → getPartialObject ["0x00000142", "0x00004000", "0x00004000"] tx 120
+[  74.78] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 84 00 00 00 00 40 00 00
+[  74.78] Step 4, next chunk after offset 0: 16384 bytes in 0.01s, params ["0x00004000"], matches: true
+[  74.78] → getPartialObject ["0x00000142", "0x0000C000", "0x00004000"] tx 121
+[  74.79] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 85 00 00 00 00 40 00 00
+[  74.79] Step 5, skip ahead: 16384 bytes in 0.01s, params ["0x00004000"], matches: true
+[  74.79] PARTIAL PASS: all 5 requests matched
+[ 104.82] Removed OP-1
+[ 167.16] Found OP-1, type 257, transport ICTransportTypeUSB
+[ 167.16] Capabilities: ["ICCameraDeviceCanDeleteOneFile", "ICCameraDeviceCanSyncClock", "ICCameraDeviceCanAcceptPTPCommands"]
+[ 167.16] Session open
+[ 167.53] Catalog ready: 0 media files, 0 top-level items
+[ 167.53] → getDeviceInfo [] tx 1
+[ 167.55] ← 0x2001, 225 data bytes, response 0c 00 00 00 03 00 01 20 0d 00 00 00
+[ 167.55] DeviceInfo raw: 64 00 06 00 00 00 64 00 14 6d 00 69 00 63 00 72 00 6f 00 73 00 6f 00 66 00 74 00 2e 00 63 00 6f 00 6d 00 3a 00 20 00 31 00 2e 00 30 00 3b 00 00 00 00 00 15 00 00 00 02 10 03 10 01 10 04 10 05 10 09 10 14 10 15 10 16 10 0b 10 0d 10 06 10 07 10 08 10 0c 10 1b 10 01 98 02 98 03 98 04 98 05 98 01 00 00 00 05 40 02 00 00 00 01 50 11 50 06 00 00 00 00 30 01 30 07 30 08 30 00 b9 04 30 05 … (225 bytes)
+[ 167.55] Device: teenage engineering OP-1 1.7.3, serial L1PXE14W
+[ 167.55] Standard 100, vendor extension 0x00000006: microsoft.com: 1.0;
+[ 167.55] Operations: 0x1002 0x1003 0x1001 0x1004 0x1005 0x1009 0x1014 0x1015 0x1016 0x100B 0x100D 0x1006 0x1007 0x1008 0x100C 0x101B 0x9801 0x9802 0x9803 0x9804 0x9805
+[ 167.55]   DeleteObject: yes
+[ 167.55]   SendObjectInfo: yes
+[ 167.55]   SendObject: yes
+[ 167.55]   GetPartialObject: yes
+[ 167.55]   GetObjectPropList: yes
+[ 167.55] → getStorageIDs [] tx 2
+[ 167.56] ← 0x2001, 8 data bytes, response 0c 00 00 00 03 00 01 20 0e 00 00 00
+[ 167.56] Storages: ["0x00010001"]
+[ 167.56] → getObjectHandles ["0xFFFFFFFF", "0x00000000", "0xFFFFFFFF"] tx 3
+[ 167.57] ← 0x2001, 20 data bytes, response 0c 00 00 00 03 00 01 20 0f 00 00 00
+[ 167.57] All storages, root: 4 handles
+[ 167.57] 0x0000017A 0x3001 0 synth/
+[ 167.58] 0x0000018F 0x3001 0 drum/
+[ 167.58] 0x000001A4 0x3001 0 tapes/
+[ 167.58] 0x000001C8 0x3001 0 mixdown/
+[ 167.59] 0x000001C9 0x3008 12235308 mixdown/side_a.wav
+[ 167.59] 0x000001CA 0x3008 16076844 mixdown/side_b.wav
+[ 167.59] 0x000001CB 0x3000 78 mixdown/readme.txt
+[ 167.59] 0x000001A5 0x3001 0 tapes/2026-220#01/
+[ 167.60] 0x000001AC 0x3001 0 tapes/2026-220#02/
+[ 167.60] 0x000001B3 0x3001 0 tapes/2026-276#01/
+[ 167.60] 0x000001BA 0x3001 0 tapes/2026-286#01/
+[ 167.60] 0x000001C1 0x3001 0 tapes/2026-312#01/
+[ 167.60] 0x000001C2 0x3004 251 tapes/2026-312#01/tape.json
+[ 167.60] 0x000001C3 0x3000 104 tapes/2026-312#01/readme.txt
+[ 167.61] 0x000001C4 0x3008 44 tapes/2026-312#01/track_1.wav
+[ 167.61] 0x000001C5 0x3008 44 tapes/2026-312#01/track_2.wav
+[ 167.61] 0x000001C6 0x3008 44 tapes/2026-312#01/track_3.wav
+[ 167.61] 0x000001C7 0x3008 44 tapes/2026-312#01/track_4.wav
+[ 167.61] 0x000001BB 0x3004 398 tapes/2026-286#01/tape.json
+[ 167.62] 0x000001BC 0x3000 104 tapes/2026-286#01/readme.txt
+[ 167.62] 0x000001BD 0x3008 1521204 tapes/2026-286#01/track_1.wav
+[ 167.62] 0x000001BE 0x3008 1514988 tapes/2026-286#01/track_2.wav
+[ 167.62] 0x000001BF 0x3008 44 tapes/2026-286#01/track_3.wav
+[ 167.62] 0x000001C0 0x3008 44 tapes/2026-286#01/track_4.wav
+[ 167.63] 0x000001B4 0x3004 1456 tapes/2026-276#01/tape.json
+[ 167.63] 0x000001B5 0x3000 104 tapes/2026-276#01/readme.txt
+[ 167.63] 0x000001B6 0x3008 21168044 tapes/2026-276#01/track_1.wav
+[ 167.63] 0x000001B7 0x3008 17992844 tapes/2026-276#01/track_2.wav
+[ 167.63] 0x000001B8 0x3008 17992844 tapes/2026-276#01/track_3.wav
+[ 167.63] 0x000001B9 0x3008 21172100 tapes/2026-276#01/track_4.wav
+[ 167.64] 0x000001AD 0x3004 386 tapes/2026-220#02/tape.json
+[ 167.64] 0x000001AE 0x3000 104 tapes/2026-220#02/readme.txt
+[ 167.64] 0x000001AF 0x3008 1164852 tapes/2026-220#02/track_1.wav
+[ 167.64] 0x000001B0 0x3008 1206836 tapes/2026-220#02/track_2.wav
+[ 167.64] 0x000001B1 0x3008 44 tapes/2026-220#02/track_3.wav
+[ 167.64] 0x000001B2 0x3008 44 tapes/2026-220#02/track_4.wav
+[ 167.65] 0x000001A6 0x3004 319 tapes/2026-220#01/tape.json
+[ 167.65] 0x000001A7 0x3000 104 tapes/2026-220#01/readme.txt
+[ 167.65] 0x000001A8 0x3008 44 tapes/2026-220#01/track_1.wav
+[ 167.65] 0x000001A9 0x3008 44 tapes/2026-220#01/track_2.wav
+[ 167.65] 0x000001AA 0x3008 44 tapes/2026-220#01/track_3.wav
+[ 167.65] 0x000001AB 0x3008 22056500 tapes/2026-220#01/track_4.wav
+[ 167.66] 0x00000190 0x3001 0 drum/user/
+[ 167.66] 0x00000192 0x3001 0 drum/slots/
+[ 167.66] 0x000001A3 0x3000 0 drum/you may create folders here
+[ 167.66] 0x00000193 0x3001 0 drum/slots/1/
+[ 167.66] 0x00000195 0x3001 0 drum/slots/2/
+[ 167.67] 0x00000197 0x3001 0 drum/slots/3/
+[ 167.67] 0x00000199 0x3001 0 drum/slots/4/
+[ 167.67] 0x0000019B 0x3001 0 drum/slots/5/
+[ 167.67] 0x0000019D 0x3001 0 drum/slots/6/
+[ 167.67] 0x0000019F 0x3001 0 drum/slots/7/
+[ 167.67] 0x000001A1 0x3001 0 drum/slots/8/
+[ 167.68] 0x000001A2 0x3007 62012 drum/slots/8/applefly.aif
+[ 167.68] 0x000001A0 0x3007 3007700 drum/slots/7/lubowa.aif
+[ 167.68] 0x0000019E 0x3007 2545072 drum/slots/6/yamalog.aif
+[ 167.69] 0x0000019C 0x3007 3444028 drum/slots/5/exoex.aif
+[ 167.69] 0x0000019A 0x3007 3244616 drum/slots/4/apes are us.aif
+[ 167.69] 0x00000198 0x3007 3472664 drum/slots/3/workshop.aif
+[ 167.69] 0x00000196 0x3007 3490544 drum/slots/2/vinyl.aif
+[ 167.70] 0x00000194 0x3007 3425808 drum/slots/1/cherry.aif
+[ 167.70] 0x00000191 0x3000 230 drum/user/readme.txt
+[ 167.70] 0x0000017B 0x3001 0 synth/user/
+[ 167.70] 0x0000017D 0x3001 0 synth/slots/
+[ 167.70] 0x0000018E 0x3000 0 synth/you may create folders here
+[ 167.71] 0x0000017E 0x3001 0 synth/slots/1/
+[ 167.71] 0x00000180 0x3001 0 synth/slots/2/
+[ 167.71] 0x00000182 0x3001 0 synth/slots/3/
+[ 167.71] 0x00000184 0x3001 0 synth/slots/4/
+[ 167.71] 0x00000186 0x3001 0 synth/slots/5/
+[ 167.72] 0x00000188 0x3001 0 synth/slots/6/
+[ 167.72] 0x0000018A 0x3001 0 synth/slots/7/
+[ 167.72] 0x0000018C 0x3001 0 synth/slots/8/
+[ 167.72] 0x0000018D 0x3007 89468 synth/slots/8/vibrates.aif
+[ 167.73] 0x0000018B 0x3007 89468 synth/slots/7/xyz files.aif
+[ 167.73] 0x00000189 0x3007 89468 synth/slots/6/afterglow.aif
+[ 167.73] 0x00000187 0x3007 89468 synth/slots/5/silky way.aif
+[ 167.73] 0x00000185 0x3007 530356 synth/slots/4/suitcase.aif
+[ 167.74] 0x00000183 0x3007 89468 synth/slots/3/pianistic.aif
+[ 167.74] 0x00000181 0x3007 89468 synth/slots/2/dissolver.aif
+[ 167.74] 0x0000017F 0x3007 89468 synth/slots/1/panned out.aif
+[ 167.74] 0x0000017C 0x3000 230 synth/user/readme.txt
+[ 167.74] Catalog: 53 files, 29 folders, 157955792 bytes
+[ 167.74] Audio files: 38, tape/album files: 33
+[ 167.75] mixdown/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: side_a.wav side_b.wav
+
+[ 167.75] tapes/2026-312#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 167.75] tapes/2026-286#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 167.75] tapes/2026-276#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 167.76] tapes/2026-220#02/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 167.76] tapes/2026-220#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 167.76] drum/user/readme.txt: this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.
+the OP-1 sample rate is 44100 Hz.
+other sample rates change the maximum sample time.
+
+to keep your sounds in different folders,
+create new folders in 'synth' or 'drum'.
+
+[ 167.76] synth/user/readme.txt: this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.
+the OP-1 sample rate is 44100 Hz.
+other sample rates change the maximum sample time.
+
+to keep your sounds in different folders,
+create new folders in 'synth' or 'drum'.
+
+[ 167.76] Downloading drum/slots/8/applefly.aif, 62012 bytes expected
+[ 167.76] → getObject ["0x000001A2"] tx 124
+[ 167.81] ← 0x2001, 62012 data bytes, response 0c 00 00 00 03 00 01 20 88 00 00 00
+[ 167.81] Received 62012 bytes in 0.05s, starts 46 4f 52 4d 00 00 f2 34 41 49 46 43 46 56 45 52 … (62012 bytes)
+[ 167.81] SHA-256 3c8297b60b2b28b6393f9141ff13383e47aab365fa8e697736f80120573ee8c0
+[ 167.81] Saved 0x000001A2-applefly.aif. Size matches: true
+[ 167.81] Verdict: PASS
+[ 169.17] Partial read test: synth/slots/8/vibrates.aif, 89468 bytes, 16384-byte chunks
+[ 169.85] Whole read 89468 bytes
+[ 169.85] → getPartialObject ["0x0000018D", "0x00004000", "0x00004000"] tx 126
+[ 169.87] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 8a 00 00 00 00 40 00 00
+[ 169.87] Step 1, first request, nonzero offset: 16384 bytes in 0.02s, params ["0x00004000"], matches: true
+[ 169.87] → getPartialObject ["0x0000018D", "0x00000000", "0x00004000"] tx 127
+[ 169.88] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 8b 00 00 00 00 40 00 00
+[ 169.88] Step 2, offset 0: 16384 bytes in 0.01s, params ["0x00004000"], matches: true
+[ 169.88] → getPartialObject ["0x0000018D", "0x00000000", "0x00004000"] tx 128
+[ 169.90] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 8c 00 00 00 00 40 00 00
+[ 169.90] Step 3, offset 0 again: 16384 bytes in 0.02s, params ["0x00004000"], matches: true
+[ 169.90] → getPartialObject ["0x0000018D", "0x00004000", "0x00004000"] tx 129
+[ 169.91] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 8d 00 00 00 00 40 00 00
+[ 169.91] Step 4, next chunk after offset 0: 16384 bytes in 0.01s, params ["0x00004000"], matches: true
+[ 169.91] → getPartialObject ["0x0000018D", "0x0000C000", "0x00004000"] tx 130
+[ 169.93] ← 0x2001, 16384 data bytes, response 10 00 00 00 03 00 01 20 8e 00 00 00 00 40 00 00
+[ 169.93] Step 5, skip ahead: 16384 bytes in 0.02s, params ["0x00004000"], matches: true
+[ 169.93] PARTIAL PASS: all 5 requests matched
+[ 174.22] Tape write test: tapes/2026-220#01/track_4.wav → tapes/2026-312#01/track_1.wav
+[ 174.22] → getObject ["0x000001AB"] tx 131
+[ 175.33] ← 0x2001, 22056500 data bytes, response 0c 00 00 00 03 00 01 20 8f 00 00 00
+[ 175.36] Read 22056500 bytes in 1.12s, 19.7 MB/s, SHA-256 9aecf10250d599ac807ab416de34f09f37cd6cae24f4e0d0ac5e2b02ecb69497
+[ 175.36] → getObject ["0x000001C4"] tx 132
+[ 175.37] ← 0x2001, 44 data bytes, response 0c 00 00 00 03 00 01 20 90 00 00 00
+[ 175.37] Backed up blank track, 44 bytes: 52 49 46 46 24 00 00 00 57 41 56 45 66 6d 74 20 10 00 00 00 01 00 02 00 44 ac 00 00 20 62 05 00 08 00 20 00 64 61 74 61 00 00 00 00
+[ 175.37] → deleteObject ["0x000001C4", "0x00000000"] tx 133
+[ 175.38] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 91 00 00 00
+[ 175.38] ObjectInfo dataset: 01 00 01 00 08 30 00 00 34 8e 50 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 c1 01 00 00 00 00 00 00 00 00 00 00 00 00 0c 74 00 72 00 61 00 63 00 6b 00 5f 00 31 00 2e 00 77 00 61 00 76 00 00 00 00 00 00
+[ 175.38] → sendObjectInfo ["0x00010001", "0x000001C1"] tx 134
+[ 175.38] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 92 00 00 00 01 00 01 00 c1 01 00 00 cc 01 00 00
+[ 175.38] SendObjectInfo response params: ["0x00010001", "0x000001C1", "0x000001CC"]
+[ 175.38] → sendObject [] tx 135
+[ 178.38] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 93 00 00 00
+[ 178.38] SendObject took 2.99s, 7.4 MB/s
+[ 178.38] → getObjectHandles ["0x00010001", "0x00000000", "0x000001C1"] tx 136
+[ 178.38] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 94 00 00 00
+[ 178.39] → getObject ["0x000001CC"] tx 138
+[ 179.51] ← 0x2001, 22056500 data bytes, response 0c 00 00 00 03 00 01 20 96 00 00 00
+[ 179.53] Read back 22056500 bytes, SHA-256 9aecf10250d599ac807ab416de34f09f37cd6cae24f4e0d0ac5e2b02ecb69497
+[ 179.53] Verdict: WRITE PASS: copy matches original exactly
+[ 184.15] Restoring blank track at tapes/2026-312#01/track_1.wav
+[ 184.15] → getObjectHandles ["0x00010001", "0x00000000", "0x000001C1"] tx 139
+[ 184.17] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 97 00 00 00
+[ 184.18] → deleteObject ["0x000001CC", "0x00000000"] tx 141
+[ 184.19] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 99 00 00 00
+[ 184.19] ObjectInfo dataset: 01 00 01 00 08 30 00 00 2c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 c1 01 00 00 00 00 00 00 00 00 00 00 00 00 0c 74 00 72 00 61 00 63 00 6b 00 5f 00 31 00 2e 00 77 00 61 00 76 00 00 00 00 00 00
+[ 184.19] → sendObjectInfo ["0x00010001", "0x000001C1"] tx 142
+[ 184.20] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 9a 00 00 00 01 00 01 00 c1 01 00 00 cd 01 00 00
+[ 184.20] SendObjectInfo response params: ["0x00010001", "0x000001C1", "0x000001CD"]
+[ 184.20] → sendObject [] tx 143
+[ 184.22] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 9b 00 00 00
+[ 184.22] SendObject took 0.02s, 0.0 MB/s
+[ 184.22] → getObjectHandles ["0x00010001", "0x00000000", "0x000001C1"] tx 144
+[ 184.22] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 9c 00 00 00
+[ 184.22] → getObject ["0x000001CD"] tx 146
+[ 184.24] ← 0x2001, 44 data bytes, response 0c 00 00 00 03 00 01 20 9e 00 00 00
+[ 184.24] Restored blank track tapes/2026-312#01/track_1.wav
+[ 201.53] PTP event: 18 00 00 00 04 00 06 40 00 00 00 00 01 50 00 00 00 00 00 00 00 00 00 00

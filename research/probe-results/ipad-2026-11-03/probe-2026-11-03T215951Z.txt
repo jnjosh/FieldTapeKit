@@ -1,0 +1,4 @@
+[   0.16] iPad, iPadOS 27.2
+[  10.05] Contents authorization: ICAuthorizationStatusAuthorized
+[  14.61] Control authorization: ICAuthorizationStatusAuthorized
+[  14.70] Browsing for cameras

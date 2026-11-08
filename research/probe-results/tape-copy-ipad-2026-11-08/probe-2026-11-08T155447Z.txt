@@ -1,0 +1,762 @@
+[   0.39] iPad, iPadOS 27.2
+[   0.43] Contents authorization: ICAuthorizationStatusAuthorized
+[   1.00] Control authorization: ICAuthorizationStatusAuthorized
+[   1.39] Browsing for cameras
+[  96.55] Found OP-1, type 257, transport ICTransportTypeUSB
+[  96.55] Capabilities: ["ICCameraDeviceCanDeleteOneFile", "ICCameraDeviceCanSyncClock", "ICCameraDeviceCanAcceptPTPCommands"]
+[  96.55] Session open
+[  96.92] Catalog ready: 0 media files, 0 top-level items
+[  96.93] → getDeviceInfo [] tx 1
+[  96.95] ← 0x2001, 225 data bytes, response 0c 00 00 00 03 00 01 20 0d 00 00 00
+[  96.95] DeviceInfo raw: 64 00 06 00 00 00 64 00 14 6d 00 69 00 63 00 72 00 6f 00 73 00 6f 00 66 00 74 00 2e 00 63 00 6f 00 6d 00 3a 00 20 00 31 00 2e 00 30 00 3b 00 00 00 00 00 15 00 00 00 02 10 03 10 01 10 04 10 05 10 09 10 14 10 15 10 16 10 0b 10 0d 10 06 10 07 10 08 10 0c 10 1b 10 01 98 02 98 03 98 04 98 05 98 01 00 00 00 05 40 02 00 00 00 01 50 11 50 06 00 00 00 00 30 01 30 07 30 08 30 00 b9 04 30 05 … (225 bytes)
+[  96.95] Device: teenage engineering OP-1 1.7.3, serial L1PXE14W
+[  96.95] Standard 100, vendor extension 0x00000006: microsoft.com: 1.0;
+[  96.95] Operations: 0x1002 0x1003 0x1001 0x1004 0x1005 0x1009 0x1014 0x1015 0x1016 0x100B 0x100D 0x1006 0x1007 0x1008 0x100C 0x101B 0x9801 0x9802 0x9803 0x9804 0x9805
+[  96.95]   DeleteObject: yes
+[  96.95]   SendObjectInfo: yes
+[  96.95]   SendObject: yes
+[  96.95]   GetPartialObject: yes
+[  96.95]   GetObjectPropList: yes
+[  96.95] → getStorageIDs [] tx 2
+[  96.96] ← 0x2001, 8 data bytes, response 0c 00 00 00 03 00 01 20 0e 00 00 00
+[  96.96] Storages: ["0x00010001"]
+[  96.96] → getObjectHandles ["0xFFFFFFFF", "0x00000000", "0xFFFFFFFF"] tx 3
+[  96.96] ← 0x2001, 20 data bytes, response 0c 00 00 00 03 00 01 20 0f 00 00 00
+[  96.96] All storages, root: 4 handles
+[  96.96] 0x000000A5 0x3001 0 synth/
+[  96.97] 0x000000BA 0x3001 0 drum/
+[  96.97] 0x000000CF 0x3001 0 tapes/
+[  96.97] 0x000000FA 0x3001 0 mixdown/
+[  96.97] 0x000000FB 0x3008 12235308 mixdown/side_a.wav
+[  96.98] 0x000000FC 0x3008 3992876 mixdown/side_b.wav
+[  96.98] 0x000000FD 0x3000 78 mixdown/readme.txt
+[  96.98] 0x000000D0 0x3001 0 tapes/2026-220#01/
+[  96.99] 0x000000D7 0x3001 0 tapes/2026-220#02/
+[  96.99] 0x000000DE 0x3001 0 tapes/2026-276#01/
+[  96.99] 0x000000E5 0x3001 0 tapes/2026-286#01/
+[  96.99] 0x000000EC 0x3001 0 tapes/2026-312#01/
+[  96.99] 0x000000F3 0x3001 0 tapes/2026-312#02/
+[  97.00] 0x000000F4 0x3004 256 tapes/2026-312#02/tape.json
+[  97.00] 0x000000F5 0x3000 104 tapes/2026-312#02/readme.txt
+[  97.00] 0x000000F6 0x3008 44 tapes/2026-312#02/track_1.wav
+[  97.00] 0x000000F7 0x3008 44 tapes/2026-312#02/track_2.wav
+[  97.00] 0x000000F8 0x3008 44 tapes/2026-312#02/track_3.wav
+[  97.00] 0x000000F9 0x3008 44 tapes/2026-312#02/track_4.wav
+[  97.01] 0x000000ED 0x3004 251 tapes/2026-312#01/tape.json
+[  97.01] 0x000000EE 0x3000 104 tapes/2026-312#01/readme.txt
+[  97.01] 0x000000EF 0x3008 44 tapes/2026-312#01/track_1.wav
+[  97.01] 0x000000F0 0x3008 44 tapes/2026-312#01/track_2.wav
+[  97.02] 0x000000F1 0x3008 44 tapes/2026-312#01/track_3.wav
+[  97.02] 0x000000F2 0x3008 44 tapes/2026-312#01/track_4.wav
+[  97.02] 0x000000E6 0x3004 398 tapes/2026-286#01/tape.json
+[  97.02] 0x000000E7 0x3000 104 tapes/2026-286#01/readme.txt
+[  97.02] 0x000000E8 0x3008 1521204 tapes/2026-286#01/track_1.wav
+[  97.03] 0x000000E9 0x3008 1514988 tapes/2026-286#01/track_2.wav
+[  97.03] 0x000000EA 0x3008 44 tapes/2026-286#01/track_3.wav
+[  97.03] 0x000000EB 0x3008 44 tapes/2026-286#01/track_4.wav
+[  97.03] 0x000000DF 0x3004 1454 tapes/2026-276#01/tape.json
+[  97.03] 0x000000E0 0x3000 104 tapes/2026-276#01/readme.txt
+[  97.04] 0x000000E1 0x3008 21168044 tapes/2026-276#01/track_1.wav
+[  97.04] 0x000000E2 0x3008 17992844 tapes/2026-276#01/track_2.wav
+[  97.04] 0x000000E3 0x3008 17992844 tapes/2026-276#01/track_3.wav
+[  97.04] 0x000000E4 0x3008 21172100 tapes/2026-276#01/track_4.wav
+[  97.05] 0x000000D8 0x3004 386 tapes/2026-220#02/tape.json
+[  97.05] 0x000000D9 0x3000 104 tapes/2026-220#02/readme.txt
+[  97.05] 0x000000DA 0x3008 1164852 tapes/2026-220#02/track_1.wav
+[  97.05] 0x000000DB 0x3008 1206836 tapes/2026-220#02/track_2.wav
+[  97.05] 0x000000DC 0x3008 44 tapes/2026-220#02/track_3.wav
+[  97.05] 0x000000DD 0x3008 44 tapes/2026-220#02/track_4.wav
+[  97.06] 0x000000D1 0x3004 319 tapes/2026-220#01/tape.json
+[  97.06] 0x000000D2 0x3000 104 tapes/2026-220#01/readme.txt
+[  97.06] 0x000000D3 0x3008 44 tapes/2026-220#01/track_1.wav
+[  97.06] 0x000000D4 0x3008 44 tapes/2026-220#01/track_2.wav
+[  97.07] 0x000000D5 0x3008 44 tapes/2026-220#01/track_3.wav
+[  97.07] 0x000000D6 0x3008 22056500 tapes/2026-220#01/track_4.wav
+[  97.07] 0x000000BB 0x3001 0 drum/user/
+[  97.07] 0x000000BD 0x3001 0 drum/slots/
+[  97.08] 0x000000CE 0x3000 0 drum/you may create folders here
+[  97.08] 0x000000BE 0x3001 0 drum/slots/1/
+[  97.08] 0x000000C0 0x3001 0 drum/slots/2/
+[  97.08] 0x000000C2 0x3001 0 drum/slots/3/
+[  97.09] 0x000000C4 0x3001 0 drum/slots/4/
+[  97.09] 0x000000C6 0x3001 0 drum/slots/5/
+[  97.09] 0x000000C8 0x3001 0 drum/slots/6/
+[  97.10] 0x000000CA 0x3001 0 drum/slots/7/
+[  97.10] 0x000000CC 0x3001 0 drum/slots/8/
+[  97.10] 0x000000CD 0x3007 62012 drum/slots/8/applefly.aif
+[  97.11] 0x000000CB 0x3007 3007700 drum/slots/7/lubowa.aif
+[  97.11] 0x000000C9 0x3007 2545072 drum/slots/6/yamalog.aif
+[  97.11] 0x000000C7 0x3007 3444028 drum/slots/5/exoex.aif
+[  97.12] 0x000000C5 0x3007 3244616 drum/slots/4/apes are us.aif
+[  97.12] 0x000000C3 0x3007 3472664 drum/slots/3/workshop.aif
+[  97.12] 0x000000C1 0x3007 3490544 drum/slots/2/vinyl.aif
+[  97.13] 0x000000BF 0x3007 3425808 drum/slots/1/cherry.aif
+[  97.13] 0x000000BC 0x3000 230 drum/user/readme.txt
+[  97.13] 0x000000A6 0x3001 0 synth/user/
+[  97.14] 0x000000A8 0x3001 0 synth/slots/
+[  97.14] 0x000000B9 0x3000 0 synth/you may create folders here
+[  97.14] 0x000000A9 0x3001 0 synth/slots/1/
+[  97.15] 0x000000AB 0x3001 0 synth/slots/2/
+[  97.15] 0x000000AD 0x3001 0 synth/slots/3/
+[  97.15] 0x000000AF 0x3001 0 synth/slots/4/
+[  97.15] 0x000000B1 0x3001 0 synth/slots/5/
+[  97.15] 0x000000B3 0x3001 0 synth/slots/6/
+[  97.16] 0x000000B5 0x3001 0 synth/slots/7/
+[  97.16] 0x000000B7 0x3001 0 synth/slots/8/
+[  97.16] 0x000000B8 0x3007 89468 synth/slots/8/vibrates.aif
+[  97.17] 0x000000B6 0x3007 89468 synth/slots/7/xyz files.aif
+[  97.17] 0x000000B4 0x3007 89468 synth/slots/6/afterglow.aif
+[  97.17] 0x000000B2 0x3007 89468 synth/slots/5/silky way.aif
+[  97.18] 0x000000B0 0x3007 530356 synth/slots/4/suitcase.aif
+[  97.18] 0x000000AE 0x3007 89468 synth/slots/3/pianistic.aif
+[  97.18] 0x000000AC 0x3007 89468 synth/slots/2/dissolver.aif
+[  97.19] 0x000000AA 0x3007 89468 synth/slots/1/panned out.aif
+[  97.19] 0x000000A7 0x3000 230 synth/user/readme.txt
+[  97.19] Catalog: 59 files, 30 folders, 145872358 bytes
+[  97.19] Audio files: 42, tape/album files: 39
+[  97.20] mixdown/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: side_a.wav side_b.wav
+
+[  97.20] tapes/2026-312#02/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[  97.20] tapes/2026-312#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[  97.20] tapes/2026-286#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[  97.21] tapes/2026-276#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[  97.21] tapes/2026-220#02/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[  97.21] tapes/2026-220#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[  97.21] drum/user/readme.txt: this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.
+the OP-1 sample rate is 44100 Hz.
+other sample rates change the maximum sample time.
+
+to keep your sounds in different folders,
+create new folders in 'synth' or 'drum'.
+
+[  97.21] synth/user/readme.txt: this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.
+the OP-1 sample rate is 44100 Hz.
+other sample rates change the maximum sample time.
+
+to keep your sounds in different folders,
+create new folders in 'synth' or 'drum'.
+
+[  97.21] Tapes: 6 of 8
+[  97.21] tapes/2026-220#01 tracks: track_1.wav 44, track_2.wav 44, track_3.wav 44, track_4.wav 22056500
+[  97.22] tapes/2026-220#01/tape.json (319 of 319 bytes): {"clips":[{"ch":3,"id":0,"padding":[27,28,-1,-1],"start":0,"stop":2757057}],"loop":true,"loop_in":0,"loop_out":2778300,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":0,"tempobpmdecimal":800,"tempometronomelevel":0.0,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":1,"version":1}
+
+[  97.22] tapes/2026-220#01: tracks match tape.json
+[  97.22] tapes/2026-220#02 tracks: track_1.wav 1164852, track_2.wav 1206836, track_3.wav 44, track_4.wav 44
+[  97.22] tapes/2026-220#02/tape.json (386 of 386 bytes): {"clips":[{"ch":0,"id":0,"padding":[112,113,-1,-1],"start":0,"stop":145601},{"ch":1,"id":1,"padding":[114,115,-1,-1],"start":0,"stop":150849}],"loop":true,"loop_in":0,"loop_out":264600,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":1,"tempobpmdecimal":1200,"tempometronomelevel":0.0,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":1,"version":1}
+
+[  97.22] tapes/2026-220#02: tracks match tape.json
+[  97.22] tapes/2026-276#01 tracks: track_1.wav 21168044, track_2.wav 17992844, track_3.wav 17992844, track_4.wav 21172100
+[  97.23] tapes/2026-276#01/tape.json (1454 of 1454 bytes): {"clips":[{"ch":3,"id":0,"padding":[43,46,-1,45],"start":1587600,"stop":2646507},{"ch":2,"id":1,"padding":[59,60,-1,-1],"start":661500,"stop":926100},{"ch":3,"id":2,"padding":[33,34,-1,-1],"start":0,"stop":1587141},{"ch":2,"id":3,"padding":[59,60,-1,-1],"start":1455300,"stop":1719900},{"ch":2,"id":4,"padding":[63,64,-1,-1],"start":264600,"stop":661500},{"ch":2,"id":5,"padding":[63,64,-1,-1],"start":926100,"stop":1323000},{"ch":2,"id":6,"padding":[65,66,-1,-1],"start":1323000,"stop":1455300},{"ch":2,"id":7,"padding":[63,64,-1,-1],"start":1719900,"stop":2116800},{"ch":2,"id":8,"padding":[65,66,-1,-1],"start":2116800,"stop":2249100},{"ch":1,"id":9,"padding":[69,70,-1,-1],"start":264600,"stop":661500},{"ch":1,"id":10,"padding":[71,72,-1,-1],"start":926100,"stop":1455300},{"ch":1,"id":11,"padding":[73,74,-1,-1],"start":1719900,"stop":2249100},{"ch":0,"id":12,"padding":[81,82,-1,-1],"start":264600,"stop":661500},{"ch":0,"id":13,"padding":[81,82,-1,-1],"start":926100,"stop":1323000},{"ch":0,"id":14,"padding":[81,82,-1,-1],"start":1719900,"stop":2116800},{"ch":0,"id":16,"padding":[100,103,-1,102],"start":2116800,"stop":2646000}],"loop":true,"loop_in":0,"loop_out":2678720,"mixer_params":[0.60836793750,0.709655750,0.75952156250,0.90988156250,-0.093750,0.093750,-0.06250,0.0468750],"pos":790656,"tape_type":0,"tempobpmdecimal":800,"tempometronomelevel":23.9531250,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":0,"version":1}
+
+[  97.23] tapes/2026-276#01: tracks match tape.json
+[  97.23] tapes/2026-286#01 tracks: track_1.wav 1521204, track_2.wav 1514988, track_3.wav 44, track_4.wav 44
+[  97.23] tapes/2026-286#01/tape.json (398 of 398 bytes): {"clips":[{"ch":0,"id":0,"padding":[106,107,-1,-1],"start":0,"stop":190145},{"ch":1,"id":1,"padding":[108,109,-1,-1],"start":0,"stop":189368}],"loop":true,"loop_in":0,"loop_out":189368,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":125991,"tape_type":0,"tempobpmdecimal":800,"tempometronomelevel":22.95507750,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":1,"version":1}
+
+[  97.23] tapes/2026-286#01: tracks match tape.json
+[  97.23] tapes/2026-312#01 tracks: track_1.wav 44, track_2.wav 44, track_3.wav 44, track_4.wav 44
+[  97.23] tapes/2026-312#01/tape.json (251 of 251 bytes): {"clips":[],"loop":false,"loop_in":0,"loop_out":0,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":3,"tempobpmdecimal":1200,"tempometronomelevel":0.0,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":0,"version":1}
+
+[  97.23] tapes/2026-312#01: tracks match tape.json
+[  97.23] tapes/2026-312#02 tracks: track_1.wav 44, track_2.wav 44, track_3.wav 44, track_4.wav 44
+[  97.24] tapes/2026-312#02/tape.json (256 of 256 bytes): {"clips":[],"loop":false,"loop_in":0,"loop_out":0,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":2,"tempobpmdecimal":800,"tempometronomelevel":21.957030,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":0,"version":1}
+
+[  97.24] tapes/2026-312#02: tracks match tape.json
+[  97.24] Downloading drum/slots/8/applefly.aif, 62012 bytes expected
+[  97.24] → getObject ["0x000000CD"] tx 139
+[  97.29] ← 0x2001, 62012 data bytes, response 0c 00 00 00 03 00 01 20 97 00 00 00
+[  97.29] Received 62012 bytes in 0.05s, starts 46 4f 52 4d 00 00 f2 34 41 49 46 43 46 56 45 52 … (62012 bytes)
+[  97.29] SHA-256 3c8297b60b2b28b6393f9141ff13383e47aab365fa8e697736f80120573ee8c0
+[  97.29] Saved 0x000000CD-applefly.aif. Size matches: true
+[  97.29] Verdict: PASS
+[ 106.15] Whole tape test: tapes/2026-220#02 → tapes/2026-312#01
+[ 106.17] Source tape.json, 386 bytes, matches its tracks
+[ 106.24] Backed up tapes/2026-312#01: four blank tracks and an empty tape.json
+[ 106.24] → getObject ["0x000000DA"] tx 146
+[ 106.32] ← 0x2001, 1164852 data bytes, response 0c 00 00 00 03 00 01 20 9e 00 00 00
+[ 106.32] Read tapes/2026-220#02/track_1.wav, 1164852 bytes in 0.08s, 14.2 MB/s
+[ 106.32] → getObjectHandles ["0x00010001", "0x00000000", "0x000000EC"] tx 147
+[ 106.33] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 9f 00 00 00
+[ 106.34] → deleteObject ["0x000000EF", "0x00000000"] tx 151
+[ 106.35] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 a3 00 00 00
+[ 106.35] ObjectInfo dataset: 01 00 01 00 08 30 00 00 34 c6 11 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ec 00 00 00 00 00 00 00 00 00 00 00 00 00 0c 74 00 72 00 61 00 63 00 6b 00 5f 00 31 00 2e 00 77 00 61 00 76 00 00 00 00 00 00
+[ 106.35] → sendObjectInfo ["0x00010001", "0x000000EC"] tx 152
+[ 106.36] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 a4 00 00 00 01 00 01 00 ec 00 00 00 fe 00 00 00
+[ 106.36] SendObjectInfo response params: ["0x00010001", "0x000000EC", "0x000000FE"]
+[ 106.36] → sendObject [] tx 153
+[ 106.54] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 a5 00 00 00
+[ 106.54] SendObject took 0.19s, 6.2 MB/s
+[ 106.54] → getObjectHandles ["0x00010001", "0x00000000", "0x000000EC"] tx 154
+[ 106.56] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 a6 00 00 00
+[ 106.66] tapes/2026-312#01/track_1.wav: 1164852 bytes written and read back intact, SHA-256 4096e930447db1f9cdeec33ab9f6dba7cb154eb0d823122ee6eb7ea1978ba4f4
+[ 106.66] → getObject ["0x000000DB"] tx 157
+[ 106.77] ← 0x2001, 1206836 data bytes, response 0c 00 00 00 03 00 01 20 a9 00 00 00
+[ 106.77] Read tapes/2026-220#02/track_2.wav, 1206836 bytes in 0.12s, 10.3 MB/s
+[ 106.77] → getObjectHandles ["0x00010001", "0x00000000", "0x000000EC"] tx 158
+[ 106.79] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 aa 00 00 00
+[ 106.80] → deleteObject ["0x000000F0", "0x00000000"] tx 163
+[ 106.81] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 af 00 00 00
+[ 106.81] ObjectInfo dataset: 01 00 01 00 08 30 00 00 34 6a 12 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ec 00 00 00 00 00 00 00 00 00 00 00 00 00 0c 74 00 72 00 61 00 63 00 6b 00 5f 00 32 00 2e 00 77 00 61 00 76 00 00 00 00 00 00
+[ 106.81] → sendObjectInfo ["0x00010001", "0x000000EC"] tx 164
+[ 106.81] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 b0 00 00 00 01 00 01 00 ec 00 00 00 ff 00 00 00
+[ 106.81] SendObjectInfo response params: ["0x00010001", "0x000000EC", "0x000000FF"]
+[ 106.82] → sendObject [] tx 165
+[ 107.05] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 b1 00 00 00
+[ 107.05] SendObject took 0.24s, 5.1 MB/s
+[ 107.05] → getObjectHandles ["0x00010001", "0x00000000", "0x000000EC"] tx 166
+[ 107.06] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 b2 00 00 00
+[ 107.19] tapes/2026-312#01/track_2.wav: 1206836 bytes written and read back intact, SHA-256 08181954408d85beaa72fb39bdda295df355c8f31dedfdf4f41552fc34b8f5d2
+[ 107.19] track_3.wav is blank on both tapes, skipped
+[ 107.19] track_4.wav is blank on both tapes, skipped
+[ 107.20] tapes/2026-312#01/tape.json after the tracks, before writing it (251 bytes): {"clips":[{"ch":0,"id":0,"padding":[-1,-1,-1,-1],"start":0,"stop":145601},{"ch":1,"id":1,"padding":[-1,-1,-1,-1],"start":0,"stop":150849}],"loop":false,"loop_in":0,"loop_out":0,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":3,"te
+[ 107.20] → getObjectHandles ["0x00010001", "0x00000000", "0x000000EC"] tx 170
+[ 107.20] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 b6 00 00 00
+[ 107.22] → deleteObject ["0x000000ED", "0x00000000"] tx 174
+[ 107.22] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 ba 00 00 00
+[ 107.22] ObjectInfo dataset: 01 00 01 00 04 30 00 00 82 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ec 00 00 00 00 00 00 00 00 00 00 00 00 00 0a 74 00 61 00 70 00 65 00 2e 00 6a 00 73 00 6f 00 6e 00 00 00 00 00 00
+[ 107.22] → sendObjectInfo ["0x00010001", "0x000000EC"] tx 175
+[ 107.23] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 bb 00 00 00 01 00 01 00 ec 00 00 00 00 01 00 00
+[ 107.23] SendObjectInfo response params: ["0x00010001", "0x000000EC", "0x00000100"]
+[ 107.23] → sendObject [] tx 176
+[ 107.24] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 bc 00 00 00
+[ 107.24] SendObject took 0.01s, 0.0 MB/s
+[ 107.24] → getObjectHandles ["0x00010001", "0x00000000", "0x000000EC"] tx 177
+[ 107.24] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 bd 00 00 00
+[ 107.25] tapes/2026-312#01/tape.json: 386 bytes written and read back intact, SHA-256 7e157584b5051264b5b77b4cac28ae7f0d4e57f5c7f8ce930003c92e8ae48db5
+[ 107.25] TAPE COPY PASS: tapes/2026-312#01 matches tapes/2026-220#02
+[ 107.25] Next: leave MTP mode, open tapes/2026-312#01 on the OP-1 and check its clips, loop and tempo match tapes/2026-220#02. Then reconnect: the probe logs whether the OP-1 kept the copied tape.json.
+[ 122.38] Removed OP-1
+[ 173.31] Found OP-1, type 257, transport ICTransportTypeUSB
+[ 173.31] Capabilities: ["ICCameraDeviceCanDeleteOneFile", "ICCameraDeviceCanSyncClock", "ICCameraDeviceCanAcceptPTPCommands"]
+[ 173.31] Session open
+[ 173.68] Catalog ready: 0 media files, 0 top-level items
+[ 173.68] → getDeviceInfo [] tx 1
+[ 173.70] ← 0x2001, 225 data bytes, response 0c 00 00 00 03 00 01 20 0d 00 00 00
+[ 173.70] DeviceInfo raw: 64 00 06 00 00 00 64 00 14 6d 00 69 00 63 00 72 00 6f 00 73 00 6f 00 66 00 74 00 2e 00 63 00 6f 00 6d 00 3a 00 20 00 31 00 2e 00 30 00 3b 00 00 00 00 00 15 00 00 00 02 10 03 10 01 10 04 10 05 10 09 10 14 10 15 10 16 10 0b 10 0d 10 06 10 07 10 08 10 0c 10 1b 10 01 98 02 98 03 98 04 98 05 98 01 00 00 00 05 40 02 00 00 00 01 50 11 50 06 00 00 00 00 30 01 30 07 30 08 30 00 b9 04 30 05 … (225 bytes)
+[ 173.70] Device: teenage engineering OP-1 1.7.3, serial L1PXE14W
+[ 173.71] Standard 100, vendor extension 0x00000006: microsoft.com: 1.0;
+[ 173.71] Operations: 0x1002 0x1003 0x1001 0x1004 0x1005 0x1009 0x1014 0x1015 0x1016 0x100B 0x100D 0x1006 0x1007 0x1008 0x100C 0x101B 0x9801 0x9802 0x9803 0x9804 0x9805
+[ 173.71]   DeleteObject: yes
+[ 173.71]   SendObjectInfo: yes
+[ 173.71]   SendObject: yes
+[ 173.71]   GetPartialObject: yes
+[ 173.71]   GetObjectPropList: yes
+[ 173.71] → getStorageIDs [] tx 2
+[ 173.72] ← 0x2001, 8 data bytes, response 0c 00 00 00 03 00 01 20 0e 00 00 00
+[ 173.72] Storages: ["0x00010001"]
+[ 173.72] → getObjectHandles ["0xFFFFFFFF", "0x00000000", "0xFFFFFFFF"] tx 3
+[ 173.72] ← 0x2001, 20 data bytes, response 0c 00 00 00 03 00 01 20 0f 00 00 00
+[ 173.72] All storages, root: 4 handles
+[ 173.72] 0x00000101 0x3001 0 synth/
+[ 173.72] 0x00000116 0x3001 0 drum/
+[ 173.73] 0x0000012B 0x3001 0 tapes/
+[ 173.73] 0x00000156 0x3001 0 mixdown/
+[ 173.74] 0x00000157 0x3008 12235308 mixdown/side_a.wav
+[ 173.74] 0x00000158 0x3008 3992876 mixdown/side_b.wav
+[ 173.74] 0x00000159 0x3000 78 mixdown/readme.txt
+[ 173.74] 0x0000012C 0x3001 0 tapes/2026-220#01/
+[ 173.75] 0x00000133 0x3001 0 tapes/2026-220#02/
+[ 173.75] 0x0000013A 0x3001 0 tapes/2026-276#01/
+[ 173.75] 0x00000141 0x3001 0 tapes/2026-286#01/
+[ 173.75] 0x00000148 0x3001 0 tapes/2026-312#01/
+[ 173.75] 0x0000014F 0x3001 0 tapes/2026-312#02/
+[ 173.75] 0x00000150 0x3004 256 tapes/2026-312#02/tape.json
+[ 173.76] 0x00000151 0x3000 104 tapes/2026-312#02/readme.txt
+[ 173.76] 0x00000152 0x3008 44 tapes/2026-312#02/track_1.wav
+[ 173.76] 0x00000153 0x3008 44 tapes/2026-312#02/track_2.wav
+[ 173.76] 0x00000154 0x3008 44 tapes/2026-312#02/track_3.wav
+[ 173.77] 0x00000155 0x3008 44 tapes/2026-312#02/track_4.wav
+[ 173.77] 0x00000149 0x3004 391 tapes/2026-312#01/tape.json
+[ 173.77] 0x0000014A 0x3000 104 tapes/2026-312#01/readme.txt
+[ 173.77] 0x0000014B 0x3008 1164852 tapes/2026-312#01/track_1.wav
+[ 173.77] 0x0000014C 0x3008 1206836 tapes/2026-312#01/track_2.wav
+[ 173.78] 0x0000014D 0x3008 44 tapes/2026-312#01/track_3.wav
+[ 173.78] 0x0000014E 0x3008 44 tapes/2026-312#01/track_4.wav
+[ 173.78] 0x00000142 0x3004 398 tapes/2026-286#01/tape.json
+[ 173.78] 0x00000143 0x3000 104 tapes/2026-286#01/readme.txt
+[ 173.79] 0x00000144 0x3008 1521204 tapes/2026-286#01/track_1.wav
+[ 173.79] 0x00000145 0x3008 1514988 tapes/2026-286#01/track_2.wav
+[ 173.79] 0x00000146 0x3008 44 tapes/2026-286#01/track_3.wav
+[ 173.79] 0x00000147 0x3008 44 tapes/2026-286#01/track_4.wav
+[ 173.80] 0x0000013B 0x3004 1454 tapes/2026-276#01/tape.json
+[ 173.80] 0x0000013C 0x3000 104 tapes/2026-276#01/readme.txt
+[ 173.80] 0x0000013D 0x3008 21168044 tapes/2026-276#01/track_1.wav
+[ 173.80] 0x0000013E 0x3008 17992844 tapes/2026-276#01/track_2.wav
+[ 173.80] 0x0000013F 0x3008 17992844 tapes/2026-276#01/track_3.wav
+[ 173.81] 0x00000140 0x3008 21172100 tapes/2026-276#01/track_4.wav
+[ 173.81] 0x00000134 0x3004 386 tapes/2026-220#02/tape.json
+[ 173.81] 0x00000135 0x3000 104 tapes/2026-220#02/readme.txt
+[ 173.81] 0x00000136 0x3008 1164852 tapes/2026-220#02/track_1.wav
+[ 173.82] 0x00000137 0x3008 1206836 tapes/2026-220#02/track_2.wav
+[ 173.82] 0x00000138 0x3008 44 tapes/2026-220#02/track_3.wav
+[ 173.82] 0x00000139 0x3008 44 tapes/2026-220#02/track_4.wav
+[ 173.82] 0x0000012D 0x3004 319 tapes/2026-220#01/tape.json
+[ 173.83] 0x0000012E 0x3000 104 tapes/2026-220#01/readme.txt
+[ 173.83] 0x0000012F 0x3008 44 tapes/2026-220#01/track_1.wav
+[ 173.83] 0x00000130 0x3008 44 tapes/2026-220#01/track_2.wav
+[ 173.83] 0x00000131 0x3008 44 tapes/2026-220#01/track_3.wav
+[ 173.84] 0x00000132 0x3008 22056500 tapes/2026-220#01/track_4.wav
+[ 173.84] 0x00000117 0x3001 0 drum/user/
+[ 173.84] 0x00000119 0x3001 0 drum/slots/
+[ 173.85] 0x0000012A 0x3000 0 drum/you may create folders here
+[ 173.85] 0x0000011A 0x3001 0 drum/slots/1/
+[ 173.85] 0x0000011C 0x3001 0 drum/slots/2/
+[ 173.85] 0x0000011E 0x3001 0 drum/slots/3/
+[ 173.86] 0x00000120 0x3001 0 drum/slots/4/
+[ 173.86] 0x00000122 0x3001 0 drum/slots/5/
+[ 173.86] 0x00000124 0x3001 0 drum/slots/6/
+[ 173.86] 0x00000126 0x3001 0 drum/slots/7/
+[ 173.87] 0x00000128 0x3001 0 drum/slots/8/
+[ 173.87] 0x00000129 0x3007 62012 drum/slots/8/applefly.aif
+[ 173.87] 0x00000127 0x3007 3007700 drum/slots/7/lubowa.aif
+[ 173.87] 0x00000125 0x3007 2545072 drum/slots/6/yamalog.aif
+[ 173.88] 0x00000123 0x3007 3444028 drum/slots/5/exoex.aif
+[ 173.88] 0x00000121 0x3007 3244616 drum/slots/4/apes are us.aif
+[ 173.89] 0x0000011F 0x3007 3472664 drum/slots/3/workshop.aif
+[ 173.89] 0x0000011D 0x3007 3490544 drum/slots/2/vinyl.aif
+[ 173.90] 0x0000011B 0x3007 3425808 drum/slots/1/cherry.aif
+[ 173.90] 0x00000118 0x3000 230 drum/user/readme.txt
+[ 173.90] 0x00000102 0x3001 0 synth/user/
+[ 173.91] 0x00000104 0x3001 0 synth/slots/
+[ 173.91] 0x00000115 0x3000 0 synth/you may create folders here
+[ 173.91] 0x00000105 0x3001 0 synth/slots/1/
+[ 173.91] 0x00000107 0x3001 0 synth/slots/2/
+[ 173.92] 0x00000109 0x3001 0 synth/slots/3/
+[ 173.92] 0x0000010B 0x3001 0 synth/slots/4/
+[ 173.92] 0x0000010D 0x3001 0 synth/slots/5/
+[ 173.92] 0x0000010F 0x3001 0 synth/slots/6/
+[ 173.93] 0x00000111 0x3001 0 synth/slots/7/
+[ 173.93] 0x00000113 0x3001 0 synth/slots/8/
+[ 173.93] 0x00000114 0x3007 89468 synth/slots/8/vibrates.aif
+[ 173.94] 0x00000112 0x3007 89468 synth/slots/7/xyz files.aif
+[ 173.94] 0x00000110 0x3007 89468 synth/slots/6/afterglow.aif
+[ 173.95] 0x0000010E 0x3007 89468 synth/slots/5/silky way.aif
+[ 173.95] 0x0000010C 0x3007 530356 synth/slots/4/suitcase.aif
+[ 173.95] 0x0000010A 0x3007 89468 synth/slots/3/pianistic.aif
+[ 173.96] 0x00000108 0x3007 89468 synth/slots/2/dissolver.aif
+[ 173.96] 0x00000106 0x3007 89468 synth/slots/1/panned out.aif
+[ 173.97] 0x00000103 0x3000 230 synth/user/readme.txt
+[ 173.97] Catalog: 59 files, 30 folders, 148244098 bytes
+[ 173.97] Audio files: 42, tape/album files: 39
+[ 173.97] mixdown/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: side_a.wav side_b.wav
+
+[ 173.97] tapes/2026-312#02/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 173.97] tapes/2026-312#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 173.98] tapes/2026-286#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 173.98] tapes/2026-276#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 173.98] tapes/2026-220#02/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 173.98] tapes/2026-220#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 173.98] drum/user/readme.txt: this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.
+the OP-1 sample rate is 44100 Hz.
+other sample rates change the maximum sample time.
+
+to keep your sounds in different folders,
+create new folders in 'synth' or 'drum'.
+
+[ 173.99] synth/user/readme.txt: this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.
+the OP-1 sample rate is 44100 Hz.
+other sample rates change the maximum sample time.
+
+to keep your sounds in different folders,
+create new folders in 'synth' or 'drum'.
+
+[ 173.99] Tapes: 6 of 8
+[ 173.99] tapes/2026-220#01 tracks: track_1.wav 44, track_2.wav 44, track_3.wav 44, track_4.wav 22056500
+[ 173.99] tapes/2026-220#01/tape.json (319 of 319 bytes): {"clips":[{"ch":3,"id":0,"padding":[27,28,-1,-1],"start":0,"stop":2757057}],"loop":true,"loop_in":0,"loop_out":2778300,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":0,"tempobpmdecimal":800,"tempometronomelevel":0.0,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":1,"version":1}
+
+[ 173.99] tapes/2026-220#01: tracks match tape.json
+[ 173.99] tapes/2026-220#02 tracks: track_1.wav 1164852, track_2.wav 1206836, track_3.wav 44, track_4.wav 44
+[ 173.99] tapes/2026-220#02/tape.json (386 of 386 bytes): {"clips":[{"ch":0,"id":0,"padding":[112,113,-1,-1],"start":0,"stop":145601},{"ch":1,"id":1,"padding":[114,115,-1,-1],"start":0,"stop":150849}],"loop":true,"loop_in":0,"loop_out":264600,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":1,"tempobpmdecimal":1200,"tempometronomelevel":0.0,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":1,"version":1}
+
+[ 173.99] tapes/2026-220#02: tracks match tape.json
+[ 173.99] tapes/2026-276#01 tracks: track_1.wav 21168044, track_2.wav 17992844, track_3.wav 17992844, track_4.wav 21172100
+[ 174.00] tapes/2026-276#01/tape.json (1454 of 1454 bytes): {"clips":[{"ch":3,"id":0,"padding":[43,46,-1,45],"start":1587600,"stop":2646507},{"ch":2,"id":1,"padding":[59,60,-1,-1],"start":661500,"stop":926100},{"ch":3,"id":2,"padding":[33,34,-1,-1],"start":0,"stop":1587141},{"ch":2,"id":3,"padding":[59,60,-1,-1],"start":1455300,"stop":1719900},{"ch":2,"id":4,"padding":[63,64,-1,-1],"start":264600,"stop":661500},{"ch":2,"id":5,"padding":[63,64,-1,-1],"start":926100,"stop":1323000},{"ch":2,"id":6,"padding":[65,66,-1,-1],"start":1323000,"stop":1455300},{"ch":2,"id":7,"padding":[63,64,-1,-1],"start":1719900,"stop":2116800},{"ch":2,"id":8,"padding":[65,66,-1,-1],"start":2116800,"stop":2249100},{"ch":1,"id":9,"padding":[69,70,-1,-1],"start":264600,"stop":661500},{"ch":1,"id":10,"padding":[71,72,-1,-1],"start":926100,"stop":1455300},{"ch":1,"id":11,"padding":[73,74,-1,-1],"start":1719900,"stop":2249100},{"ch":0,"id":12,"padding":[81,82,-1,-1],"start":264600,"stop":661500},{"ch":0,"id":13,"padding":[81,82,-1,-1],"start":926100,"stop":1323000},{"ch":0,"id":14,"padding":[81,82,-1,-1],"start":1719900,"stop":2116800},{"ch":0,"id":16,"padding":[100,103,-1,102],"start":2116800,"stop":2646000}],"loop":true,"loop_in":0,"loop_out":2678720,"mixer_params":[0.60836793750,0.709655750,0.75952156250,0.90988156250,-0.093750,0.093750,-0.06250,0.0468750],"pos":790656,"tape_type":0,"tempobpmdecimal":800,"tempometronomelevel":23.9531250,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":0,"version":1}
+
+[ 174.00] tapes/2026-276#01: tracks match tape.json
+[ 174.00] tapes/2026-286#01 tracks: track_1.wav 1521204, track_2.wav 1514988, track_3.wav 44, track_4.wav 44
+[ 174.00] tapes/2026-286#01/tape.json (398 of 398 bytes): {"clips":[{"ch":0,"id":0,"padding":[106,107,-1,-1],"start":0,"stop":190145},{"ch":1,"id":1,"padding":[108,109,-1,-1],"start":0,"stop":189368}],"loop":true,"loop_in":0,"loop_out":189368,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":125991,"tape_type":0,"tempobpmdecimal":800,"tempometronomelevel":22.95507750,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":1,"version":1}
+
+[ 174.00] tapes/2026-286#01: tracks match tape.json
+[ 174.00] tapes/2026-312#01 tracks: track_1.wav 1164852, track_2.wav 1206836, track_3.wav 44, track_4.wav 44
+[ 174.00] tapes/2026-312#01/tape.json (391 of 391 bytes): {"clips":[{"ch":0,"id":0,"padding":[112,113,-1,-1],"start":0,"stop":145601},{"ch":1,"id":1,"padding":[114,115,-1,-1],"start":0,"stop":150849}],"loop":true,"loop_in":0,"loop_out":264600,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":173184,"tape_type":1,"tempobpmdecimal":1200,"tempometronomelevel":0.0,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":1,"version":1}
+
+[ 174.00] tapes/2026-312#01: tracks match tape.json
+[ 174.01] tapes/2026-312#01: the OP-1 changed the copied tape.json (386 bytes written, 391 now)
+[ 174.01] tapes/2026-312#02 tracks: track_1.wav 44, track_2.wav 44, track_3.wav 44, track_4.wav 44
+[ 174.01] tapes/2026-312#02/tape.json (256 of 256 bytes): {"clips":[],"loop":false,"loop_in":0,"loop_out":0,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":2,"tempobpmdecimal":800,"tempometronomelevel":21.957030,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":0,"version":1}
+
+[ 174.01] tapes/2026-312#02: tracks match tape.json
+[ 174.01] Downloading drum/slots/8/applefly.aif, 62012 bytes expected
+[ 174.01] → getObject ["0x00000129"] tx 139
+[ 174.05] ← 0x2001, 62012 data bytes, response 0c 00 00 00 03 00 01 20 97 00 00 00
+[ 174.05] Received 62012 bytes in 0.05s, starts 46 4f 52 4d 00 00 f2 34 41 49 46 43 46 56 45 52 … (62012 bytes)
+[ 174.06] SHA-256 3c8297b60b2b28b6393f9141ff13383e47aab365fa8e697736f80120573ee8c0
+[ 174.06] Saved 0x00000129-applefly.aif. Size matches: true
+[ 174.06] Verdict: PASS
+[ 179.84] PTP event: 18 00 00 00 04 00 06 40 00 00 00 00 01 50 00 00 00 00 00 00 00 00 00 00
+[ 181.48] Restoring tapes/2026-312#01 from backup
+[ 181.48] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 140
+[ 181.50] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 98 00 00 00
+[ 181.51] → deleteObject ["0x0000014B", "0x00000000"] tx 144
+[ 181.51] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 9c 00 00 00
+[ 181.51] ObjectInfo dataset: 01 00 01 00 08 30 00 00 2c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 48 01 00 00 00 00 00 00 00 00 00 00 00 00 0c 74 00 72 00 61 00 63 00 6b 00 5f 00 31 00 2e 00 77 00 61 00 76 00 00 00 00 00 00
+[ 181.51] → sendObjectInfo ["0x00010001", "0x00000148"] tx 145
+[ 181.52] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 9d 00 00 00 01 00 01 00 48 01 00 00 5a 01 00 00
+[ 181.52] SendObjectInfo response params: ["0x00010001", "0x00000148", "0x0000015A"]
+[ 181.52] → sendObject [] tx 146
+[ 181.55] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 9e 00 00 00
+[ 181.55] SendObject took 0.03s, 0.0 MB/s
+[ 181.55] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 147
+[ 181.55] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 9f 00 00 00
+[ 181.57] tapes/2026-312#01/track_1.wav: 44 bytes written and read back intact, SHA-256 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e
+[ 181.57] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 150
+[ 181.58] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 a2 00 00 00
+[ 181.58] → deleteObject ["0x0000014C", "0x00000000"] tx 155
+[ 181.59] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 a7 00 00 00
+[ 181.59] ObjectInfo dataset: 01 00 01 00 08 30 00 00 2c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 48 01 00 00 00 00 00 00 00 00 00 00 00 00 0c 74 00 72 00 61 00 63 00 6b 00 5f 00 32 00 2e 00 77 00 61 00 76 00 00 00 00 00 00
+[ 181.59] → sendObjectInfo ["0x00010001", "0x00000148"] tx 156
+[ 181.60] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 a8 00 00 00 01 00 01 00 48 01 00 00 5b 01 00 00
+[ 181.60] SendObjectInfo response params: ["0x00010001", "0x00000148", "0x0000015B"]
+[ 181.60] → sendObject [] tx 157
+[ 181.61] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 a9 00 00 00
+[ 181.61] SendObject took 0.02s, 0.0 MB/s
+[ 181.61] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 158
+[ 181.62] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 aa 00 00 00
+[ 181.63] tapes/2026-312#01/track_2.wav: 44 bytes written and read back intact, SHA-256 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e
+[ 181.63] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 161
+[ 181.63] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 ad 00 00 00
+[ 181.64] → deleteObject ["0x0000014D", "0x00000000"] tx 167
+[ 181.64] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 b3 00 00 00
+[ 181.64] ObjectInfo dataset: 01 00 01 00 08 30 00 00 2c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 48 01 00 00 00 00 00 00 00 00 00 00 00 00 0c 74 00 72 00 61 00 63 00 6b 00 5f 00 33 00 2e 00 77 00 61 00 76 00 00 00 00 00 00
+[ 181.64] → sendObjectInfo ["0x00010001", "0x00000148"] tx 168
+[ 181.65] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 b4 00 00 00 01 00 01 00 48 01 00 00 5c 01 00 00
+[ 181.65] SendObjectInfo response params: ["0x00010001", "0x00000148", "0x0000015C"]
+[ 181.65] → sendObject [] tx 169
+[ 181.67] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 b5 00 00 00
+[ 181.67] SendObject took 0.01s, 0.0 MB/s
+[ 181.67] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 170
+[ 181.67] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 b6 00 00 00
+[ 181.68] tapes/2026-312#01/track_3.wav: 44 bytes written and read back intact, SHA-256 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e
+[ 181.68] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 173
+[ 181.69] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 b9 00 00 00
+[ 181.69] → deleteObject ["0x0000014E", "0x00000000"] tx 180
+[ 181.70] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 c0 00 00 00
+[ 181.70] ObjectInfo dataset: 01 00 01 00 08 30 00 00 2c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 48 01 00 00 00 00 00 00 00 00 00 00 00 00 0c 74 00 72 00 61 00 63 00 6b 00 5f 00 34 00 2e 00 77 00 61 00 76 00 00 00 00 00 00
+[ 181.70] → sendObjectInfo ["0x00010001", "0x00000148"] tx 181
+[ 181.70] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 c1 00 00 00 01 00 01 00 48 01 00 00 5d 01 00 00
+[ 181.70] SendObjectInfo response params: ["0x00010001", "0x00000148", "0x0000015D"]
+[ 181.70] → sendObject [] tx 182
+[ 181.72] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 c2 00 00 00
+[ 181.72] SendObject took 0.02s, 0.0 MB/s
+[ 181.72] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 183
+[ 181.72] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 c3 00 00 00
+[ 181.74] tapes/2026-312#01/track_4.wav: 44 bytes written and read back intact, SHA-256 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e
+[ 181.74] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 186
+[ 181.74] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 c6 00 00 00
+[ 181.74] → deleteObject ["0x00000149", "0x00000000"] tx 192
+[ 181.75] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 cc 00 00 00
+[ 181.75] ObjectInfo dataset: 01 00 01 00 04 30 00 00 fb 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 48 01 00 00 00 00 00 00 00 00 00 00 00 00 0a 74 00 61 00 70 00 65 00 2e 00 6a 00 73 00 6f 00 6e 00 00 00 00 00 00
+[ 181.75] → sendObjectInfo ["0x00010001", "0x00000148"] tx 193
+[ 181.75] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 cd 00 00 00 01 00 01 00 48 01 00 00 5e 01 00 00
+[ 181.75] SendObjectInfo response params: ["0x00010001", "0x00000148", "0x0000015E"]
+[ 181.75] → sendObject [] tx 194
+[ 181.76] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 ce 00 00 00
+[ 181.76] SendObject took 0.01s, 0.0 MB/s
+[ 181.76] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 195
+[ 181.76] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 cf 00 00 00
+[ 181.77] tapes/2026-312#01/tape.json: 251 bytes written and read back intact, SHA-256 cc7162e2d48677b88d1ab89d2a2672dec6da0145ec79be265c082703651983cb
+[ 181.77] Restored blank tape tapes/2026-312#01
+[ 185.88] Whole tape test: tapes/2026-276#01 → tapes/2026-312#01
+[ 185.90] Source tape.json, 1454 bytes, matches its tracks
+[ 185.96] Backed up tapes/2026-312#01: four blank tracks and an empty tape.json
+[ 185.96] → getObject ["0x0000013D"] tx 204
+[ 186.93] ← 0x2001, 21168044 data bytes, response 0c 00 00 00 03 00 01 20 d8 00 00 00
+[ 186.95] Read tapes/2026-276#01/track_1.wav, 21168044 bytes in 0.99s, 21.5 MB/s
+[ 186.95] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 205
+[ 186.96] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 d9 00 00 00
+[ 186.97] → deleteObject ["0x0000015A", "0x00000000"] tx 211
+[ 186.97] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 df 00 00 00
+[ 186.97] ObjectInfo dataset: 01 00 01 00 08 30 00 00 ac ff 42 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 48 01 00 00 00 00 00 00 00 00 00 00 00 00 0c 74 00 72 00 61 00 63 00 6b 00 5f 00 31 00 2e 00 77 00 61 00 76 00 00 00 00 00 00
+[ 186.97] → sendObjectInfo ["0x00010001", "0x00000148"] tx 212
+[ 186.98] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 e0 00 00 00 01 00 01 00 48 01 00 00 5f 01 00 00
+[ 186.98] SendObjectInfo response params: ["0x00010001", "0x00000148", "0x0000015F"]
+[ 186.98] → sendObject [] tx 213
+[ 189.85] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 e1 00 00 00
+[ 189.85] SendObject took 2.87s, 7.4 MB/s
+[ 189.85] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 214
+[ 189.87] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 e2 00 00 00
+[ 190.96] tapes/2026-312#01/track_1.wav: 21168044 bytes written and read back intact, SHA-256 d47bbe1d4eadbce02a8e5101dcf3e0340bde891741bbf77af788820b262f6b97
+[ 190.96] → getObject ["0x0000013E"] tx 217
+[ 191.79] ← 0x2001, 17992844 data bytes, response 0c 00 00 00 03 00 01 20 e5 00 00 00
+[ 191.80] Read tapes/2026-276#01/track_2.wav, 17992844 bytes in 0.84s, 21.4 MB/s
+[ 191.80] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 218
+[ 191.81] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 e6 00 00 00
+[ 191.82] → deleteObject ["0x0000015B", "0x00000000"] tx 224
+[ 191.83] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 ec 00 00 00
+[ 191.83] ObjectInfo dataset: 01 00 01 00 08 30 00 00 8c 8c 12 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 48 01 00 00 00 00 00 00 00 00 00 00 00 00 0c 74 00 72 00 61 00 63 00 6b 00 5f 00 32 00 2e 00 77 00 61 00 76 00 00 00 00 00 00
+[ 191.83] → sendObjectInfo ["0x00010001", "0x00000148"] tx 225
+[ 191.84] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 ed 00 00 00 01 00 01 00 48 01 00 00 60 01 00 00
+[ 191.84] SendObjectInfo response params: ["0x00010001", "0x00000148", "0x00000160"]
+[ 191.84] → sendObject [] tx 226
+[ 194.30] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 ee 00 00 00
+[ 194.30] SendObject took 2.46s, 7.3 MB/s
+[ 194.30] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 227
+[ 194.31] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 ef 00 00 00
+[ 195.27] tapes/2026-312#01/track_2.wav: 17992844 bytes written and read back intact, SHA-256 46d0b9bea155addcd1ca1689c0be96534089a647b1a3dd823b2a8b8a5da91d04
+[ 195.27] → getObject ["0x0000013F"] tx 230
+[ 196.18] ← 0x2001, 17992844 data bytes, response 0c 00 00 00 03 00 01 20 f2 00 00 00
+[ 196.19] Read tapes/2026-276#01/track_3.wav, 17992844 bytes in 0.92s, 19.5 MB/s
+[ 196.19] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 231
+[ 196.20] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 f3 00 00 00
+[ 196.21] → deleteObject ["0x0000015C", "0x00000000"] tx 237
+[ 196.22] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 f9 00 00 00
+[ 196.22] ObjectInfo dataset: 01 00 01 00 08 30 00 00 8c 8c 12 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 48 01 00 00 00 00 00 00 00 00 00 00 00 00 0c 74 00 72 00 61 00 63 00 6b 00 5f 00 33 00 2e 00 77 00 61 00 76 00 00 00 00 00 00
+[ 196.22] → sendObjectInfo ["0x00010001", "0x00000148"] tx 238
+[ 196.22] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 fa 00 00 00 01 00 01 00 48 01 00 00 61 01 00 00
+[ 196.22] SendObjectInfo response params: ["0x00010001", "0x00000148", "0x00000161"]
+[ 196.23] → sendObject [] tx 239
+[ 198.70] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 fb 00 00 00
+[ 198.70] SendObject took 2.47s, 7.3 MB/s
+[ 198.70] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 240
+[ 198.71] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 fc 00 00 00
+[ 199.66] tapes/2026-312#01/track_3.wav: 17992844 bytes written and read back intact, SHA-256 4daf143eff22043d4872176098d76b81e7d4e5be2a6e647ac1140a7f3ab21075
+[ 199.66] → getObject ["0x00000140"] tx 243
+[ 200.73] ← 0x2001, 21172100 data bytes, response 0c 00 00 00 03 00 01 20 ff 00 00 00
+[ 200.74] Read tapes/2026-276#01/track_4.wav, 21172100 bytes in 1.08s, 19.6 MB/s
+[ 200.74] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 244
+[ 200.75] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 00 01 00 00
+[ 200.76] → deleteObject ["0x0000015D", "0x00000000"] tx 250
+[ 200.77] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 06 01 00 00
+[ 200.77] ObjectInfo dataset: 01 00 01 00 08 30 00 00 84 0f 43 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 48 01 00 00 00 00 00 00 00 00 00 00 00 00 0c 74 00 72 00 61 00 63 00 6b 00 5f 00 34 00 2e 00 77 00 61 00 76 00 00 00 00 00 00
+[ 200.77] → sendObjectInfo ["0x00010001", "0x00000148"] tx 251
+[ 200.77] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 07 01 00 00 01 00 01 00 48 01 00 00 62 01 00 00
+[ 200.77] SendObjectInfo response params: ["0x00010001", "0x00000148", "0x00000162"]
+[ 200.77] → sendObject [] tx 252
+[ 203.64] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 08 01 00 00
+[ 203.64] SendObject took 2.87s, 7.4 MB/s
+[ 203.65] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 253
+[ 203.66] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 09 01 00 00
+[ 204.75] tapes/2026-312#01/track_4.wav: 21172100 bytes written and read back intact, SHA-256 714da5edb9b3687dd7b24fc396c4614209dfa961f008ace8821262146594f67a
+[ 204.75] tapes/2026-312#01/tape.json after the tracks, before writing it (251 bytes): {"clips":[{"ch":0,"id":0,"padding":[-1,-1,-1,-1],"start":0,"stop":2646000},{"ch":1,"id":1,"padding":[-1,-1,-1,-1],"start":0,"stop":2249100},{"ch":2,"id":2,"padding":[-1,-1,-1,-1],"start":0,"stop":2249100},{"ch":3,"id":3,"padding":[-1,-1,-1,-1],"start"
+[ 204.75] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 257
+[ 204.75] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 0d 01 00 00
+[ 204.76] → deleteObject ["0x0000015E", "0x00000000"] tx 263
+[ 204.76] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 13 01 00 00
+[ 204.76] ObjectInfo dataset: 01 00 01 00 04 30 00 00 ae 05 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 48 01 00 00 00 00 00 00 00 00 00 00 00 00 0a 74 00 61 00 70 00 65 00 2e 00 6a 00 73 00 6f 00 6e 00 00 00 00 00 00
+[ 204.76] → sendObjectInfo ["0x00010001", "0x00000148"] tx 264
+[ 204.77] ← 0x2001, 0 data bytes, response 18 00 00 00 03 00 01 20 14 01 00 00 01 00 01 00 48 01 00 00 63 01 00 00
+[ 204.77] SendObjectInfo response params: ["0x00010001", "0x00000148", "0x00000163"]
+[ 204.77] → sendObject [] tx 265
+[ 204.78] ← 0x2001, 0 data bytes, response 0c 00 00 00 03 00 01 20 15 01 00 00
+[ 204.78] SendObject took 0.01s, 0.2 MB/s
+[ 204.78] → getObjectHandles ["0x00010001", "0x00000000", "0x00000148"] tx 266
+[ 204.78] ← 0x2001, 28 data bytes, response 0c 00 00 00 03 00 01 20 16 01 00 00
+[ 204.78] tapes/2026-312#01/tape.json: 1454 bytes written and read back intact, SHA-256 b5f466ed3d7bc49e3440e8039a7cec3670d663dcbb4ce23b9d899b7fe3e1f713
+[ 204.78] TAPE COPY PASS: tapes/2026-312#01 matches tapes/2026-276#01
+[ 204.78] Next: leave MTP mode, open tapes/2026-312#01 on the OP-1 and check its clips, loop and tempo match tapes/2026-276#01. Then reconnect: the probe logs whether the OP-1 kept the copied tape.json.
+[ 218.58] Removed OP-1
+[ 278.65] Found OP-1, type 257, transport ICTransportTypeUSB
+[ 278.65] Capabilities: ["ICCameraDeviceCanDeleteOneFile", "ICCameraDeviceCanSyncClock", "ICCameraDeviceCanAcceptPTPCommands"]
+[ 278.67] Session open
+[ 279.02] Catalog ready: 0 media files, 0 top-level items
+[ 279.03] → getDeviceInfo [] tx 1
+[ 279.04] ← 0x2001, 225 data bytes, response 0c 00 00 00 03 00 01 20 0d 00 00 00
+[ 279.04] DeviceInfo raw: 64 00 06 00 00 00 64 00 14 6d 00 69 00 63 00 72 00 6f 00 73 00 6f 00 66 00 74 00 2e 00 63 00 6f 00 6d 00 3a 00 20 00 31 00 2e 00 30 00 3b 00 00 00 00 00 15 00 00 00 02 10 03 10 01 10 04 10 05 10 09 10 14 10 15 10 16 10 0b 10 0d 10 06 10 07 10 08 10 0c 10 1b 10 01 98 02 98 03 98 04 98 05 98 01 00 00 00 05 40 02 00 00 00 01 50 11 50 06 00 00 00 00 30 01 30 07 30 08 30 00 b9 04 30 05 … (225 bytes)
+[ 279.04] Device: teenage engineering OP-1 1.7.3, serial L1PXE14W
+[ 279.04] Standard 100, vendor extension 0x00000006: microsoft.com: 1.0;
+[ 279.04] Operations: 0x1002 0x1003 0x1001 0x1004 0x1005 0x1009 0x1014 0x1015 0x1016 0x100B 0x100D 0x1006 0x1007 0x1008 0x100C 0x101B 0x9801 0x9802 0x9803 0x9804 0x9805
+[ 279.04]   DeleteObject: yes
+[ 279.04]   SendObjectInfo: yes
+[ 279.04]   SendObject: yes
+[ 279.04]   GetPartialObject: yes
+[ 279.04]   GetObjectPropList: yes
+[ 279.04] → getStorageIDs [] tx 2
+[ 279.05] ← 0x2001, 8 data bytes, response 0c 00 00 00 03 00 01 20 0e 00 00 00
+[ 279.05] Storages: ["0x00010001"]
+[ 279.05] → getObjectHandles ["0xFFFFFFFF", "0x00000000", "0xFFFFFFFF"] tx 3
+[ 279.06] ← 0x2001, 20 data bytes, response 0c 00 00 00 03 00 01 20 0f 00 00 00
+[ 279.06] All storages, root: 4 handles
+[ 279.06] 0x00000164 0x3001 0 synth/
+[ 279.07] 0x00000179 0x3001 0 drum/
+[ 279.07] 0x0000018E 0x3001 0 tapes/
+[ 279.07] 0x000001B9 0x3001 0 mixdown/
+[ 279.08] 0x000001BA 0x3008 12235308 mixdown/side_a.wav
+[ 279.08] 0x000001BB 0x3008 3992876 mixdown/side_b.wav
+[ 279.08] 0x000001BC 0x3000 78 mixdown/readme.txt
+[ 279.09] 0x0000018F 0x3001 0 tapes/2026-220#01/
+[ 279.09] 0x00000196 0x3001 0 tapes/2026-220#02/
+[ 279.09] 0x0000019D 0x3001 0 tapes/2026-276#01/
+[ 279.09] 0x000001A4 0x3001 0 tapes/2026-286#01/
+[ 279.09] 0x000001AB 0x3001 0 tapes/2026-312#01/
+[ 279.09] 0x000001B2 0x3001 0 tapes/2026-312#02/
+[ 279.10] 0x000001B3 0x3004 256 tapes/2026-312#02/tape.json
+[ 279.10] 0x000001B4 0x3000 104 tapes/2026-312#02/readme.txt
+[ 279.10] 0x000001B5 0x3008 44 tapes/2026-312#02/track_1.wav
+[ 279.10] 0x000001B6 0x3008 44 tapes/2026-312#02/track_2.wav
+[ 279.10] 0x000001B7 0x3008 44 tapes/2026-312#02/track_3.wav
+[ 279.11] 0x000001B8 0x3008 44 tapes/2026-312#02/track_4.wav
+[ 279.11] 0x000001AC 0x3004 1454 tapes/2026-312#01/tape.json
+[ 279.11] 0x000001AD 0x3000 104 tapes/2026-312#01/readme.txt
+[ 279.11] 0x000001AE 0x3008 21168044 tapes/2026-312#01/track_1.wav
+[ 279.12] 0x000001AF 0x3008 17992844 tapes/2026-312#01/track_2.wav
+[ 279.12] 0x000001B0 0x3008 17992844 tapes/2026-312#01/track_3.wav
+[ 279.12] 0x000001B1 0x3008 21172100 tapes/2026-312#01/track_4.wav
+[ 279.12] 0x000001A5 0x3004 398 tapes/2026-286#01/tape.json
+[ 279.12] 0x000001A6 0x3000 104 tapes/2026-286#01/readme.txt
+[ 279.13] 0x000001A7 0x3008 1521204 tapes/2026-286#01/track_1.wav
+[ 279.13] 0x000001A8 0x3008 1514988 tapes/2026-286#01/track_2.wav
+[ 279.13] 0x000001A9 0x3008 44 tapes/2026-286#01/track_3.wav
+[ 279.13] 0x000001AA 0x3008 44 tapes/2026-286#01/track_4.wav
+[ 279.13] 0x0000019E 0x3004 1454 tapes/2026-276#01/tape.json
+[ 279.14] 0x0000019F 0x3000 104 tapes/2026-276#01/readme.txt
+[ 279.14] 0x000001A0 0x3008 21168044 tapes/2026-276#01/track_1.wav
+[ 279.14] 0x000001A1 0x3008 17992844 tapes/2026-276#01/track_2.wav
+[ 279.14] 0x000001A2 0x3008 17992844 tapes/2026-276#01/track_3.wav
+[ 279.14] 0x000001A3 0x3008 21172100 tapes/2026-276#01/track_4.wav
+[ 279.15] 0x00000197 0x3004 386 tapes/2026-220#02/tape.json
+[ 279.15] 0x00000198 0x3000 104 tapes/2026-220#02/readme.txt
+[ 279.15] 0x00000199 0x3008 1164852 tapes/2026-220#02/track_1.wav
+[ 279.15] 0x0000019A 0x3008 1206836 tapes/2026-220#02/track_2.wav
+[ 279.16] 0x0000019B 0x3008 44 tapes/2026-220#02/track_3.wav
+[ 279.16] 0x0000019C 0x3008 44 tapes/2026-220#02/track_4.wav
+[ 279.16] 0x00000190 0x3004 319 tapes/2026-220#01/tape.json
+[ 279.17] 0x00000191 0x3000 104 tapes/2026-220#01/readme.txt
+[ 279.17] 0x00000192 0x3008 44 tapes/2026-220#01/track_1.wav
+[ 279.17] 0x00000193 0x3008 44 tapes/2026-220#01/track_2.wav
+[ 279.17] 0x00000194 0x3008 44 tapes/2026-220#01/track_3.wav
+[ 279.17] 0x00000195 0x3008 22056500 tapes/2026-220#01/track_4.wav
+[ 279.18] 0x0000017A 0x3001 0 drum/user/
+[ 279.18] 0x0000017C 0x3001 0 drum/slots/
+[ 279.18] 0x0000018D 0x3000 0 drum/you may create folders here
+[ 279.18] 0x0000017D 0x3001 0 drum/slots/1/
+[ 279.19] 0x0000017F 0x3001 0 drum/slots/2/
+[ 279.19] 0x00000181 0x3001 0 drum/slots/3/
+[ 279.19] 0x00000183 0x3001 0 drum/slots/4/
+[ 279.19] 0x00000185 0x3001 0 drum/slots/5/
+[ 279.19] 0x00000187 0x3001 0 drum/slots/6/
+[ 279.20] 0x00000189 0x3001 0 drum/slots/7/
+[ 279.20] 0x0000018B 0x3001 0 drum/slots/8/
+[ 279.20] 0x0000018C 0x3007 62012 drum/slots/8/applefly.aif
+[ 279.21] 0x0000018A 0x3007 3007700 drum/slots/7/lubowa.aif
+[ 279.21] 0x00000188 0x3007 2545072 drum/slots/6/yamalog.aif
+[ 279.21] 0x00000186 0x3007 3444028 drum/slots/5/exoex.aif
+[ 279.22] 0x00000184 0x3007 3244616 drum/slots/4/apes are us.aif
+[ 279.22] 0x00000182 0x3007 3472664 drum/slots/3/workshop.aif
+[ 279.23] 0x00000180 0x3007 3490544 drum/slots/2/vinyl.aif
+[ 279.23] 0x0000017E 0x3007 3425808 drum/slots/1/cherry.aif
+[ 279.23] 0x0000017B 0x3000 230 drum/user/readme.txt
+[ 279.24] 0x00000165 0x3001 0 synth/user/
+[ 279.24] 0x00000167 0x3001 0 synth/slots/
+[ 279.24] 0x00000178 0x3000 0 synth/you may create folders here
+[ 279.24] 0x00000168 0x3001 0 synth/slots/1/
+[ 279.25] 0x0000016A 0x3001 0 synth/slots/2/
+[ 279.25] 0x0000016C 0x3001 0 synth/slots/3/
+[ 279.25] 0x0000016E 0x3001 0 synth/slots/4/
+[ 279.25] 0x00000170 0x3001 0 synth/slots/5/
+[ 279.26] 0x00000172 0x3001 0 synth/slots/6/
+[ 279.26] 0x00000174 0x3001 0 synth/slots/7/
+[ 279.26] 0x00000176 0x3001 0 synth/slots/8/
+[ 279.27] 0x00000177 0x3007 89468 synth/slots/8/vibrates.aif
+[ 279.27] 0x00000175 0x3007 89468 synth/slots/7/xyz files.aif
+[ 279.27] 0x00000173 0x3007 89468 synth/slots/6/afterglow.aif
+[ 279.28] 0x00000171 0x3007 89468 synth/slots/5/silky way.aif
+[ 279.28] 0x0000016F 0x3007 530356 synth/slots/4/suitcase.aif
+[ 279.29] 0x0000016D 0x3007 89468 synth/slots/3/pianistic.aif
+[ 279.29] 0x0000016B 0x3007 89468 synth/slots/2/dissolver.aif
+[ 279.29] 0x00000169 0x3007 89468 synth/slots/1/panned out.aif
+[ 279.30] 0x00000166 0x3000 230 synth/user/readme.txt
+[ 279.30] Catalog: 59 files, 30 folders, 224199217 bytes
+[ 279.30] Audio files: 42, tape/album files: 39
+[ 279.30] mixdown/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: side_a.wav side_b.wav
+
+[ 279.30] tapes/2026-312#02/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 279.31] tapes/2026-312#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 279.31] tapes/2026-286#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 279.31] tapes/2026-276#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 279.31] tapes/2026-220#02/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 279.31] tapes/2026-220#01/readme.txt: this folder accepts 44100 Hz .wav files.
+allowed names: track_1.wav track_2.wav track_3.wav track_4.wav
+
+[ 279.32] drum/user/readme.txt: this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.
+the OP-1 sample rate is 44100 Hz.
+other sample rates change the maximum sample time.
+
+to keep your sounds in different folders,
+create new folders in 'synth' or 'drum'.
+
+[ 279.32] synth/user/readme.txt: this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.
+the OP-1 sample rate is 44100 Hz.
+other sample rates change the maximum sample time.
+
+to keep your sounds in different folders,
+create new folders in 'synth' or 'drum'.
+
+[ 279.32] Tapes: 6 of 8
+[ 279.32] tapes/2026-220#01 tracks: track_1.wav 44, track_2.wav 44, track_3.wav 44, track_4.wav 22056500
+[ 279.32] tapes/2026-220#01/tape.json (319 of 319 bytes): {"clips":[{"ch":3,"id":0,"padding":[27,28,-1,-1],"start":0,"stop":2757057}],"loop":true,"loop_in":0,"loop_out":2778300,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":0,"tempobpmdecimal":800,"tempometronomelevel":0.0,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":1,"version":1}
+
+[ 279.32] tapes/2026-220#01: tracks match tape.json
+[ 279.32] tapes/2026-220#02 tracks: track_1.wav 1164852, track_2.wav 1206836, track_3.wav 44, track_4.wav 44
+[ 279.32] tapes/2026-220#02/tape.json (386 of 386 bytes): {"clips":[{"ch":0,"id":0,"padding":[112,113,-1,-1],"start":0,"stop":145601},{"ch":1,"id":1,"padding":[114,115,-1,-1],"start":0,"stop":150849}],"loop":true,"loop_in":0,"loop_out":264600,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":1,"tempobpmdecimal":1200,"tempometronomelevel":0.0,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":1,"version":1}
+
+[ 279.32] tapes/2026-220#02: tracks match tape.json
+[ 279.32] tapes/2026-276#01 tracks: track_1.wav 21168044, track_2.wav 17992844, track_3.wav 17992844, track_4.wav 21172100
+[ 279.33] tapes/2026-276#01/tape.json (1454 of 1454 bytes): {"clips":[{"ch":3,"id":0,"padding":[43,46,-1,45],"start":1587600,"stop":2646507},{"ch":2,"id":1,"padding":[59,60,-1,-1],"start":661500,"stop":926100},{"ch":3,"id":2,"padding":[33,34,-1,-1],"start":0,"stop":1587141},{"ch":2,"id":3,"padding":[59,60,-1,-1],"start":1455300,"stop":1719900},{"ch":2,"id":4,"padding":[63,64,-1,-1],"start":264600,"stop":661500},{"ch":2,"id":5,"padding":[63,64,-1,-1],"start":926100,"stop":1323000},{"ch":2,"id":6,"padding":[65,66,-1,-1],"start":1323000,"stop":1455300},{"ch":2,"id":7,"padding":[63,64,-1,-1],"start":1719900,"stop":2116800},{"ch":2,"id":8,"padding":[65,66,-1,-1],"start":2116800,"stop":2249100},{"ch":1,"id":9,"padding":[69,70,-1,-1],"start":264600,"stop":661500},{"ch":1,"id":10,"padding":[71,72,-1,-1],"start":926100,"stop":1455300},{"ch":1,"id":11,"padding":[73,74,-1,-1],"start":1719900,"stop":2249100},{"ch":0,"id":12,"padding":[81,82,-1,-1],"start":264600,"stop":661500},{"ch":0,"id":13,"padding":[81,82,-1,-1],"start":926100,"stop":1323000},{"ch":0,"id":14,"padding":[81,82,-1,-1],"start":1719900,"stop":2116800},{"ch":0,"id":16,"padding":[100,103,-1,102],"start":2116800,"stop":2646000}],"loop":true,"loop_in":0,"loop_out":2678720,"mixer_params":[0.60836793750,0.709655750,0.75952156250,0.90988156250,-0.093750,0.093750,-0.06250,0.0468750],"pos":52921,"tape_type":0,"tempobpmdecimal":800,"tempometronomelevel":22.95507750,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":0,"version":1}
+
+[ 279.33] tapes/2026-276#01: tracks match tape.json
+[ 279.33] tapes/2026-286#01 tracks: track_1.wav 1521204, track_2.wav 1514988, track_3.wav 44, track_4.wav 44
+[ 279.33] tapes/2026-286#01/tape.json (398 of 398 bytes): {"clips":[{"ch":0,"id":0,"padding":[106,107,-1,-1],"start":0,"stop":190145},{"ch":1,"id":1,"padding":[108,109,-1,-1],"start":0,"stop":189368}],"loop":true,"loop_in":0,"loop_out":189368,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":125991,"tape_type":0,"tempobpmdecimal":800,"tempometronomelevel":22.95507750,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":1,"version":1}
+
+[ 279.33] tapes/2026-286#01: tracks match tape.json
+[ 279.33] tapes/2026-312#01 tracks: track_1.wav 21168044, track_2.wav 17992844, track_3.wav 17992844, track_4.wav 21172100
+[ 279.33] tapes/2026-312#01/tape.json (1454 of 1454 bytes): {"clips":[{"ch":3,"id":0,"padding":[43,46,-1,45],"start":1587600,"stop":2646507},{"ch":2,"id":1,"padding":[59,60,-1,-1],"start":661500,"stop":926100},{"ch":3,"id":2,"padding":[33,34,-1,-1],"start":0,"stop":1587141},{"ch":2,"id":3,"padding":[59,60,-1,-1],"start":1455300,"stop":1719900},{"ch":2,"id":4,"padding":[63,64,-1,-1],"start":264600,"stop":661500},{"ch":2,"id":5,"padding":[63,64,-1,-1],"start":926100,"stop":1323000},{"ch":2,"id":6,"padding":[65,66,-1,-1],"start":1323000,"stop":1455300},{"ch":2,"id":7,"padding":[63,64,-1,-1],"start":1719900,"stop":2116800},{"ch":2,"id":8,"padding":[65,66,-1,-1],"start":2116800,"stop":2249100},{"ch":1,"id":9,"padding":[69,70,-1,-1],"start":264600,"stop":661500},{"ch":1,"id":10,"padding":[71,72,-1,-1],"start":926100,"stop":1455300},{"ch":1,"id":11,"padding":[73,74,-1,-1],"start":1719900,"stop":2249100},{"ch":0,"id":12,"padding":[81,82,-1,-1],"start":264600,"stop":661500},{"ch":0,"id":13,"padding":[81,82,-1,-1],"start":926100,"stop":1323000},{"ch":0,"id":14,"padding":[81,82,-1,-1],"start":1719900,"stop":2116800},{"ch":0,"id":16,"padding":[100,103,-1,102],"start":2116800,"stop":2646000}],"loop":true,"loop_in":0,"loop_out":2678720,"mixer_params":[0.60836793750,0.709655750,0.75952156250,0.90988156250,-0.093750,0.093750,-0.06250,0.0468750],"pos":69312,"tape_type":0,"tempobpmdecimal":800,"tempometronomelevel":22.95507750,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":0,"version":1}
+
+[ 279.34] tapes/2026-312#01: tracks match tape.json
+[ 279.34] tapes/2026-312#01: the OP-1 changed the copied tape.json (1454 bytes written, 1454 now)
+[ 279.34] tapes/2026-312#02 tracks: track_1.wav 44, track_2.wav 44, track_3.wav 44, track_4.wav 44
+[ 279.34] tapes/2026-312#02/tape.json (256 of 256 bytes): {"clips":[],"loop":false,"loop_in":0,"loop_out":0,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":2,"tempobpmdecimal":800,"tempometronomelevel":21.957030,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":0,"version":1}
+
+[ 279.34] tapes/2026-312#02: tracks match tape.json
+[ 279.34] Downloading drum/slots/8/applefly.aif, 62012 bytes expected
+[ 279.34] → getObject ["0x0000018C"] tx 139
+[ 279.39] ← 0x2001, 62012 data bytes, response 0c 00 00 00 03 00 01 20 97 00 00 00
+[ 279.39] Received 62012 bytes in 0.04s, starts 46 4f 52 4d 00 00 f2 34 41 49 46 43 46 56 45 52 … (62012 bytes)
+[ 279.39] SHA-256 3c8297b60b2b28b6393f9141ff13383e47aab365fa8e697736f80120573ee8c0
+[ 279.39] Saved 0x0000018C-applefly.aif. Size matches: true
+[ 279.39] Verdict: PASS
