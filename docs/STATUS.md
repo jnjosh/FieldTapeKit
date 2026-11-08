@@ -43,10 +43,11 @@ Where the project stands, so a new session can pick it up. Update this when the 
 
 **Building FieldTapeKit:** following [the implementation plan](plans/adr-0002-implementation.md), one committed step at a time.
 - **Step 1 is done:** the package and the PTP wire format, all internal, with the probe's 12 PTP tests ported to Swift Testing and new StorageInfo tests. All 15 pass on the Mac and the iOS simulator. Nothing on the OP-1 has been run against it yet.
+- **Step 2 is done:** `MTPSession` sends one request at a time, with a timeout and a ping, and never sends OpenSession. The simulated OP-1 answers the read operations as 1.7.3 does, and can inject faults: no answer, going silent, a refusal. All internal, with 34 tests passing on the Mac and the iOS simulator. The session's timeouts are tested only on the simulator, because the one real hang never recurred.
 
 ## Next steps
 
-1. Step 2 of the plan: the MTP session and a simulated OP-1 that can be read. Leave `research/` untouched.
+1. Step 3 of the plan: `FieldDevice`, connections, the ImageCaptureCore transport and the FieldCheck app shell. It ends with the first run on the OP-1. Leave `research/` untouched.
 
 ## The OP-1 right now
 
