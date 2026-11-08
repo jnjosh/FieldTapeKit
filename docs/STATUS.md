@@ -41,12 +41,12 @@ Where the project stands, so a new session can pick it up. Update this when the 
 
 **Open questions:** none in ADRs 0002 or 0003.
 
+**Building FieldTapeKit:** following [the implementation plan](plans/adr-0002-implementation.md), one committed step at a time.
+- **Step 1 is done:** the package and the PTP wire format, all internal, with the probe's 12 PTP tests ported to Swift Testing and new StorageInfo tests. All 15 pass on the Mac and the iOS simulator. Nothing on the OP-1 has been run against it yet.
+
 ## Next steps
 
-1. Make the repository a git repository before the first release. Checking for API breaks needs release tags.
-2. Create FieldTapeKit as a new project at the repository root. Leave `research/` untouched.
-3. Start by copying the probe's PTP layer and its tests into the package, then add FieldCheck's read-only checks (level 1). Run them on the OP-1 to record the 1.7.3 baseline.
-4. Build the rest of FieldTapeKit on top of that, phase by phase.
+1. Step 2 of the plan: the MTP session and a simulated OP-1 that can be read. Leave `research/` untouched.
 
 ## The OP-1 right now
 

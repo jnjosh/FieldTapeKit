@@ -33,7 +33,19 @@ For where the work stands and what's next, read [docs/STATUS.md](docs/STATUS.md)
 
 ## Build, Test, and Run
 
-Only the research probe exists today. Its project is generated with XcodeGen from `research/project.yml`, so edit the spec, not the `.xcodeproj`. Run these from `research/`:
+**FieldTapeKit** is a Swift package at the repository root. Run its tests from the root, on the Mac and on the iOS simulator:
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcrun swift test
+```
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcodebuild -scheme FieldTapeKit -destination 'id=0F76E627-D8A1-46BA-A245-C9C5DDE71C80' test
+```
+
+It's being built in the steps of [docs/plans/adr-0002-implementation.md](docs/plans/adr-0002-implementation.md).
+
+**The research probe** is frozen. Its project is generated with XcodeGen from `research/project.yml`, so edit the spec, not the `.xcodeproj`. Run these from `research/`:
 
 ```bash
 xcodegen generate
@@ -47,7 +59,7 @@ DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcodebuild -proj
 DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcodebuild -project OP1Probe.xcodeproj -scheme OP1Probe -destination 'generic/platform=iOS' -allowProvisioningUpdates build
 ```
 
-There's no linter or formatter yet. The full test suite is the 21 parser tests in `research/OP1ProbeTests`. Commands for installing on a device and pulling logs off it are in [research/PROBE-NOTES.md](research/PROBE-NOTES.md).
+There's no linter or formatter yet. The package's tests use Swift Testing. The probe's 21 XCTest tests in `research/OP1ProbeTests` stay as they are. Commands for installing on a device and pulling logs off it are in [research/PROBE-NOTES.md](research/PROBE-NOTES.md).
 
 ### Environment Setup
 
@@ -237,7 +249,7 @@ Do not claim completion until the expected outcome is implemented and verified.
 
 ## Version Control
 
-This directory isn't a git repository yet. Once it is, follow these defaults.
+This directory is a git repository. Follow these defaults.
 
 ### Commits
 
@@ -280,6 +292,7 @@ proto/short-kebab-description
 
 ```text
 docs/STATUS.md              — Where the project stands and the next steps; keep it current
+docs/plans/adr-0002-implementation.md — The 24-step plan for building ADR 0002, each step committable
 docs/swift-disk-access-guide.md — Research on Swift file APIs, an input to ADR 0002
 docs/adrs/                  — Architecture decisions: 0001 transport, 0002 public API and
                               0003 firmware check tool (all accepted)
