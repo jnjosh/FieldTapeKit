@@ -51,7 +51,7 @@ Your app
 ### 1. Finding the device
 
 ```swift
-for await event in FieldDevice.connections {     // requests ImageCaptureCore authorization on first use
+for try await event in FieldDevice.connections { // requests ImageCaptureCore authorization on first use
     switch event {
     case .connected(let device):    await show(device)
     case .disconnected(let id):     forget(id)
@@ -68,7 +68,11 @@ final class DevicesViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         watching = Task { [weak self] in
-            for await event in FieldDevice.connections { self?.handle(event) }
+            do {
+                for try await event in FieldDevice.connections { self?.handle(event) }
+            } catch {
+                self?.show(error)                         // FieldError, code .notAuthorized
+            }
         }
     }
 
@@ -76,7 +80,7 @@ final class DevicesViewController: UIViewController {
 }
 ```
 
-- **No browser type.** `FieldDevice.connections` is a static `AsyncSequence` of connect and disconnect events. Watching starts when something iterates it and stops when that task is cancelled. In SwiftUI that's `.task {}`; in UIKit, AppKit, a command-line tool or a background service, it's a `Task` the caller keeps.
+- **No browser type.** `FieldDevice.connections` is a static `AsyncSequence` of connect and disconnect events. Watching starts when something iterates it and stops when that task is cancelled. It throws only to end with `.notAuthorized`, when the person denies ImageCaptureCore access, so callers write `for try await`. In SwiftUI that's `.task {}`; in UIKit, AppKit, a command-line tool or a background service, it's a `Task` the caller keeps.
 - **Current state first.** Each new iteration begins with a `.connected` event for every OP-1 already attached, so a listener that starts late doesn't miss one. That's what `NWPathMonitor` does with the current path.
 - **Several listeners are fine.** They share one `ICDeviceBrowser` underneath, which is filtered to the OP-1 (USB vendor 0x2367, MTP product 0x0102, or the name). The browser stops when the last listener goes away.
 - **Callback or Combine code** can wrap the stream in a few lines. FieldTapeKit doesn't ship those wrappers. If apps need an object to hold, a `FieldDeviceMonitor` can be added later on top of the same stream without changing it.
@@ -431,7 +435,7 @@ public struct FieldError: Error, Sendable, LocalizedError {
     var path: FilePath?
     var responseCode: UInt16?          // the PTP response, when the device refused
     var changed: [FilePath]            // what was already written or deleted, if anything
-    var underlying: (any Error & Sendable)?   // Sendable, so FieldError can be
+    var underlying: (any Error)?       // Error refines Sendable in Swift 6, so FieldError is Sendable
 
     public struct Code: Sendable, Hashable {
         static let disconnected, timedOut, notFound, alreadyExists,
@@ -591,3 +595,5 @@ These are possible later features, deliberately left out for now:
   - A major version protects the Swift API, the archive format, supported firmware and safety behavior.
   - Firmware support is additive, with a profile for each tested firmware.
   - Untested firmware works, with a warning.
+- **2026-11-08:** Correction to the API gap fix above: `Error` already refines `Sendable` in Swift 6 (SE-0302), so `(any Error)?` was fine as written. The sketch is back to `(any Error)?`, which is the same type.
+- **2026-11-09:** `FieldDevice.connections` throws, so the examples use `for try await`. Without that, `.notAuthorized` would have no way to reach the caller when the person denies access. Found while building step 3, and approved by the owner.

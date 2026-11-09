@@ -1,0 +1,43 @@
+name: FieldCheck
+options:
+  bundleIdPrefix: com.jnjosh
+  deploymentTarget:
+    iOS: "27.0"
+settings:
+  base:
+    DEVELOPMENT_TEAM: Q285243259
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "6.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+packages:
+  FieldTapeKit:
+    path: ..
+targets:
+  FieldCheck:
+    type: application
+    platform: iOS
+    sources: [FieldCheck]
+    dependencies:
+      - package: FieldTapeKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jnjosh.FieldCheck
+    info:
+      path: FieldCheck/Info.plist
+      properties:
+        CFBundleDisplayName: FieldCheck
+        UILaunchScreen: {}
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        # The probe carried both as a precaution; which, if either, ImageCaptureCore needs is still unknown.
+        NSCameraUsageDescription: FieldCheck talks to the OP-1 Field, which connects as a camera device.
+        NSPhotoLibraryUsageDescription: FieldCheck reads the contents of the connected OP-1 Field.
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight

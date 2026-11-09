@@ -2,7 +2,7 @@
 
 Where the project stands, so a new session can pick it up. Update this when the state changes. The reasoning lives in the ADRs, and the evidence in [research/PROBE-NOTES.md](../research/PROBE-NOTES.md).
 
-## As of 2026-11-08
+## As of 2026-11-09
 
 **Research is done.** The probe in `research/` showed that ImageCaptureCore's raw PTP passthrough can do everything FieldTapeKit needs, on iPad and iPhone with OP-1 firmware 1.7.3: list, read, write, create, and delete, including whole-tape copies and album sides byte for byte. Its 21 unit tests pass from `research/`.
 
@@ -44,10 +44,19 @@ Where the project stands, so a new session can pick it up. Update this when the 
 **Building FieldTapeKit:** following [the implementation plan](plans/adr-0002-implementation.md), one committed step at a time.
 - **Step 1 is done:** the package and the PTP wire format, all internal, with the probe's 12 PTP tests ported to Swift Testing and new StorageInfo tests. All 15 pass on the Mac and the iOS simulator. Nothing on the OP-1 has been run against it yet.
 - **Step 2 is done:** `MTPSession` sends one request at a time, with a timeout and a ping, and never sends OpenSession. The simulated OP-1 answers the read operations as 1.7.3 does, and can inject faults: no answer, going silent, a refusal. All internal, with 34 tests passing on the Mac and the iOS simulator. The session's timeouts are tested only on the simulator, because the one real hang never recurred.
+- **Step 3 is done, and passed its first run on the OP-1** (iPad Pro, 2026-11-09, log in [firmware/1.7.3/runs](../firmware/1.7.3/runs/fieldcheck-2026-11-09T131756Z.txt)):
+  - The first public API: `FieldDevice` with `info` and `isConnected`, `FieldDevice.connections`, `FieldError`, and `FieldDevice.simulated()`.
+  - Inside: the ImageCaptureCore transport and the 1.7.3 firmware profile.
+  - The FieldCheck app shell, which shows connections and device info.
+  - 53 tests pass on the Mac and the iOS simulator. FieldCheck builds for iOS devices.
+  - On the OP-1: it connected as OP-1, firmware 1.7.3 (tested), serial L1PXE14W. Both ways of disconnecting were reported: unplugging, which also takes the OP-1 out of MTP mode, and leaving MTP mode with the cable still in. After the unplug, plugging in and entering MTP mode again connected as a new device. The stream never ended.
+  - The OP-1 reports 6,429,185,024 bytes of capacity, now the simulator's default.
+  - Free space fell by 1,024 bytes between the two connections, with nothing written by FieldCheck. That fits what the probe found: the OP-1 rewrites files such as `tape.json` while it's out of MTP mode (PROBE-NOTES.md, survival run). `device.storage` must allow for it.
 
 ## Next steps
 
-1. Step 3 of the plan: `FieldDevice`, connections, the ImageCaptureCore transport and the FieldCheck app shell. It ends with the first run on the OP-1. Leave `research/` untouched.
+1. Commit step 3.
+2. Step 4 of the plan: FieldCheck's expectations, reports and first level 1 checks. Leave `research/` untouched.
 
 ## The OP-1 right now
 

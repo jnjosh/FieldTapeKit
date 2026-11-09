@@ -188,7 +188,7 @@ FieldCheck measures only the firmware installed, so the old-firmware rows come f
 - If one DeleteObject on the scratch tape's folder half-works, the scratch tape may need cleaning up by hand on the OP-1. It holds only generated content.
 - The suggested compatibility class is a heuristic from the kind of difference. A person has to confirm it.
 - Only the installed firmware can be measured. After an update, the draft's old-firmware answers rely on the old baseline and the simulator.
-- Carrying the PTP code into the package is the first refactor of code that has only ever been tested on a device. The probe's 21 parser tests move with it and must still pass.
+- Carrying the PTP code into the package is the first refactor of code that has only ever been tested on a device. 16 of the probe's 21 tests move with it and must still pass: 12 for the PTP layer, and 4 for the tape checks. The other 5 test the probe's own test plans, which don't move, so they stay with the probe.
 
 ## Change Log
 
@@ -201,3 +201,4 @@ FieldCheck measures only the firmware installed, so the old-firmware rows come f
 - **2026-11-08:** `delete.folder-with-files` moved from a second scratch folder, which would have needed a second tape slot, to the scratch tape's own deletion in level 3. `device.storage` now also checks the free-space figure is accurate, for ADR 0002's free-space decision.
 - **2026-11-08:** Added section 5, decided by the owner, and renumbered Code and platforms to section 6. A run with changes or failures writes a draft ADR, with a suggested compatibility class and a compatibility table for each change, and leaves the decision to a person. Baselines are now kept for every firmware, to match ADR 0002, section 11.
 - **2026-11-08:** Accepted by the owner.
+- **2026-11-09:** Corrected the number of probe tests that move into FieldTapeKit from 21 to 16, as the implementation plan records.

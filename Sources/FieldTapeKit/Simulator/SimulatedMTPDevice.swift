@@ -36,14 +36,15 @@ actor SimulatedMTPDevice: MTPTransport {
 
     let firmware: String
     let serialNumber: String
-    /// Not the OP-1's real capacity, which is untested. Free space is this minus the stored bytes.
+    /// The default is the capacity a real OP-1 Field reported on 1.7.3 (FieldCheck, 2026-11-09). Free space is
+    /// this minus the stored bytes.
     let capacity: UInt64
     private var objects: [UInt32: Object] = [:]
     private var nextHandle: UInt32 = 1
     private var faults: [Fault]
     private(set) var requestCount = 0
 
-    init(firmware: String = "1.7.3", serialNumber: String = "SIMULATED", capacity: UInt64 = 8 << 30, faults: [Fault] = []) {
+    init(firmware: String = "1.7.3", serialNumber: String = "SIMULATED", capacity: UInt64 = 6_429_185_024, faults: [Fault] = []) {
         self.firmware = firmware
         self.serialNumber = serialNumber
         self.capacity = capacity

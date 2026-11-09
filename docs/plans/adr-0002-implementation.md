@@ -18,7 +18,7 @@ Steps are sized to stay near the 200–300 line guideline. Two of them (2 and 14
 - **`FilePath` comes from Apple's `System` module,** not the standard library: `import System`. It's available from iOS 14 and macOS 11.
 - **`ProgressManager` and `Subprogress`** are in Foundation in the iOS 27.2 SDK. `Subprogress` is `~Copyable`, which matches the ADR's `consuming Subprogress?` parameters.
 - **`swift package diagnose-api-breaking-changes`** is available, for the release checks.
-- **Of the probe's 21 tests,** 12 test the PTP layer and move in step 1. Four test tape checks and move with the code they test: three `tapeProblems` tests in step 5 and the tape name test in step 13. Five test the probe's own test plans (`tapeWritePlan`, `wholeTapePlan`, `copySource`), which don't move, so those tests stay with the probe. ADR 0003 says all 21 move. It should say 16.
+- **Of the probe's 21 tests,** 12 test the PTP layer and move in step 1. Four test tape checks and move with the code they test: three `tapeProblems` tests in step 5 and the tape name test in step 13. Five test the probe's own test plans (`tapeWritePlan`, `wholeTapePlan`, `copySource`), which don't move, so those tests stay with the probe. ADR 0003 has been corrected to say so.
 
 ## Layout
 

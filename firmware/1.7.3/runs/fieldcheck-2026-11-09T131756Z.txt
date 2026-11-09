@@ -1,0 +1,8 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2
+[   0.47] Watching for an OP-1 in MTP mode
+[  82.48] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  82.48] Storage: 6429185024 bytes, 6283312128 free
+[ 117.05] Disconnected
+[ 119.33] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[ 119.33] Storage: 6429185024 bytes, 6283311104 free
+[ 142.80] Disconnected
