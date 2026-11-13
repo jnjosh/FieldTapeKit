@@ -120,6 +120,8 @@ firmware/1.7.3/               Baseline and reports
 
 **Done when:** the 1.7.3 baseline is committed. The rest of FieldTapeKit is built against it.
 
+**A baseline holds only what the firmware decides** (decided 2026-11-13). What's on the OP-1 changes from one device to the next and over time: the number of tapes and their names, folders people make in `synth/` and `drum/`, how many files there are, and free space. Checks keep those out of `observed` and put them only in the summary, or the baseline marks them as expected to vary, as free space must be. A check never passes or fails on them.
+
 ## Part 2: The file layer
 
 ### 6. Paths and listing

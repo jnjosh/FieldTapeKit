@@ -1,7 +1,7 @@
 import Foundation
 import Synchronization
 
-enum MTPError: Error, Equatable {
+package enum MTPError: Error, Equatable {
     /// The device answered with a response code other than OK.
     case refused(PTPOperation, responseCode: UInt16)
     /// What came back wasn't a response container.
@@ -12,16 +12,19 @@ enum MTPError: Error, Equatable {
     case disconnected
 }
 
-struct MTPReply: Sendable {
-    let payload: Data
-    let params: [UInt32]
+package struct MTPReply: Sendable {
+    package let payload: Data
+    package let params: [UInt32]
+    /// Whether the data phase came with its 12-byte container header, which `payload` leaves out
+    /// (`session.data-phase`).
+    package let hadContainerHeader: Bool
 }
 
 /// Sends one PTP transaction at a time to a device, with a timeout on each.
 ///
 /// There's no OpenSession: ImageCaptureCore's session is enough (`session.implicit`), and OpenSession isn't in
 /// ADR 0002's rule 7. A Session Not Open response is reported like any other refusal.
-actor MTPSession {
+package actor MTPSession {
     private let transport: any MTPTransport
     private let timeout: Duration
     private let pingTimeout: Duration
@@ -42,7 +45,7 @@ actor MTPSession {
     ///
     /// Requests are sent strictly one after another, even when callers overlap. Cancellation is checked before
     /// sending. A request already sent isn't abandoned on cancellation, only on a timeout.
-    func send(_ operation: PTPOperation, _ params: [UInt32] = [], dataOut: Data? = nil) async throws -> MTPReply {
+    package func send(_ operation: PTPOperation, _ params: [UInt32] = [], dataOut: Data? = nil) async throws -> MTPReply {
         await acquire()
         defer { release() }
         guard !isDisconnected else { throw MTPError.disconnected }
@@ -65,38 +68,39 @@ actor MTPSession {
         }
         guard code == PTPResponseCode.ok else { throw MTPError.refused(operation, responseCode: code) }
         return MTPReply(payload: PTPContainer.payload(transaction.data, for: operation),
-                        params: PTPContainer.responseParams(transaction.response))
+                        params: PTPContainer.responseParams(transaction.response),
+                        hadContainerHeader: PTPContainer.hasContainerHeader(transaction.data, for: operation))
     }
 
     // MARK: Operations
 
-    func deviceInfo() async throws -> PTPDeviceInfo {
+    package func deviceInfo() async throws -> PTPDeviceInfo {
         try PTPDeviceInfo(try await send(.getDeviceInfo).payload)
     }
 
-    func storageIDs() async throws -> [UInt32] {
+    package func storageIDs() async throws -> [UInt32] {
         try PTPReader.u32Array(from: try await send(.getStorageIDs).payload)
     }
 
-    func storageInfo(_ storageID: UInt32) async throws -> PTPStorageInfo {
+    package func storageInfo(_ storageID: UInt32) async throws -> PTPStorageInfo {
         try PTPStorageInfo(try await send(.getStorageInfo, [storageID]).payload)
     }
 
     /// The handles directly inside `parent`, or at the root when it's `PTPContainer.rootParent`.
-    func objectHandles(storage: UInt32 = PTPContainer.allStorages, parent: UInt32) async throws -> [UInt32] {
+    package func objectHandles(storage: UInt32 = PTPContainer.allStorages, parent: UInt32) async throws -> [UInt32] {
         try PTPReader.u32Array(from: try await send(.getObjectHandles, [storage, 0, parent]).payload)
     }
 
-    func objectInfo(_ handle: UInt32) async throws -> PTPObjectInfo {
+    package func objectInfo(_ handle: UInt32) async throws -> PTPObjectInfo {
         try PTPObjectInfo(try await send(.getObjectInfo, [handle]).payload)
     }
 
-    func object(_ handle: UInt32) async throws -> Data {
+    package func object(_ handle: UInt32) async throws -> Data {
         try await send(.getObject, [handle]).payload
     }
 
     /// Up to `maxLength` bytes from `offset`. Fewer come back at the end of the file.
-    func partialObject(_ handle: UInt32, offset: UInt32, maxLength: UInt32) async throws -> Data {
+    package func partialObject(_ handle: UInt32, offset: UInt32, maxLength: UInt32) async throws -> Data {
         try await send(.getPartialObject, [handle, offset, maxLength]).payload
     }
 

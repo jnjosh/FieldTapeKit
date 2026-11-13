@@ -79,7 +79,7 @@ public struct FieldError: Error, Sendable, LocalizedError {
 
 extension FieldError {
     /// Turns an error from the MTP layer into a `FieldError`. `FieldError` and `CancellationError` pass through.
-    static func wrapping(_ error: any Error, path: FilePath? = nil) -> any Error {
+    package static func wrapping(_ error: any Error, path: FilePath? = nil) -> any Error {
         switch error {
         case let error as FieldError:
             error

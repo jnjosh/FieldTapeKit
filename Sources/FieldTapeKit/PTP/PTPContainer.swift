@@ -1,11 +1,11 @@
 import Foundation
 
 /// Building command containers and reading response containers. Carried over from the probe.
-enum PTPContainer {
+package enum PTPContainer {
     static let headerSize = 12
     /// For GetObjectHandles: every storage, and the root as parent.
-    static let allStorages: UInt32 = 0xFFFF_FFFF
-    static let rootParent: UInt32 = 0xFFFF_FFFF
+    package static let allStorages: UInt32 = 0xFFFF_FFFF
+    package static let rootParent: UInt32 = 0xFFFF_FFFF
 
     static func command(_ operation: PTPOperation, transactionID: UInt32, params: [UInt32]) -> Data {
         var data = Data()
@@ -21,11 +21,17 @@ enum PTPContainer {
     /// so the header is stripped only when one is really there. The result always starts at index 0.
     static func payload(_ data: Data, for operation: PTPOperation) -> Data {
         let data = Data(data)
-        var reader = PTPReader(data)
-        guard let length = try? reader.u32(), let type = try? reader.u16(), let code = try? reader.u16(),
-              length == data.count, type == PTPContainerType.data, code == operation.rawValue
-        else { return data }
+        guard hasContainerHeader(data, for: operation) else { return data }
         return Data(data.dropFirst(headerSize))
+    }
+
+    /// Whether the data starts with a data container header for this operation whose length is the whole data.
+    static func hasContainerHeader(_ data: Data, for operation: PTPOperation) -> Bool {
+        var reader = PTPReader(Data(data))
+        guard let length = try? reader.u32(), let type = try? reader.u16(), let code = try? reader.u16() else {
+            return false
+        }
+        return length == data.count && type == PTPContainerType.data && code == operation.rawValue
     }
 
     static func responseCode(_ data: Data) -> UInt16? {

@@ -20,14 +20,17 @@ public actor FieldDevice: Identifiable {
     public nonisolated let id = ID()
     /// What the OP-1 reported when it connected.
     public nonisolated let info: FieldDeviceInfo
-    nonisolated let session: MTPSession
-    nonisolated let profile: FirmwareProfile
+    package nonisolated let session: MTPSession
+    package nonisolated let profile: FirmwareProfile
+    /// What ImageCaptureCore reported about the USB device, or nil if it wasn't asked (`device.identity`).
+    package nonisolated let usb: USBIdentity?
     private var wasRemoved = false
 
-    init(session: MTPSession, info: FieldDeviceInfo, profile: FirmwareProfile) {
+    init(session: MTPSession, info: FieldDeviceInfo, profile: FirmwareProfile, usb: USBIdentity?) {
         self.session = session
         self.info = info
         self.profile = profile
+        self.usb = usb
     }
 
     /// False once the OP-1 has been unplugged, has left MTP mode, or has stopped answering.
@@ -44,7 +47,7 @@ public actor FieldDevice: Identifiable {
     }
 
     /// Reads the OP-1's device and storage info over a new session, and makes the device from them.
-    static func connect(over transport: any MTPTransport, timeout: Duration = .seconds(30),
+    static func connect(over transport: any MTPTransport, usb: USBIdentity? = nil, timeout: Duration = .seconds(30),
                         pingTimeout: Duration = .seconds(5)) async throws -> FieldDevice {
         let session = MTPSession(transport: transport, timeout: timeout, pingTimeout: pingTimeout)
         do {
@@ -59,7 +62,7 @@ public actor FieldDevice: Identifiable {
                                        isFirmwareTested: isTested, serialNumber: deviceInfo.serialNumber,
                                        storage: FieldStorage(capacity: Int(clamping: storage.maxCapacity),
                                                              freeSpace: Int(clamping: storage.freeSpaceInBytes)))
-            return FieldDevice(session: session, info: info, profile: profile)
+            return FieldDevice(session: session, info: info, profile: profile, usb: usb)
         } catch {
             throw FieldError.wrapping(error)
         }
@@ -67,6 +70,22 @@ public actor FieldDevice: Identifiable {
 }
 
 // MARK: - Info
+
+/// The USB identity of a device as ImageCaptureCore reports it.
+package struct USBIdentity: Sendable, Hashable {
+    package let vendorID: Int
+    package let productID: Int
+    package let name: String?
+
+    package init(vendorID: Int, productID: Int, name: String?) {
+        self.vendorID = vendorID
+        self.productID = productID
+        self.name = name
+    }
+
+    /// An OP-1 Field in MTP mode, as seen on 1.7.3. The simulator reports it too.
+    package static let op1 = USBIdentity(vendorID: 0x2367, productID: 0x0102, name: "OP-1")
+}
 
 public struct FieldDeviceInfo: Sendable, Hashable {
     /// "OP-1" for an OP-1 Field.
@@ -107,6 +126,6 @@ extension FieldDevice {
                                    storage: FieldStorage(capacity: Int(clamping: simulator.capacity),
                                                          freeSpace: Int(clamping: simulator.capacity)))
         return FieldDevice(session: MTPSession(transport: simulator, timeout: timeout, pingTimeout: pingTimeout),
-                           info: info, profile: profile)
+                           info: info, profile: profile, usb: .op1)
     }
 }

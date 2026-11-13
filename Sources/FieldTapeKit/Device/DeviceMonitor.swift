@@ -107,7 +107,8 @@ final class DeviceMonitor: NSObject {
 
     /// USB vendor 0x2367 and MTP product 0x0102, or the name (`device.identity`).
     private static func isOP1(_ device: ICDevice) -> Bool {
-        (device.usbVendorID == 0x2367 && device.usbProductID == 0x0102) || device.name == "OP-1"
+        let op1 = USBIdentity.op1
+        return (Int(device.usbVendorID) == op1.vendorID && Int(device.usbProductID) == op1.productID) || device.name == op1.name
     }
 
     fileprivate func added(_ device: ICDevice) {
@@ -145,8 +146,9 @@ final class DeviceMonitor: NSObject {
         let key = ObjectIdentifier(camera)
         guard opening.remove(key) != nil else { return }
         let transport = ImageCaptureTransport(camera: camera)
+        let usb = USBIdentity(vendorID: Int(camera.usbVendorID), productID: Int(camera.usbProductID), name: camera.name)
         do {
-            let device = try await FieldDevice.connect(over: transport)
+            let device = try await FieldDevice.connect(over: transport, usb: usb)
             log.info("Connected: firmware \(device.info.firmware, privacy: .public)")
             connected[key] = (transport, device)
             hub.connected(device)

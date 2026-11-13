@@ -79,14 +79,18 @@ enum CheckRunner {
             let finding: Finding
             do {
                 finding = try await check.body()
-            } catch is CancellationError {
-                stopped = cancelled
-                finding = .notRun(cancelled)
-            } catch let error as FieldError where error.code == .disconnected {
-                stopped = "The OP-1 disconnected."
-                finding = .fail("The OP-1 disconnected during this check.")
             } catch {
-                finding = .fail(Self.describe(error))
+                // Checks use the MTP layer directly, so its errors are turned into FieldErrors here.
+                switch FieldError.wrapping(error) {
+                case is CancellationError:
+                    stopped = cancelled
+                    finding = .notRun(cancelled)
+                case let error as FieldError where error.code == .disconnected:
+                    stopped = "The OP-1 disconnected."
+                    finding = .fail("The OP-1 disconnected during this check.")
+                case let error:
+                    finding = .fail(Self.describe(error))
+                }
             }
             results.append(CheckResult(expectation: check.expectation, outcome: finding.outcome,
                                        summary: finding.summary, observed: finding.observed))
@@ -94,10 +98,15 @@ enum CheckRunner {
         return results
     }
 
+    /// The error's description, and what went wrong underneath when that isn't a plain refusal or timeout,
+    /// such as a dataset that couldn't be parsed.
     private static func describe(_ error: any Error) -> String {
-        if let error = error as? FieldError, let description = error.errorDescription {
+        guard let error = error as? FieldError, let description = error.errorDescription else {
+            return "Couldn't check: \(error)"
+        }
+        guard let underlying = error.underlying, error.responseCode == nil, error.code == .deviceRefused else {
             return "Couldn't check: \(description)"
         }
-        return "Couldn't check: \(error)"
+        return "Couldn't check: \(description) (\(underlying))"
     }
 }

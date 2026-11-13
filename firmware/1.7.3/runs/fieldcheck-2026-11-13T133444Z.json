@@ -1,0 +1,160 @@
+{
+  "device" : {
+    "firmware" : "1.7.3",
+    "isFirmwareTested" : true,
+    "model" : "OP-1",
+    "serialNumber" : "L1PXE14W"
+  },
+  "finished" : "2026-11-13T13:34:44Z",
+  "format" : 1,
+  "host" : {
+    "app" : "1.0",
+    "model" : "iPad",
+    "system" : "iPadOS 27.2.1"
+  },
+  "level" : 1,
+  "results" : [
+    {
+      "expectation" : "device.identity",
+      "observed" : {
+        "name" : "OP-1",
+        "productID" : "0x0102",
+        "vendorID" : "0x2367"
+      },
+      "outcome" : "pass",
+      "summary" : "USB vendor 0x2367, product 0x0102, named \"OP-1\"."
+    },
+    {
+      "expectation" : "device.operations",
+      "observed" : {
+        "operations" : [
+          "0x1002",
+          "0x1003",
+          "0x1001",
+          "0x1004",
+          "0x1005",
+          "0x1009",
+          "0x1014",
+          "0x1015",
+          "0x1016",
+          "0x100B",
+          "0x100D",
+          "0x1006",
+          "0x1007",
+          "0x1008",
+          "0x100C",
+          "0x101B",
+          "0x9801",
+          "0x9802",
+          "0x9803",
+          "0x9804",
+          "0x9805"
+        ],
+        "vendorExtensionID" : 6
+      },
+      "outcome" : "pass",
+      "summary" : "21 operations listed, including all 10 that FieldTapeKit sends."
+    },
+    {
+      "expectation" : "device.storage",
+      "observed" : {
+        "storages" : [
+          {
+            "accessCapability" : "0x0000",
+            "capacity" : 6429185024,
+            "filesystemType" : "0x0002",
+            "freeSpace" : 6285685760,
+            "id" : "0x00010001",
+            "storageType" : "0x0003"
+          }
+        ]
+      },
+      "outcome" : "pass",
+      "summary" : "One storage, 0x00010001, with 6.29 GB free of 6.43 GB. Whether free space is accurate is checked at level 2."
+    },
+    {
+      "expectation" : "session.implicit",
+      "observed" : {
+        "getObjectHandles" : "0x2001",
+        "openSessionSent" : false
+      },
+      "outcome" : "pass",
+      "summary" : "GetObjectHandles answered with no OpenSession sent, listing 4 objects at the root."
+    },
+    {
+      "expectation" : "session.data-phase",
+      "observed" : {
+        "getDeviceInfo" : {
+          "containerHeader" : false,
+          "payloadBytes" : 225
+        },
+        "getStorageIDs" : {
+          "containerHeader" : false,
+          "payloadBytes" : 8
+        }
+      },
+      "outcome" : "pass",
+      "summary" : "Data arrived without its container header for getDeviceInfo and getStorageIDs."
+    },
+    {
+      "expectation" : "layout.folders",
+      "observed" : {
+        "expected" : [
+          "drum",
+          "drum/slots",
+          "drum/slots/1",
+          "drum/slots/2",
+          "drum/slots/3",
+          "drum/slots/4",
+          "drum/slots/5",
+          "drum/slots/6",
+          "drum/slots/7",
+          "drum/slots/8",
+          "drum/user",
+          "mixdown",
+          "synth",
+          "synth/slots",
+          "synth/slots/1",
+          "synth/slots/2",
+          "synth/slots/3",
+          "synth/slots/4",
+          "synth/slots/5",
+          "synth/slots/6",
+          "synth/slots/7",
+          "synth/slots/8",
+          "synth/user",
+          "tapes"
+        ],
+        "others" : [
+
+        ],
+        "tapeFolders" : 3
+      },
+      "outcome" : "pass",
+      "summary" : "All 24 expected folders are there, and 3 tape folders."
+    },
+    {
+      "expectation" : "layout.readmes",
+      "observed" : {
+        "drum/user/readme.txt" : "this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.\nthe OP-1 sample rate is 44100 Hz.\nother sample rates change the maximum sample time.\n\nto keep your sounds in different folders,\ncreate new folders in 'synth' or 'drum'.\n",
+        "mixdown/readme.txt" : "this folder accepts 44100 Hz .wav files.\nallowed names: side_a.wav side_b.wav\n",
+        "synth/user/readme.txt" : "this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.\nthe OP-1 sample rate is 44100 Hz.\nother sample rates change the maximum sample time.\n\nto keep your sounds in different folders,\ncreate new folders in 'synth' or 'drum'.\n",
+        "tapes/*/readme.txt" : "this folder accepts 44100 Hz .wav files.\nallowed names: track_1.wav track_2.wav track_3.wav track_4.wav\n"
+      },
+      "outcome" : "pass",
+      "summary" : "Read 6 readme.txt files. The allowed names match FieldTapeKit's rules for mixdown and 3 tapes."
+    },
+    {
+      "expectation" : "names.lowercase",
+      "observed" : {
+        "names" : 68,
+        "notLowercase" : [
+
+        ]
+      },
+      "outcome" : "pass",
+      "summary" : "All 68 names are lowercase."
+    }
+  ],
+  "started" : "2026-11-13T13:34:44Z"
+}

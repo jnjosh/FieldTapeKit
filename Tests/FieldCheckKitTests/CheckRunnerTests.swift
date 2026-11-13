@@ -27,7 +27,7 @@ import Testing
             Check("names.lowercase") { .pass("All lowercase") },
         ])
         #expect(results.map(\.outcome) == [.fail, .fail, .pass])
-        #expect(results[0].summary == "Couldn't check: The OP-1 sent a reply that couldn't be read.")
+        #expect(results[0].summary == "Couldn't check: The OP-1 sent a reply that couldn't be read. (Unreadable())")
         #expect(results[1].summary.hasPrefix("Couldn't check: "))
     }
 

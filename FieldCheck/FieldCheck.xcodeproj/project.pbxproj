@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		29FBE7BF46F2FC0B9E045BD2 /* FieldTapeKit in Frameworks */ = {isa = PBXBuildFile; productRef = 82861AB0DF7A10F9E864E8F3 /* FieldTapeKit */; };
 		9312C00F56B2605AD88899E0 /* FieldCheckApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D76CDF7A8E2BF2BBEBAEE7CD /* FieldCheckApp.swift */; };
+		9D34A752DBC1E09DB278C4D6 /* FieldCheckKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F76C4B889171786FB3C1310 /* FieldCheckKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				29FBE7BF46F2FC0B9E045BD2 /* FieldTapeKit in Frameworks */,
+				9D34A752DBC1E09DB278C4D6 /* FieldCheckKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -81,6 +83,7 @@
 			name = FieldCheck;
 			packageProductDependencies = (
 				82861AB0DF7A10F9E864E8F3 /* FieldTapeKit */,
+				8F76C4B889171786FB3C1310 /* FieldCheckKit */,
 			);
 			productName = FieldCheck;
 			productReference = 40FE766552186C294B0AD807 /* FieldCheck.app */;
@@ -326,6 +329,10 @@
 		82861AB0DF7A10F9E864E8F3 /* FieldTapeKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FieldTapeKit;
+		};
+		8F76C4B889171786FB3C1310 /* FieldCheckKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FieldCheckKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

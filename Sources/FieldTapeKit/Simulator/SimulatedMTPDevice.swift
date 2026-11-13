@@ -36,6 +36,8 @@ actor SimulatedMTPDevice: MTPTransport {
 
     let firmware: String
     let serialNumber: String
+    /// What GetDeviceInfo lists.
+    let operations: [UInt16]
     /// The default is the capacity a real OP-1 Field reported on 1.7.3 (FieldCheck, 2026-11-09). Free space is
     /// this minus the stored bytes.
     let capacity: UInt64
@@ -44,9 +46,11 @@ actor SimulatedMTPDevice: MTPTransport {
     private var faults: [Fault]
     private(set) var requestCount = 0
 
-    init(firmware: String = "1.7.3", serialNumber: String = "SIMULATED", capacity: UInt64 = 6_429_185_024, faults: [Fault] = []) {
+    init(firmware: String = "1.7.3", serialNumber: String = "SIMULATED", capacity: UInt64 = 6_429_185_024,
+         operations: [UInt16] = operations173, faults: [Fault] = []) {
         self.firmware = firmware
         self.serialNumber = serialNumber
+        self.operations = operations
         self.capacity = capacity
         self.faults = faults
     }
@@ -190,7 +194,7 @@ actor SimulatedMTPDevice: MTPTransport {
         data.appendLittleEndian(UInt16(100))         // VendorExtensionVersion
         data.appendPTPString("microsoft.com: 1.0;")
         data.appendLittleEndian(UInt16(0))           // FunctionalMode
-        data.appendU16Array(Self.operations173)
+        data.appendU16Array(operations)
         for _ in 0..<4 { data.appendU16Array([]) }   // Events, device properties, capture and image formats
         data.appendPTPString("teenage engineering")
         data.appendPTPString("OP-1")

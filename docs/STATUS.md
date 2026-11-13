@@ -53,20 +53,22 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - The OP-1 reports 6,429,185,024 bytes of capacity, now the simulator's default.
   - Free space fell by 1,024 bytes between the two connections, with nothing written by FieldCheck. That fits what the probe found: the OP-1 rewrites files such as `tape.json` while it's out of MTP mode (PROBE-NOTES.md, survival run). `device.storage` must allow for it.
 - **Step 4 is split into 4a and 4b** (decided 2026-11-13, recorded in the plan). Until baselines exist, checks give pass, fail or not run on the behavior FieldTapeKit relies on, and record what they observed. `changed` waits for step 22.
-- **Step 4a is built, not committed:**
-  - The expectation list, `Expectation.all`, in FieldTapeKit with `package` access: ADR 0003's 32 IDs, each with what it expects and what uses it.
-  - `FieldCheckKit`, a second library product for the app: `CheckResult`, `CheckValue` for observations, a runner that turns a thrown error into a fail and marks the rest not run after a disconnect or cancellation, and `CheckReport`, saved as JSON and Markdown and never overwriting a file.
-  - 69 tests pass on the Mac and the iOS simulator (57 FieldTapeKit, 12 FieldCheckKit). FieldCheck still builds for iOS devices, unchanged.
-  - The simulator tests now run with `-scheme FieldTapeKit-Package`, since a second product means the `FieldTapeKit` scheme no longer has a test action. CLAUDE.md is updated.
+- **Step 4a is done** (committed): the expectation list, `Expectation.all`, in FieldTapeKit with `package` access, and `FieldCheckKit`, a second library product for the app, with results, a runner, and reports saved as JSON and Markdown that never overwrite a file. The simulator tests now run with `-scheme FieldTapeKit-Package`.
+- **Step 4b is done, and passed its run on the OP-1** (iPad Pro, iPadOS 27.2.1, 2026-11-13, report in [firmware/1.7.3/runs](../firmware/1.7.3/runs/fieldcheck-2026-11-13T133444Z.md)):
+  - Eight level 1 checks, which only read: `device.identity`, `device.operations`, `device.storage`, `session.implicit`, `session.data-phase`, `layout.folders`, `layout.readmes` and `names.lowercase`. Each fetches what it needs, then a plain function judges it.
+  - FieldTapeKit's session and PTP layer now has `package` access, so FieldCheckKit can send raw operations. `FieldDevice` keeps the USB identity ImageCaptureCore reported, a reply says whether its data had a container header, and the 1.7.3 profile holds the expected folders and the names each `readme.txt` allows.
+  - FieldCheck has a **Run level 1 (reads only)** button for each connected OP-1. It shows the results and saves `fieldcheck-<time>.json` and `.md` to Documents, next to the log.
+  - 86 tests pass on the Mac and the iOS simulator (57 FieldTapeKit, 29 FieldCheckKit), against a simulated OP-1 laid out from the probe's 1.7.3 listing. FieldCheck builds for iOS devices.
+  - On the OP-1: all 8 checks passed in 0.1 s, and match PROBE-NOTES.md. The same 21 operations in the same order, one storage with the capacity from 2026-11-09, all 24 folders, the readme texts from 2026-11-05 word for word, and 68 names, all lowercase. It found 3 tapes, which is right: the owner removed the others on the OP-1 after the probe runs.
+  - For step 5: the report's JSON stores times to the second, so a report read back loses its duration. Store it explicitly when reports are read back.
 
 ## Next steps
 
-1. Commit step 4a.
-2. Step 4b: the level 1 checks for `device.*`, `session.*`, `layout.*` and `names.lowercase`, FieldCheck's Run button, and a read-only run on the OP-1. `device.identity` needs the USB IDs, which `FieldDevice` doesn't keep yet. Leave `research/` untouched.
+1. Step 5: the rest of level 1 and the 1.7.3 baseline. Leave `research/` untouched.
 
 ## The OP-1 right now
 
-- Firmware 1.7.3, with 7 of the 8 tape slots used. One slot is free, which FieldCheck's scratch tape `fieldcheck #1-2` needs.
-- `tapes/2026-312#01` is the blank tape the probe tests used. It should be blank again after **Restore blank tape**, but check on the OP-1 before relying on it.
+- Firmware 1.7.3, with 3 of the 8 tape slots used (2026-11-13), after the owner removed the rest on the OP-1. FieldCheck's scratch tape `fieldcheck #1-2` needs one free slot.
+- Which 3 tapes are left isn't recorded, so don't assume the probe's blank tape `tapes/2026-312#01` is still there.
 - Paired test devices: an iPad Pro 11-inch (M4), iPadOS 27.2, and an iPhone 17 Pro, iOS 27.0.1. Their IDs and the commands for pulling logs are in PROBE-NOTES.md.
 - Paused: switching into MTP mode over MIDI. Its code was removed. The bytes and the Mac tools are kept in `research/`.

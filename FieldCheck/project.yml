@@ -19,6 +19,9 @@ targets:
     sources: [FieldCheck]
     dependencies:
       - package: FieldTapeKit
+        product: FieldTapeKit
+      - package: FieldTapeKit
+        product: FieldCheckKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jnjosh.FieldCheck

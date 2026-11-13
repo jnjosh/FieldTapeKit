@@ -1,17 +1,17 @@
 import Foundation
 
 /// The DeviceInfo dataset (GetDeviceInfo).
-struct PTPDeviceInfo: Sendable, Equatable {
-    let standardVersion: UInt16
-    let vendorExtensionID: UInt32
-    let vendorExtensionDescription: String
-    let operations: [UInt16]
-    let manufacturer: String
-    let model: String
-    let deviceVersion: String
-    let serialNumber: String
+package struct PTPDeviceInfo: Sendable, Equatable {
+    package let standardVersion: UInt16
+    package let vendorExtensionID: UInt32
+    package let vendorExtensionDescription: String
+    package let operations: [UInt16]
+    package let manufacturer: String
+    package let model: String
+    package let deviceVersion: String
+    package let serialNumber: String
 
-    init(_ data: Data) throws {
+    package init(_ data: Data) throws {
         var reader = PTPReader(data)
         standardVersion = try reader.u16()
         vendorExtensionID = try reader.u32()
@@ -31,17 +31,17 @@ struct PTPDeviceInfo: Sendable, Equatable {
 }
 
 /// The ObjectInfo dataset (GetObjectInfo), as far as FieldTapeKit reads it.
-struct PTPObjectInfo: Sendable, Equatable {
-    let storageID: UInt32
-    let format: UInt16
-    let compressedSize: UInt32
-    let parent: UInt32
-    let associationType: UInt16
-    let filename: String
+package struct PTPObjectInfo: Sendable, Equatable {
+    package let storageID: UInt32
+    package let format: UInt16
+    package let compressedSize: UInt32
+    package let parent: UInt32
+    package let associationType: UInt16
+    package let filename: String
 
-    var isFolder: Bool { format == PTPObjectFormat.association || associationType != 0 }
+    package var isFolder: Bool { format == PTPObjectFormat.association || associationType != 0 }
 
-    init(_ data: Data) throws {
+    package init(_ data: Data) throws {
         var reader = PTPReader(data)
         storageID = try reader.u32()
         format = try reader.u16()
@@ -78,17 +78,17 @@ struct PTPObjectInfo: Sendable, Equatable {
 
 /// The StorageInfo dataset (GetStorageInfo). Whether the OP-1's free space is accurate is untested
 /// (ADR 0002, section 1; ADR 0003, `device.storage`).
-struct PTPStorageInfo: Sendable, Equatable {
-    let storageType: UInt16
-    let filesystemType: UInt16
-    let accessCapability: UInt16
-    let maxCapacity: UInt64
-    let freeSpaceInBytes: UInt64
-    let freeSpaceInObjects: UInt32
-    let storageDescription: String
-    let volumeLabel: String
+package struct PTPStorageInfo: Sendable, Equatable {
+    package let storageType: UInt16
+    package let filesystemType: UInt16
+    package let accessCapability: UInt16
+    package let maxCapacity: UInt64
+    package let freeSpaceInBytes: UInt64
+    package let freeSpaceInObjects: UInt32
+    package let storageDescription: String
+    package let volumeLabel: String
 
-    init(_ data: Data) throws {
+    package init(_ data: Data) throws {
         var reader = PTPReader(data)
         storageType = try reader.u16()
         filesystemType = try reader.u16()
