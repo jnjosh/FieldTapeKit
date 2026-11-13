@@ -2,7 +2,7 @@
 
 Where the project stands, so a new session can pick it up. Update this when the state changes. The reasoning lives in the ADRs, and the evidence in [research/PROBE-NOTES.md](../research/PROBE-NOTES.md).
 
-## As of 2026-11-09
+## As of 2026-11-13
 
 **Research is done.** The probe in `research/` showed that ImageCaptureCore's raw PTP passthrough can do everything FieldTapeKit needs, on iPad and iPhone with OP-1 firmware 1.7.3: list, read, write, create, and delete, including whole-tape copies and album sides byte for byte. Its 21 unit tests pass from `research/`.
 
@@ -52,11 +52,17 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - On the OP-1: it connected as OP-1, firmware 1.7.3 (tested), serial L1PXE14W. Both ways of disconnecting were reported: unplugging, which also takes the OP-1 out of MTP mode, and leaving MTP mode with the cable still in. After the unplug, plugging in and entering MTP mode again connected as a new device. The stream never ended.
   - The OP-1 reports 6,429,185,024 bytes of capacity, now the simulator's default.
   - Free space fell by 1,024 bytes between the two connections, with nothing written by FieldCheck. That fits what the probe found: the OP-1 rewrites files such as `tape.json` while it's out of MTP mode (PROBE-NOTES.md, survival run). `device.storage` must allow for it.
+- **Step 4 is split into 4a and 4b** (decided 2026-11-13, recorded in the plan). Until baselines exist, checks give pass, fail or not run on the behavior FieldTapeKit relies on, and record what they observed. `changed` waits for step 22.
+- **Step 4a is built, not committed:**
+  - The expectation list, `Expectation.all`, in FieldTapeKit with `package` access: ADR 0003's 32 IDs, each with what it expects and what uses it.
+  - `FieldCheckKit`, a second library product for the app: `CheckResult`, `CheckValue` for observations, a runner that turns a thrown error into a fail and marks the rest not run after a disconnect or cancellation, and `CheckReport`, saved as JSON and Markdown and never overwriting a file.
+  - 69 tests pass on the Mac and the iOS simulator (57 FieldTapeKit, 12 FieldCheckKit). FieldCheck still builds for iOS devices, unchanged.
+  - The simulator tests now run with `-scheme FieldTapeKit-Package`, since a second product means the `FieldTapeKit` scheme no longer has a test action. CLAUDE.md is updated.
 
 ## Next steps
 
-1. Commit step 3.
-2. Step 4 of the plan: FieldCheck's expectations, reports and first level 1 checks. Leave `research/` untouched.
+1. Commit step 4a.
+2. Step 4b: the level 1 checks for `device.*`, `session.*`, `layout.*` and `names.lowercase`, FieldCheck's Run button, and a read-only run on the OP-1. `device.identity` needs the USB IDs, which `FieldDevice` doesn't keep yet. Leave `research/` untouched.
 
 ## The OP-1 right now
 

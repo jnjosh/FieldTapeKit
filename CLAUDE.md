@@ -40,7 +40,7 @@ DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcrun swift test
 ```
 
 ```bash
-DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcodebuild -scheme FieldTapeKit -destination 'id=0F76E627-D8A1-46BA-A245-C9C5DDE71C80' test
+DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcodebuild -scheme FieldTapeKit-Package -destination 'id=0F76E627-D8A1-46BA-A245-C9C5DDE71C80' test
 ```
 
 It's being built in the steps of [docs/plans/adr-0002-implementation.md](docs/plans/adr-0002-implementation.md).

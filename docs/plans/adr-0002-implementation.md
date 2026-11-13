@@ -98,6 +98,12 @@ firmware/1.7.3/               Baseline and reports
 
 **On the OP-1 (reads only):** a level 1 run. The report should match PROBE-NOTES.md.
 
+**Split in two (decided 2026-11-13),** because it came to about 800–900 lines:
+- **4a:** the expectation list, and FieldCheckKit's results, runner and reports, tested with recorded results. Nothing on the OP-1.
+- **4b:** the level 1 checks, the small device interface they run over, FieldCheck's Run button, and the run on the OP-1.
+
+**Until baselines exist** (decided 2026-11-13), each check gives pass, fail or not run on the behavior FieldTapeKit relies on, and records what it observed for step 5's baseline. `changed` comes with the baseline comparison in step 22.
+
 ### 5. FieldCheck: the rest of level 1, and the 1.7.3 baseline (ADR 0003)
 
 **Adds:**
