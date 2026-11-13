@@ -62,9 +62,19 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - On the OP-1: all 8 checks passed in 0.1 s, and match PROBE-NOTES.md. The same 21 operations in the same order, one storage with the capacity from 2026-11-09, all 24 folders, the readme texts from 2026-11-05 word for word, and 68 names, all lowercase. It found 3 tapes, which is right: the owner removed the others on the OP-1 after the probe runs.
   - For step 5: the report's JSON stores times to the second, so a report read back loses its duration. Store it explicitly when reports are read back.
 
+- **Step 5 is split into 5a and 5b** (decided 2026-11-13, recorded in the plan). 5a reads up to 16 MiB in 1 MiB chunks for `read.partial` and `read.speed`, with no whole-file read.
+- **Step 5a is done, and passed two runs on the OP-1** (iPad Pro, 2026-11-13, reports in [firmware/1.7.3/runs](../firmware/1.7.3/runs/fieldcheck-2026-11-13T135316Z.md)):
+  - Nine more level 1 checks, which only read: `tape.files`, `tape.wav-format`, `tape.json-keys`, `tape.json-units`, `tape.types`, `album.files`, `album.wav-format`, `read.partial` and `read.speed`. Level 1 now has 17.
+  - In FieldTapeKit, with `package` access: the probe's tape consistency check as `TapeConsistency`, a reader for the OP-1's 44-byte WAV headers, and the 1.7.3 profile's tape and album files, `tape.json` keys, versions and types, and track and side formats.
+  - None of them passes or fails on what's on the OP-1. With no tapes, the tape checks don't run, and with no audio, the read checks don't.
+  - 110 tests pass on the Mac and the iOS simulator (64 FieldTapeKit, 46 FieldCheckKit), including the probe's three `tapeProblems` tests. FieldCheck builds for iOS devices.
+  - On the OP-1: all 17 checks passed in 10.5 s and match PROBE-NOTES.md: 3 tapes and 12 tracks in the 1.7.3 format, every `tape.json` with exactly the known keys at version 1, the consistency check passing, and both album sides 16-bit. Both sides have audio, so level 2's album write checks won't be able to run.
+  - **New: chunked reads get slower with the offset** (PROBE-NOTES.md, 2026-11-13). The second run timed each 1 MiB chunk: 62 ms at offset 0, rising about 58 ms for each MiB, to 960 ms at 15 MiB, so 2.0 MB/s overall. It looks as if the OP-1 reads from the start of the file for every GetPartialObject. Reading a full 127 MB track in 1 MiB chunks would take about 7 minutes, against about 6 s for one GetObject.
+
 ## Next steps
 
-1. Step 5: the rest of level 1 and the 1.7.3 baseline. Leave `research/` untouched.
+1. Step 5b: the 1.7.3 baseline. Leave the probe in `research/` untouched.
+2. **Decide how FieldTapeKit reads large files, before step 7.** Decided so far (owner, 2026-11-13): not in 1 MiB GetPartialObject chunks, although ADR 0002 has `bytes(of:)`, `copyItem` and `copyTape` stream that way. Still to decide: one GetObject, larger chunks, or a mix. A level 1 run reading the same chunks in reverse order comes first, to tell whether the cost grows with the offset or with the number of requests (PROBE-NOTES.md, 2026-11-13). ADR 0002 changes once, when the whole decision is made.
 
 ## The OP-1 right now
 

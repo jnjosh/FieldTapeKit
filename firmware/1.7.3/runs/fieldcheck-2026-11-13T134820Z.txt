@@ -1,0 +1,7 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.81] Watching for an OP-1 in MTP mode
+[  12.48] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  12.48] Storage: 6429185024 bytes, 6285685760 free
+[  16.41] Level 1: running
+[  26.94] Level 1: 17 pass, 0 fail, 0 not run
+[  26.94] Saved fieldcheck-2026-11-13T134837Z.json and fieldcheck-2026-11-13T134837Z.md

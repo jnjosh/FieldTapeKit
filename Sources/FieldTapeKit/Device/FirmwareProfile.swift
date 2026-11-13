@@ -10,6 +10,18 @@ package struct FirmwareProfile: Sendable, Equatable {
     /// The names the `readme.txt` in each kind of folder allows (`layout.readmes`). `tapes/*` stands for every
     /// tape folder.
     package let allowedNames: [String: [String]]
+    /// What each tape folder holds (`tape.files`).
+    package let tapeFiles: FolderFiles
+    /// What `mixdown/` holds (`album.files`).
+    package let albumFiles: FolderFiles
+    /// What `tape.json` looks like (`tape.json-keys`, `tape.types`).
+    package let tapeJSON: TapeJSONShape
+    /// Tape tracks (`tape.wav-format`).
+    package let trackFormat: WAVFormat
+    /// Album sides (`album.wav-format`).
+    package let sideFormat: WAVFormat
+    /// The longest a tape can be, in frames: 6 minutes at 44.1 kHz.
+    package let maximumTapeFrames: Int
 
     package static let v1_7_3 = FirmwareProfile(
         version: FirmwareVersion("1.7.3")!,
@@ -19,7 +31,20 @@ package struct FirmwareProfile: Sendable, Equatable {
         allowedNames: [
             "mixdown": ["side_a.wav", "side_b.wav"],
             "tapes/*": ["track_1.wav", "track_2.wav", "track_3.wav", "track_4.wav"],
-        ])
+        ],
+        tapeFiles: FolderFiles(required: ["tape.json", "track_1.wav", "track_2.wav", "track_3.wav", "track_4.wav"],
+                               optional: ["readme.txt"]),
+        albumFiles: FolderFiles(required: ["side_a.wav", "side_b.wav"], optional: ["readme.txt"]),
+        // From every tape.json the probe read (PROBE-NOTES.md, `tape.json` format, 2026-11-08).
+        tapeJSON: TapeJSONShape(
+            keys: ["clips", "loop", "loop_in", "loop_out", "mixer_params", "pos", "tape_type", "tempobpmdecimal",
+                   "tempometronomelevel", "tempometronometype", "temposyncout", "temposynctype", "track", "version"],
+            clipKeys: ["ch", "id", "padding", "start", "stop"],
+            versions: [1],
+            tapeTypes: 0...3),
+        trackFormat: WAVFormat(encoding: WAVFormat.pcm, channels: 2, sampleRate: 44_100, bitsPerSample: 32),
+        sideFormat: WAVFormat(encoding: WAVFormat.pcm, channels: 2, sampleRate: 44_100, bitsPerSample: 16),
+        maximumTapeFrames: 6 * 60 * 44_100)
 
     /// Every firmware this release has a baseline for, oldest first.
     static let tested: [FirmwareProfile] = [.v1_7_3]
@@ -62,4 +87,19 @@ package struct FirmwareVersion: Sendable, Hashable, Comparable, CustomStringConv
     private func padded(to other: Self) -> [Int] {
         components + Array(repeating: 0, count: max(0, other.components.count - components.count))
     }
+}
+
+/// The files a kind of folder holds: every required one, and maybe the optional ones. Nothing else.
+package struct FolderFiles: Sendable, Equatable {
+    package let required: [String]
+    package let optional: [String]
+}
+
+/// The keys and values `tape.json` has on one firmware.
+package struct TapeJSONShape: Sendable, Equatable {
+    package let keys: Set<String>
+    /// The keys of each entry in `clips`.
+    package let clipKeys: Set<String>
+    package let versions: Set<Int>
+    package let tapeTypes: ClosedRange<Int>
 }

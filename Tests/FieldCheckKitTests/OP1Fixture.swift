@@ -2,8 +2,33 @@ import Foundation
 @testable import FieldTapeKit
 
 /// A simulated OP-1 laid out as the probe listed one on 1.7.3 (`probe-results/large-tape-ipad-2026-11-08b/`),
-/// with two tapes and the readme texts from `probe-results/folder-rules-ipad-2026-11-05/`.
+/// with the readme texts from `probe-results/folder-rules-ipad-2026-11-05/`. It has two tapes, as the probe read
+/// them on 2026-11-08 (`probe-results/tape-json-ipad-2026-11-08/`): 2026-220#02 with two recorded tracks, and the
+/// blank 2026-312#01. Side A has 2 MB of audio, and side B is empty.
 enum OP1Fixture {
+    static let recordedTapeJSON = #"{"clips":[{"ch":0,"id":0,"padding":[112,113,-1,-1],"start":0,"stop":145601},{"ch":1,"id":1,"padding":[114,115,-1,-1],"start":0,"stop":150849}],"loop":true,"loop_in":0,"loop_out":264600,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":1,"tempobpmdecimal":1200,"tempometronomelevel":0.0,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":1,"version":1}"#
+    static let blankTapeJSON = #"{"clips":[],"loop":false,"loop_in":0,"loop_out":0,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":3,"tempobpmdecimal":1200,"tempometronomelevel":0.0,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":0,"version":1}"#
+    static let sideABytes = 2_000_044
+
+    /// A canonical 44-byte header and `dataBytes` of patterned audio, so reads at different offsets differ.
+    static func wav(_ format: WAVFormat, dataBytes: Int) -> Data {
+        var data = Data()
+        data.append(contentsOf: Array("RIFF".utf8))
+        data.appendLittleEndian(UInt32(36 + dataBytes))
+        data.append(contentsOf: Array("WAVEfmt ".utf8))
+        data.appendLittleEndian(UInt32(16))
+        data.appendLittleEndian(format.encoding)
+        data.appendLittleEndian(UInt16(format.channels))
+        data.appendLittleEndian(UInt32(format.sampleRate))
+        data.appendLittleEndian(UInt32(format.sampleRate * format.frameBytes))
+        data.appendLittleEndian(UInt16(format.frameBytes))
+        data.appendLittleEndian(UInt16(format.bitsPerSample))
+        data.append(contentsOf: Array("data".utf8))
+        data.appendLittleEndian(UInt32(dataBytes))
+        data.append(Data((0..<dataBytes).map { UInt8(truncatingIfNeeded: $0 % 251) }))
+        return data
+    }
+
     static let tapeReadme = "this folder accepts 44100 Hz .wav files.\nallowed names: track_1.wav track_2.wav track_3.wav track_4.wav\n"
     static let mixdownReadme = "this folder accepts 44100 Hz .wav files.\nallowed names: side_a.wav side_b.wav\n"
     static let presetReadme = "this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.\nthe OP-1 sample rate is 44100 Hz.\n"
@@ -37,16 +62,23 @@ enum OP1Fixture {
             await file("you may create folders here", in: kind, Data())
             await file("vibrates.aif", in: "\(kind)/slots/8", Data(count: 64), format: 0x3007)
         }
+        let track = FirmwareProfile.v1_7_3.trackFormat
         await folder("tapes")
-        for tape in ["2026-220#01", "2026-286#01"] {
+        let tapes = [("2026-220#02", recordedTapeJSON, [1_164_852, 1_206_836, 44, 44]),
+                     ("2026-312#01", blankTapeJSON, [44, 44, 44, 44])]
+        for (tape, json, sizes) in tapes {
             await folder("tapes/\(tape)")
-            await file("tape.json", in: "tapes/\(tape)", Data("{}".utf8), format: PTPObjectFormat.text)
+            await file("tape.json", in: "tapes/\(tape)", Data(json.utf8), format: PTPObjectFormat.text)
             await file("readme.txt", in: "tapes/\(tape)", Data(tapeReadme.utf8))
-            for track in 1...4 { await file("track_\(track).wav", in: "tapes/\(tape)", Data(count: 44), format: PTPObjectFormat.wav) }
+            for (index, size) in sizes.enumerated() {
+                await file("track_\(index + 1).wav", in: "tapes/\(tape)", wav(track, dataBytes: size - 44),
+                           format: PTPObjectFormat.wav)
+            }
         }
+        let side = FirmwareProfile.v1_7_3.sideFormat
         await folder("mixdown")
-        await file("side_a.wav", in: "mixdown", Data(count: 44), format: PTPObjectFormat.wav)
-        await file("side_b.wav", in: "mixdown", Data(count: 44), format: PTPObjectFormat.wav)
+        await file("side_a.wav", in: "mixdown", wav(side, dataBytes: sideABytes - 44), format: PTPObjectFormat.wav)
+        await file("side_b.wav", in: "mixdown", wav(side, dataBytes: 0), format: PTPObjectFormat.wav)
         await file("readme.txt", in: "mixdown", Data(mixdownReadme.utf8))
         await extra(simulator, folders)
         return simulator

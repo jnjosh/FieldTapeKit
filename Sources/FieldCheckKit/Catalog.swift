@@ -40,8 +40,34 @@ actor Catalog {
         return entries
     }
 
-    /// A file's contents. Only for small files, such as `readme.txt`.
+    private var cache: [UInt32: Data] = [:]
+
+    /// A file's contents, read once. Only for small files, such as `readme.txt` and `tape.json`.
     func contents(of entry: CatalogEntry) async throws -> Data {
-        try await session.object(entry.handle)
+        if let data = cache[entry.handle] { return data }
+        let data = try await session.object(entry.handle)
+        cache[entry.handle] = data
+        return data
+    }
+
+    /// Up to `length` bytes from `offset`, with GetPartialObject.
+    func read(_ entry: CatalogEntry, offset: Int, length: Int) async throws -> Data {
+        try await session.partialObject(entry.handle, offset: UInt32(offset), maxLength: UInt32(length))
+    }
+}
+
+extension [CatalogEntry] {
+    /// What's directly inside the folder at `path`, matched ignoring case.
+    func children(of path: String) -> [CatalogEntry] {
+        let prefix = path.lowercased() + "/"
+        return filter { entry in
+            let lower = entry.path.lowercased()
+            return lower.hasPrefix(prefix) && !lower.dropFirst(prefix.count).contains("/")
+        }
+    }
+
+    /// Every tape: each folder directly inside `tapes/`, with what's in it.
+    func tapes() -> [(folder: CatalogEntry, contents: [CatalogEntry])] {
+        children(of: "tapes").filter(\.isFolder).sorted { $0.path < $1.path }.map { ($0, children(of: $0.path)) }
     }
 }

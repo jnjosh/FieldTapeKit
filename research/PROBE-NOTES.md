@@ -263,6 +263,29 @@ Tape names (from the user): A–Z, 0–9, `#`, `-` and space look allowed. The m
 
 Correction (2026-11-08): an earlier note here said `mixdown/side_b.wav` had changed to 3,992,876 bytes. It hadn't: that is the size of the Mac backup it already matched, and the 16 MB figure came from an older copy. The Mixdown write test still applies.
 
+## Chunked reads get slower with the offset (FieldCheck, iPad, 2026-11-13)
+
+This came from FieldCheck, not the probe, which is frozen. It's recorded here because it's a device behavior. The evidence is in `firmware/1.7.3/runs/`.
+
+**Each GetPartialObject takes longer the further into the file it starts.** FieldCheck's level 1 `read.speed` reads the first 16 MiB of the largest tape track in 1 MiB chunks, in order.
+- **First run (`fieldcheck-2026-11-13T134837Z`):** 16 MiB in 8.5 s, 2.0 MB/s. That's far below the 6.5–9.5 MB/s the probe measured for 1 MiB chunks, but the probe only ever read the chunks at offsets 0 and 1 MiB.
+- **Second run, with each chunk timed (`fieldcheck-2026-11-13T135316Z`):** the same 2.0 MB/s, and the chunk times rise steadily: 62, 161, 221, 276, 333 ms… up to 960 ms for the chunk at 15 MiB. That's about 58 ms more for each MiB of offset, or about 18 MB/s, close to the whole-file read speed of about 20 MB/s.
+
+So a read seems to cost about what reading the file from its start up to the end of the chunk would. The likely explanation is that the OP-1 reads from the start of the file every time, rather than seeking. That's an inference from the timings; the cause can't be seen over MTP.
+
+What it means:
+- **Reading a file in 1 MiB chunks takes time that grows with the square of its size.** For a full 6-minute track (127 MB), the formula gives about 7 minutes, against about 6 s for one GetObject. The first 16 MiB already take 8.5 s in chunks, against under 1 s whole.
+- **Larger chunks help only partly.** With 16 MiB chunks, the formula gives about 35 s for 127 MB.
+- **GetObject is linear, but holds the whole file in memory:** up to 127 MB for one track. The probe held about 66 MB with no trouble.
+- **Every chunked read before this was small or near the start of a file,** so nothing earlier showed it. The one 60-second hang (2026-11-08) was a 1 MiB read at offset 1 MiB, so this doesn't explain it.
+
+**Decided by the owner (2026-11-13): FieldTapeKit won't read large files in 1 MiB GetPartialObject chunks.** Both runs showed it's about 10 times slower than a whole-file read over the first 16 MiB, before any extrapolation.
+
+Still open, and decided before step 7 of the plan:
+- **What replaces them:** one GetObject, larger chunks, or a mix. ADR 0002 changes then, as one decision.
+- **Whether the cost grows with the offset or with the number of requests.** The chunks were read in order, so the two rose together. Reading the same chunks in reverse or shuffled order would tell them apart, and the answer favours different choices: a cost that grows with the offset favours GetObject, a cost per request favours fewer, larger chunks.
+- **Past 16 MiB, the figures are extrapolated,** and iPhone and macOS weren't measured.
+
 ## Entering MTP mode from the app (paused 2026-11-08: possible, a future feature)
 
 **Status:** paused by the user as too fragile for now, and kept as a possible future feature for the framework. What works: detecting a plugged-in OP-1 over USB MIDI, `greet`, and switching it into MTP mode with `mode`, from both the Mac and the iPad. What doesn't yet: on the iPad, ImageCaptureCore never saw the OP-1 after any switch in that session. Even MTP mode entered with the buttons failed until the OP-1 was restarted. Not tested: Leave MTP mode (closing the session), and a full app-triggered switch on a freshly restarted OP-1. To pick this up, start there, and restart the OP-1 whenever it shows connected but the app sees nothing. **The MIDI code was removed from the probe on 2026-11-08,** at the user's request, so it can't recreate the stuck state. That was `OP1MIDI.swift` (the `TESysEx` encoder and the CoreMIDI client), its tests, and the MIDI toggle and Enter and Leave MTP mode buttons. The format and bytes are kept below, and the Mac tools `tools/op1-midi-listen.swift` and `tools/op1-sysex.swift` remain. They only send when run by hand. The probe still logs each device's USB IDs.
@@ -305,7 +328,7 @@ Open questions:
 
 ## Questions for the real app
 
-- Does GetObject work for full-size tapes? It holds the whole file in memory, so the real app should probably read with GetPartialObject in chunks. That operation is supported but untested.
+- Does GetObject work for full-size tapes? It holds the whole file in memory. Reading in GetPartialObject chunks avoids that, but each chunk costs time in proportion to its offset (2026-11-13, above), so chunked reads of large files are slow.
 - Is `mixdown/` stored byte for byte like `tapes/`, and is 5.8 MB/s representative of large writes?
 - Does the OP-1 use a written file without a restart, and does replacing a tape track need `tape.json` updated?
 - Do writes work the same from iPhone?

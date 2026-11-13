@@ -3,9 +3,9 @@ import Foundation
 
 /// FieldCheck's level 1: reads only, and changes nothing on the OP-1 (ADR 0003, section 2).
 ///
-/// So far it covers `device.*`, `session.*`, `layout.*` and `names.lowercase`. The tape, album and read checks
-/// come in step 5 of the plan. Each check fetches what it needs, then a plain function judges it, so the
-/// judging can be tested without a device.
+/// It covers the device, the session, the layout and names, and then tapes, the album and reads
+/// (`LevelOne+Content.swift`, `LevelOne+Reads.swift`). Each check fetches what it needs, then a plain function
+/// judges it, so the judging can be tested without a device.
 public enum LevelOne {
     /// Runs every level 1 check on `device`, in order, and returns the report. It never throws: a check that
     /// can't finish is a failure in the report.
@@ -54,7 +54,7 @@ public enum LevelOne {
                 return readmes(texts, profile: profile)
             },
             Check("names.lowercase") { lowercase(try await catalog.entries()) },
-        ]
+        ] + contentChecks(catalog: catalog, profile: profile)
     }
 
     // MARK: device.identity
