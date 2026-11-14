@@ -216,6 +216,12 @@ Added by the owner on 2026-11-14.
 
 **Relies on:** `write.folder`, `write.exact`, `write.refused-name`, `write.preset-converted`, `rebuild.tape-json`.
 
+**Split in two (decided 2026-11-14):**
+- **9a:** `write`, uploading with `copyItem(at: URL, to: FilePath)`, and `createDirectory`, for tapes and `mixdown/`, with the folder rules, format checks against the profile, the tape limit, Store Full and read-back, and the simulator's SendObjectInfo, SendObject, 0x2002 and `tape.json` rebuild.
+- **9b:** preset folders, `synth/user/` and `drum/user/`, where the OP-1 converts the file and the check is its audio length, which needs an AIFC reader.
+
+Decided by the owner at the same time, and recorded in ADR 0002's change log: a write that reads back wrong is deleted and reported, and audio is checked against the profile's formats before sending.
+
 ### 10. Replacing files
 
 **Adds (public):** the two `ExistingFile` replace cases: `.replace(keepingCopyAt:)` and `.replace(confirmed:)`. Each is built from steps 8 and 9: a verified copy or a confirmation first, then delete, then send.

@@ -25,6 +25,8 @@ package struct FirmwareProfile: Sendable, Equatable {
     package let sideFormat: WAVFormat
     /// The longest a tape can be, in frames: 6 minutes at 44.1 kHz.
     package let maximumTapeFrames: Int
+    /// How many tapes the OP-1 holds.
+    package let maximumTapes: Int
 
     package static let v1_7_3 = FirmwareProfile(
         version: FirmwareVersion("1.7.3")!,
@@ -48,7 +50,8 @@ package struct FirmwareProfile: Sendable, Equatable {
             tapeTypes: 0...3),
         trackFormat: WAVFormat(encoding: WAVFormat.pcm, channels: 2, sampleRate: 44_100, bitsPerSample: 32),
         sideFormat: WAVFormat(encoding: WAVFormat.pcm, channels: 2, sampleRate: 44_100, bitsPerSample: 16),
-        maximumTapeFrames: 6 * 60 * 44_100)
+        maximumTapeFrames: 6 * 60 * 44_100,
+        maximumTapes: 8)
 
     /// Every firmware this release has a baseline for, oldest first.
     static let tested: [FirmwareProfile] = [.v1_7_3]

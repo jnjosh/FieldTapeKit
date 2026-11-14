@@ -18,6 +18,10 @@ actor SimulatedMTPDevice: MTPTransport {
         case shortData(request: Int, keeping: Int)
         /// Deleting the object with this name is refused with this response code.
         case refuseDeleting(name: String, responseCode: UInt16)
+        /// The file with this name is stored with its first byte changed, so it reads back wrong.
+        case corruptStored(name: String)
+        /// Every SendObject is refused with this response code, after its SendObjectInfo succeeded.
+        case refuseSendObject(responseCode: UInt16)
     }
 
     struct Object: Sendable {
@@ -57,6 +61,8 @@ actor SimulatedMTPDevice: MTPTransport {
     private(set) var requestCount = 0
     /// The names of deleted objects, in the order they went.
     private(set) var deleted: [String] = []
+    /// The file SendObjectInfo announced, waiting for its SendObject.
+    private var pending: UInt32?
 
     /// Free space when it was made, before any later `addFile`.
     let initialFreeSpace: UInt64
@@ -114,6 +120,13 @@ actor SimulatedMTPDevice: MTPTransport {
         objects[handle] = object
     }
 
+    /// What the simulator holds for the object with this name in the folder with that name, ignoring what it serves.
+    func stored(_ name: String, in folder: String) -> Data? {
+        objects.values.first { object in
+            object.name == name && objects[object.parent]?.name == folder
+        }?.data
+    }
+
     /// Replaces a file's contents with ones of another size, as if it were rewritten before this session.
     func replace(_ handle: UInt32, with data: Data) {
         objects[handle]?.data = data
@@ -153,7 +166,7 @@ actor SimulatedMTPDevice: MTPTransport {
             case .refuse(let number, let responseCode) where number == request:
                 return MTPTransaction(data: Data(), response: Self.response(responseCode, transactionID: transactionID))
             case .shortData(let number, let keeping) where number == request:
-                let (data, responseCode, responseParams) = answer(code, params)
+                let (data, responseCode, responseParams) = answer(code, params, dataOut)
                 return MTPTransaction(data: Data(data.prefix(keeping)),
                                       response: Self.response(responseCode, transactionID: transactionID, params: responseParams))
             default:
@@ -161,7 +174,7 @@ actor SimulatedMTPDevice: MTPTransport {
             }
         }
 
-        let (data, responseCode, responseParams) = answer(code, params)
+        let (data, responseCode, responseParams) = answer(code, params, dataOut)
         return MTPTransaction(data: data, response: Self.response(responseCode, transactionID: transactionID, params: responseParams))
     }
 
@@ -180,9 +193,10 @@ actor SimulatedMTPDevice: MTPTransport {
         static let invalidObjectHandle: UInt16 = 0x2009
         static let invalidParentObject: UInt16 = 0x201A
         static let invalidParameter: UInt16 = 0x201D
+        static let noValidObjectInfo: UInt16 = 0x2015
     }
 
-    private func answer(_ code: UInt16, _ params: [UInt32]) -> (Data, UInt16, [UInt32]) {
+    private func answer(_ code: UInt16, _ params: [UInt32], _ dataOut: Data?) -> (Data, UInt16, [UInt32]) {
         let none = Data()
         switch PTPOperation(rawValue: code) {
         case .getDeviceInfo:
@@ -253,9 +267,94 @@ actor SimulatedMTPDevice: MTPTransport {
             deleted.append(object.name)
             return (none, Response.ok, [])
 
-        case .sendObjectInfo, .sendObject, nil:
+        case .sendObjectInfo:
+            return sendObjectInfo(params, dataOut)
+
+        case .sendObject:
+            return sendObject(dataOut)
+
+        case nil:
             return (none, Response.operationNotSupported, [])
         }
+    }
+
+    // MARK: Writing, as 1.7.3 does
+
+    /// Folders that hold tapes, by handle: the folder named `tapes` at the root.
+    private var tapesFolder: UInt32? {
+        objects.first { $0.value.parent == Self.root && $0.value.name.lowercased() == "tapes" }?.key
+    }
+
+    /// The names a folder accepts, as its readme says, or nil for any name (`write.refused-name`).
+    private func allowedNames(in parent: UInt32) -> Set<String>? {
+        guard let folder = objects[parent] else { return [] }
+        if folder.parent == tapesFolder { return ["track_1.wav", "track_2.wav", "track_3.wav", "track_4.wav", "tape.json"] }
+        if folder.parent == Self.root, folder.name.lowercased() == "mixdown" { return ["side_a.wav", "side_b.wav"] }
+        return nil
+    }
+
+    private func sendObjectInfo(_ params: [UInt32], _ dataOut: Data?) -> (Data, UInt16, [UInt32]) {
+        let none = Data()
+        guard params.count == 2, let dataOut, let info = try? PTPObjectInfo(dataOut) else {
+            return (none, Response.invalidParameter, [])
+        }
+        guard params[0] == Self.storageID else { return (none, Response.invalidStorageID, []) }
+        let parent = params[1]
+        guard let folder = objects[parent], folder.format == PTPObjectFormat.association else {
+            return (none, Response.invalidParentObject, [])
+        }
+        if info.isFolder {
+            // A new tape needs one of the 8 slots. How the OP-1 refuses a ninth isn't known; General Error is a guess.
+            guard parent == tapesFolder, objects.values.count(where: { $0.parent == parent && $0.format == PTPObjectFormat.association }) < 8
+            else { return (none, PTPResponseCode.generalError, []) }
+        } else {
+            if let allowed = allowedNames(in: parent), !allowed.contains(info.filename.lowercased()) {
+                return (none, PTPResponseCode.generalError, [])
+            }
+            let used = objects.values.reduce(UInt64(0)) { $0 + UInt64($1.data.count) }
+            if UInt64(info.compressedSize) > capacity - min(used, capacity) { return (none, PTPResponseCode.storeFull, []) }
+        }
+        // Within the session the OP-1 keeps the name as sent.
+        let handle = add(Object(parent: parent, name: info.filename, format: info.format,
+                                associationType: info.isFolder ? PTPAssociationType.genericFolder : 0))
+        pending = info.isFolder ? nil : handle
+        return (none, Response.ok, [Self.storageID, parent, handle])
+    }
+
+    private func sendObject(_ dataOut: Data?) -> (Data, UInt16, [UInt32]) {
+        guard let handle = pending, var object = objects[handle] else { return (Data(), Response.noValidObjectInfo, []) }
+        pending = nil
+        for case .refuseSendObject(let responseCode) in faults { return (Data(), responseCode, []) }
+        var data = dataOut ?? Data()
+        for case .corruptStored(let name) in faults where name == object.name && !data.isEmpty {
+            data[data.startIndex] ^= 0xFF
+        }
+        object.data = data
+        objects[handle] = object
+        rebuildTapeJSON(afterWriting: object)
+        return (Data(), Response.ok, [])
+    }
+
+    /// After a track is written, the OP-1 rebuilds its tape's `tape.json`: one clip per track with audio, from frame 0
+    /// to the end of the file, `padding` all -1, and the loop off (`rebuild.tape-json`). Within the session it still
+    /// lists at its old size (`rebuild.stale-size`).
+    private func rebuildTapeJSON(afterWriting track: Object) {
+        guard objects[track.parent]?.parent == tapesFolder, track.name.lowercased().hasPrefix("track_"),
+              let json = objects.first(where: { $0.value.parent == track.parent && $0.value.name.lowercased() == "tape.json" })
+        else { return }
+        var root = (try? JSONSerialization.jsonObject(with: json.value.data) as? [String: Any]) ?? [:]
+        let tracks = objects.values.filter { $0.parent == track.parent && $0.name.lowercased().hasPrefix("track_") }
+        var clips: [[String: Any]] = []
+        for number in 1...4 {
+            guard let file = tracks.first(where: { $0.name.lowercased() == "track_\(number).wav" }) else { continue }
+            let frames = max(0, file.data.count - WAVHeader.size) / 8
+            guard frames > 0 else { continue }
+            clips.append(["ch": number - 1, "id": clips.count, "padding": [-1, -1, -1, -1], "start": 0, "stop": frames])
+        }
+        root["clips"] = clips
+        root["loop"] = false
+        guard let rebuilt = try? JSONSerialization.data(withJSONObject: root, options: [.sortedKeys]) else { return }
+        rebuild(json.key, with: rebuilt)
     }
 
     private func deviceInfo() -> Data {

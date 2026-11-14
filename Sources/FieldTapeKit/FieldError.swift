@@ -15,14 +15,17 @@ public struct FieldError: Error, Sendable, LocalizedError {
     public let changed: [FilePath]
     /// `Error` refines `Sendable` in Swift 6, so this keeps `FieldError` `Sendable`.
     public let underlying: (any Error)?
+    /// Why, for codes whose description needs it, such as the folder rule behind `notAllowed`.
+    let reason: String?
 
     init(_ code: Code, path: FilePath? = nil, responseCode: UInt16? = nil, changed: [FilePath] = [],
-         underlying: (any Error)? = nil) {
+         underlying: (any Error)? = nil, reason: String? = nil) {
         self.code = code
         self.path = path
         self.responseCode = responseCode
         self.changed = changed
         self.underlying = underlying
+        self.reason = reason
     }
 
     /// Extensible, so a later version can add codes without breaking an app's `switch` (ADR 0002, section 11).
@@ -66,11 +69,22 @@ public struct FieldError: Error, Sendable, LocalizedError {
         public static let changedSinceConfirmation = Code("changedSinceConfirmation")
         /// A confirmation was already used. Each works once. Nothing changed.
         public static let confirmationAlreadyUsed = Code("confirmationAlreadyUsed")
+        /// Something is already at `path`.
+        public static let alreadyExists = Code("alreadyExists")
+        /// A new tape's name isn't allowed: a character the OP-1 doesn't use, or longer than 15 characters.
+        public static let invalidName = Code("invalidName")
+        /// All 8 tapes are in use.
+        public static let tapeLimitReached = Code("tapeLimitReached")
+        /// A track is longer than the 6 minutes a tape holds.
+        public static let tapeTooLong = Code("tapeTooLong")
+        /// The OP-1 is full (Store Full, 0x200C).
+        public static let insufficientSpace = Code("insufficientSpace")
     }
 
     /// The same error, also saying what had already been changed on the OP-1.
     func adding(changed more: [FilePath]) -> FieldError {
-        FieldError(code, path: path, responseCode: responseCode, changed: changed + more, underlying: underlying)
+        FieldError(code, path: path, responseCode: responseCode, changed: changed + more, underlying: underlying,
+                   reason: reason)
     }
 
     public var errorDescription: String? {
@@ -86,7 +100,17 @@ public struct FieldError: Error, Sendable, LocalizedError {
         case .ambiguousPath:
             "More than one item on the OP-1 matches \(pathDescription) when case is ignored."
         case .notAllowed:
-            "FieldTapeKit doesn't change \(pathDescription), because it belongs to the OP-1."
+            "FieldTapeKit doesn't change \(pathDescription), because \(reason ?? "it belongs to the OP-1")."
+        case .alreadyExists:
+            "Something is already at \(pathDescription) on the OP-1."
+        case .invalidName:
+            "\(pathDescriptionCapitalized) isn't a name the OP-1 can use: \(reason ?? "it isn't allowed")."
+        case .tapeLimitReached:
+            "The OP-1 already has 8 tapes."
+        case .tapeTooLong:
+            "\(pathDescriptionCapitalized) is longer than the 6 minutes a tape holds."
+        case .insufficientSpace:
+            "The OP-1 is full."
         case .changedSinceConfirmation:
             "\(pathDescriptionCapitalized) changed on the OP-1 since it was confirmed, so nothing was deleted."
         case .confirmationAlreadyUsed:
@@ -125,6 +149,12 @@ public struct FieldError: Error, Sendable, LocalizedError {
             "Use the path exactly as a listing spells it."
         case .changedSinceConfirmation, .confirmationAlreadyUsed:
             "Ask again, with what's on the OP-1 now."
+        case .tapeLimitReached:
+            "Move a tape off the OP-1 first."
+        case .insufficientSpace:
+            "Make space on the OP-1, such as by moving a tape off it."
+        case .invalidName:
+            "Use only letters, numbers, #, - and spaces, and at most 15 characters."
         case .tooLarge:
             "Copy it to a file with copyItem(at:to:), or read it with a larger maximum size."
         case .verificationFailed:
@@ -162,6 +192,8 @@ extension FieldError {
             error
         case let error as MTPError:
             switch error {
+            case .refused(_, let responseCode) where responseCode == PTPResponseCode.storeFull:
+                FieldError(.insufficientSpace, path: path, responseCode: responseCode, underlying: error)
             case .refused(_, let responseCode):
                 FieldError(.deviceRefused, path: path, responseCode: responseCode, underlying: error)
             case .unreadableResponse:

@@ -24,15 +24,19 @@ public actor FieldDevice: Identifiable {
     package nonisolated let profile: FirmwareProfile
     /// What ImageCaptureCore reported about the USB device, or nil if it wasn't asked (`device.identity`).
     package nonisolated let usb: USBIdentity?
+    /// The OP-1's one storage, which new objects go into (`device.storage`).
+    package nonisolated let storageID: UInt32
     private var wasRemoved = false
     /// Confirmations already used. Each works once (ADR 0002, safety rule 1).
     var usedConfirmations: Set<UUID> = []
 
-    init(session: MTPSession, info: FieldDeviceInfo, profile: FirmwareProfile, usb: USBIdentity?) {
+    init(session: MTPSession, info: FieldDeviceInfo, profile: FirmwareProfile, usb: USBIdentity?,
+         storageID: UInt32 = SimulatedMTPDevice.storageID) {
         self.session = session
         self.info = info
         self.profile = profile
         self.usb = usb
+        self.storageID = storageID
     }
 
     /// False once the OP-1 has been unplugged, has left MTP mode, or has stopped answering.
@@ -64,7 +68,7 @@ public actor FieldDevice: Identifiable {
                                        isFirmwareTested: isTested, serialNumber: deviceInfo.serialNumber,
                                        storage: FieldStorage(capacity: Int(clamping: storage.maxCapacity),
                                                              freeSpace: Int(clamping: storage.freeSpaceInBytes)))
-            return FieldDevice(session: session, info: info, profile: profile, usb: usb)
+            return FieldDevice(session: session, info: info, profile: profile, usb: usb, storageID: storageID)
         } catch {
             throw FieldError.wrapping(error)
         }

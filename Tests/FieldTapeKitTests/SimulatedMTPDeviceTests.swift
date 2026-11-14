@@ -99,11 +99,22 @@ import Testing
         #expect(try await session.partialObject(handles.track, offset: 2_000, maxLength: 50).isEmpty)
     }
 
-    /// DeleteObject arrived in step 8. Sending files arrives in step 9.
-    @Test(arguments: [PTPOperation.sendObjectInfo, .sendObject])
-    func refusesWritesForNow(operation: PTPOperation) async {
-        await #expect(throws: MTPError.refused(operation, responseCode: 0x2005)) {
-            try await session(SimulatedMTPDevice()).send(operation, [1])
+    @Test func refusesSendsWithoutWhatTheyNeed() async {
+        let session = session(SimulatedMTPDevice())
+        // SendObjectInfo with no dataset, and SendObject with nothing announced.
+        await #expect(throws: MTPError.refused(.sendObjectInfo, responseCode: 0x201D)) { try await session.send(.sendObjectInfo, [1]) }
+        await #expect(throws: MTPError.refused(.sendObject, responseCode: 0x2015)) { try await session.send(.sendObject) }
+    }
+
+    /// `write.refused-name`: the OP-1 refuses a name a folder doesn't allow, with General Error.
+    @Test func refusesANameATapeDoesntAllow() async throws {
+        let simulator = SimulatedMTPDevice()
+        let tapes = await simulator.addFolder("tapes")
+        let tape = await simulator.addFolder("2026-312#01", in: tapes)
+        let dataset = PTPObjectInfo.dataset(storageID: SimulatedMTPDevice.storageID, format: PTPObjectFormat.wav,
+                                            size: 44, parent: tape, filename: "track_5.wav")
+        await #expect(throws: MTPError.refused(.sendObjectInfo, responseCode: 0x2002)) {
+            try await session(simulator).sendObjectInfo(storage: SimulatedMTPDevice.storageID, parent: tape, dataset: dataset)
         }
     }
 

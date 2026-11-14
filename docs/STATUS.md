@@ -131,9 +131,18 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - In the iOS simulator, `-SimulatedOP1 YES` gives FieldCheck the simulated OP-1. Both tabs were checked there: Explore listed the folders and `mixdown/`, and copied side A.
   - The owner tried it on the OP-1 on 2026-11-14, and it worked. No log was kept of that try. FieldCheck builds for iOS devices, and the package's 182 tests are unchanged.
 
+- **Step 9 is split into 9a and 9b** (decided 2026-11-14, recorded in the plan and ADR 0002's change log).
+- **Step 9a is done, tested only on the simulator,** as the plan says. Hardware checks it in step 11:
+  - Public: `write(_:to:options:)`, `copyItem(at: URL, to: FilePath, options:progress:)` and `createDirectory(at:)`, with `UploadOptions` (`verify` on by default) and `ExistingFile`, which has only `.fail` until step 10.
+  - Everything is checked before anything is sent: the folder exists, the path is free, the folder allows the name, and audio is in the profile's format. Names are sent lowercase. A send that fails, is cancelled or reads back wrong deletes its half-made file, and `changed` lists it only if that delete fails.
+  - `createDirectory` makes only tape folders, with names of at most 15 characters from A–Z, 0–9, `#`, `-` and space, and only while one of the 8 slots is free.
+  - New `FieldError` codes: `alreadyExists`, `invalidName`, `tapeLimitReached`, `tapeTooLong` and `insufficientSpace` (Store Full). Preset folders are refused with `notAllowed` until 9b.
+  - The simulator now accepts SendObjectInfo and SendObject, refuses names a folder doesn't allow with 0x2002, refuses a full store with 0x200C, rebuilds `tape.json` after a track write with the old size still listed, and can corrupt a stored file or refuse a SendObject. How the OP-1 refuses a ninth tape isn't known; the simulator's 0x2002 is a guess, and FieldTapeKit refuses first anyway.
+  - 205 tests pass on the Mac and the iOS simulator (133 FieldTapeKit, 67 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS devices.
+
 ## Next steps
 
-1. Step 9 of the plan: writing new files and folders.
+1. Step 9b: writing to preset folders.
 
 ## The OP-1 right now
 

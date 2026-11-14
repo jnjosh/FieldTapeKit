@@ -99,6 +99,21 @@ package actor MTPSession {
         try await send(.getObject, [handle]).payload
     }
 
+    /// Announces a new object, with no data yet. The OP-1 makes it, and a folder is complete with this alone
+    /// (`write.folder`).
+    ///
+    /// - Returns: The new object's handle.
+    package func sendObjectInfo(storage: UInt32, parent: UInt32, dataset: Data) async throws -> UInt32 {
+        let reply = try await send(.sendObjectInfo, [storage, parent], dataOut: dataset)
+        guard reply.params.count >= 3 else { throw MTPError.unreadableResponse(.sendObjectInfo) }
+        return reply.params[2]
+    }
+
+    /// Sends the data for the object announced just before.
+    package func sendObject(_ data: Data) async throws {
+        _ = try await send(.sendObject, [], dataOut: data)
+    }
+
     /// Deletes one object. A folder is deleted only once it's empty (`delete.files-then-folder`).
     package func deleteObject(_ handle: UInt32) async throws {
         _ = try await send(.deleteObject, [handle, 0])
