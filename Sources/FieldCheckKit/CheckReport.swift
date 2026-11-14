@@ -46,8 +46,12 @@ public struct CheckReport: Sendable, Hashable, Codable {
 
     public let format: Int
     public let level: Int
+    /// To the second in JSON.
     public let started: Date
+    /// To the second in JSON.
     public let finished: Date
+    /// How long the run took. It's kept apart from the dates, because JSON keeps those only to the second.
+    public let durationMilliseconds: Int
     public let device: Device
     public let host: Host
     /// In the order the checks ran.
@@ -58,9 +62,28 @@ public struct CheckReport: Sendable, Hashable, Codable {
         self.level = level
         self.started = started
         self.finished = finished
+        durationMilliseconds = Int((finished.timeIntervalSince(started) * 1_000).rounded())
         self.device = device
         self.host = host
         self.results = results
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case format, level, started, finished, durationMilliseconds, device, host, results
+    }
+
+    /// Reports from before `durationMilliseconds` existed fall back to their dates, to the second.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        format = try container.decode(Int.self, forKey: .format)
+        level = try container.decode(Int.self, forKey: .level)
+        started = try container.decode(Date.self, forKey: .started)
+        finished = try container.decode(Date.self, forKey: .finished)
+        durationMilliseconds = try container.decodeIfPresent(Int.self, forKey: .durationMilliseconds)
+            ?? Int((finished.timeIntervalSince(started) * 1_000).rounded())
+        device = try container.decode(Device.self, forKey: .device)
+        host = try container.decode(Host.self, forKey: .host)
+        results = try container.decode([CheckResult].self, forKey: .results)
     }
 
     public func count(_ outcome: CheckResult.Outcome) -> Int {
@@ -72,17 +95,11 @@ public struct CheckReport: Sendable, Hashable, Codable {
 
 extension CheckReport {
     public func jsonData() throws -> Data {
-        let encoder = JSONEncoder()
-        // Sorted keys keep runs diffable in the repository.
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        encoder.dateEncodingStrategy = .iso8601
-        return try encoder.encode(self)
+        try ReportFiles.encoder().encode(self)
     }
 
     public init(json: Data) throws {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        self = try decoder.decode(Self.self, from: json)
+        self = try ReportFiles.decoder().decode(Self.self, from: json)
     }
 }
 
@@ -99,7 +116,7 @@ extension CheckReport {
             "- **Ran on:** \(host.model), \(host.system), FieldCheck \(host.app)",
             "- **Level:** \(level)",
             "- **Started:** \(started.formatted(.iso8601)), took "
-                + "\(finished.timeIntervalSince(started).formatted(.number.precision(.fractionLength(1)))) s",
+                + "\((Double(durationMilliseconds) / 1_000).formatted(.number.precision(.fractionLength(1)))) s",
             "- **Results:** \(count(.pass)) pass, \(count(.fail)) fail, \(count(.notRun)) not run",
         ]
         for (title, outcome) in [("Failures", CheckResult.Outcome.fail), ("Not run", .notRun), ("Passed", .pass)] {
@@ -119,6 +136,9 @@ extension CheckReport {
             lines += ["- **Expected:** not in this version's expectation list"]
         }
         lines += ["- **\(result.outcome == .notRun ? "Why" : "Seen"):** \(result.summary)"]
+        if !result.varies.isEmpty {
+            lines += ["- **Varies between runs:** \(result.varies.map { "`\($0)`" }.joined(separator: ", "))"]
+        }
         if let observed = result.observed, let json = try? Self.prettyJSON(observed) {
             lines += ["", "```json", json, "```"]
         }
@@ -126,9 +146,7 @@ extension CheckReport {
     }
 
     private static func prettyJSON(_ value: CheckValue) throws -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        return String(decoding: try encoder.encode(value), as: UTF8.self)
+        String(decoding: try ReportFiles.encoder().encode(value), as: UTF8.self)
     }
 }
 
@@ -143,21 +161,8 @@ extension CheckReport {
     public func save(in directory: URL) throws -> (json: URL, markdown: URL) {
         let stamp = started.formatted(.iso8601.year().month().day().timeZone(separator: .omitted)
             .time(includingFractionalSeconds: false).timeSeparator(.omitted))
-        let json = try jsonData()
-        let text = Data(markdown().utf8)
-        var number = 1
-        while true {
-            let base = number == 1 ? "fieldcheck-\(stamp)" : "fieldcheck-\(stamp)-\(number)"
-            let urls = (json: directory.appending(path: "\(base).json"), markdown: directory.appending(path: "\(base).md"))
-            let manager = FileManager.default
-            if !manager.fileExists(atPath: urls.json.path(percentEncoded: false)),
-               !manager.fileExists(atPath: urls.markdown.path(percentEncoded: false)) {
-                // .withoutOverwriting refuses if something took the name in between.
-                try json.write(to: urls.json, options: .withoutOverwriting)
-                try text.write(to: urls.markdown, options: .withoutOverwriting)
-                return urls
-            }
-            number += 1
-        }
+        let urls = try ReportFiles.write([("json", try jsonData()), ("md", Data(markdown().utf8))],
+                                         named: "fieldcheck-\(stamp)", in: directory)
+        return (urls[0], urls[1])
     }
 }

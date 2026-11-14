@@ -104,15 +104,18 @@ public enum LevelOne {
              "filesystemType": .string(hex(storage.info.filesystemType)),
              "accessCapability": .string(hex(storage.info.accessCapability))]
         })]
+        // Free space changes with what's on the OP-1, and even while it's out of MTP mode.
+        let varies = ["storages[].freeSpace"]
         guard storages.count == 1, let only = storages.first else {
             let ids = storages.map { hex($0.id, digits: 8) }.joined(separator: ", ")
             return .fail(storages.isEmpty ? "The OP-1 lists no storage."
-                         : "\(storages.count) storages (\(ids)), but FieldTapeKit uses only the first.", observed: observed)
+                         : "\(storages.count) storages (\(ids)), but FieldTapeKit uses only the first.",
+                         observed: observed, varies: varies)
         }
         let free = Int(clamping: only.info.freeSpaceInBytes).formatted(.byteCount(style: .file))
         let capacity = Int(clamping: only.info.maxCapacity).formatted(.byteCount(style: .file))
         return .pass("One storage, \(hex(only.id, digits: 8)), with \(free) free of \(capacity). Whether free space is accurate "
-                     + "is checked at level 2.", observed: observed)
+                     + "is checked at level 2.", observed: observed, varies: varies)
     }
 
     // MARK: session.implicit

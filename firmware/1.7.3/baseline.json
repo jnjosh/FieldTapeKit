@@ -1,0 +1,313 @@
+{
+  "expectations" : {
+    "album.files" : {
+      "observed" : {
+        "files" : [
+          "readme.txt",
+          "side_a.wav",
+          "side_b.wav"
+        ]
+      },
+      "varies" : [
+
+      ]
+    },
+    "album.wav-format" : {
+      "observed" : {
+        "formats" : [
+          {
+            "bitsPerSample" : 16,
+            "channels" : 2,
+            "encoding" : 1,
+            "sampleRate" : 44100
+          }
+        ],
+        "problems" : [
+
+        ]
+      },
+      "varies" : [
+
+      ]
+    },
+    "device.identity" : {
+      "observed" : {
+        "name" : "OP-1",
+        "productID" : "0x0102",
+        "vendorID" : "0x2367"
+      },
+      "varies" : [
+
+      ]
+    },
+    "device.operations" : {
+      "observed" : {
+        "operations" : [
+          "0x1002",
+          "0x1003",
+          "0x1001",
+          "0x1004",
+          "0x1005",
+          "0x1009",
+          "0x1014",
+          "0x1015",
+          "0x1016",
+          "0x100B",
+          "0x100D",
+          "0x1006",
+          "0x1007",
+          "0x1008",
+          "0x100C",
+          "0x101B",
+          "0x9801",
+          "0x9802",
+          "0x9803",
+          "0x9804",
+          "0x9805"
+        ],
+        "vendorExtensionID" : 6
+      },
+      "varies" : [
+
+      ]
+    },
+    "device.storage" : {
+      "observed" : {
+        "storages" : [
+          {
+            "accessCapability" : "0x0000",
+            "capacity" : 6429185024,
+            "filesystemType" : "0x0002",
+            "freeSpace" : 6285685760,
+            "id" : "0x00010001",
+            "storageType" : "0x0003"
+          }
+        ]
+      },
+      "varies" : [
+        "storages[].freeSpace"
+      ]
+    },
+    "layout.folders" : {
+      "observed" : {
+        "expected" : [
+          "drum",
+          "drum/slots",
+          "drum/slots/1",
+          "drum/slots/2",
+          "drum/slots/3",
+          "drum/slots/4",
+          "drum/slots/5",
+          "drum/slots/6",
+          "drum/slots/7",
+          "drum/slots/8",
+          "drum/user",
+          "mixdown",
+          "synth",
+          "synth/slots",
+          "synth/slots/1",
+          "synth/slots/2",
+          "synth/slots/3",
+          "synth/slots/4",
+          "synth/slots/5",
+          "synth/slots/6",
+          "synth/slots/7",
+          "synth/slots/8",
+          "synth/user",
+          "tapes"
+        ]
+      },
+      "varies" : [
+
+      ]
+    },
+    "layout.readmes" : {
+      "observed" : {
+        "drum/user/readme.txt" : "this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.\nthe OP-1 sample rate is 44100 Hz.\nother sample rates change the maximum sample time.\n\nto keep your sounds in different folders,\ncreate new folders in 'synth' or 'drum'.\n",
+        "mixdown/readme.txt" : "this folder accepts 44100 Hz .wav files.\nallowed names: side_a.wav side_b.wav\n",
+        "synth/user/readme.txt" : "this folder accepts mono/stereo .aif/.aiff/.aifc/.wav files.\nthe OP-1 sample rate is 44100 Hz.\nother sample rates change the maximum sample time.\n\nto keep your sounds in different folders,\ncreate new folders in 'synth' or 'drum'.\n",
+        "tapes/*/readme.txt" : "this folder accepts 44100 Hz .wav files.\nallowed names: track_1.wav track_2.wav track_3.wav track_4.wav\n"
+      },
+      "varies" : [
+
+      ]
+    },
+    "names.lowercase" : {
+      "observed" : {
+        "notLowercase" : [
+
+        ]
+      },
+      "varies" : [
+
+      ]
+    },
+    "read.partial" : {
+      "observed" : {
+        "chunkBytes" : 1048576,
+        "problems" : [
+
+        ],
+        "reads" : [
+          "16 KiB at offset 1001",
+          "64 KiB across the first chunk boundary",
+          "1 MiB from 100 bytes before the end"
+        ]
+      },
+      "varies" : [
+        "reads"
+      ]
+    },
+    "read.speed" : {
+      "observed" : {
+        "bytes" : 16777216,
+        "chunkMilliseconds" : [
+          61,
+          162,
+          220,
+          278,
+          337,
+          398,
+          448,
+          504,
+          562,
+          618,
+          677,
+          735,
+          791,
+          846,
+          905,
+          960
+        ],
+        "kilobytesPerSecond" : 1973,
+        "milliseconds" : 8504
+      },
+      "varies" : [
+        "bytes",
+        "milliseconds",
+        "kilobytesPerSecond",
+        "chunkMilliseconds"
+      ]
+    },
+    "session.data-phase" : {
+      "observed" : {
+        "getDeviceInfo" : {
+          "containerHeader" : false,
+          "payloadBytes" : 225
+        },
+        "getStorageIDs" : {
+          "containerHeader" : false,
+          "payloadBytes" : 8
+        }
+      },
+      "varies" : [
+
+      ]
+    },
+    "session.implicit" : {
+      "observed" : {
+        "getObjectHandles" : "0x2001",
+        "openSessionSent" : false
+      },
+      "varies" : [
+
+      ]
+    },
+    "tape.files" : {
+      "observed" : {
+        "missing" : [
+
+        ],
+        "unexpected" : [
+
+        ]
+      },
+      "varies" : [
+
+      ]
+    },
+    "tape.json-keys" : {
+      "observed" : {
+        "clipKeys" : [
+          "ch",
+          "id",
+          "padding",
+          "start",
+          "stop"
+        ],
+        "keys" : [
+          "clips",
+          "loop",
+          "loop_in",
+          "loop_out",
+          "mixer_params",
+          "pos",
+          "tape_type",
+          "tempobpmdecimal",
+          "tempometronomelevel",
+          "tempometronometype",
+          "temposyncout",
+          "temposynctype",
+          "track",
+          "version"
+        ],
+        "versions" : [
+          1
+        ]
+      },
+      "varies" : [
+
+      ]
+    },
+    "tape.json-units" : {
+      "observed" : {
+        "problems" : [
+
+        ]
+      },
+      "varies" : [
+
+      ]
+    },
+    "tape.types" : {
+      "observed" : {
+        "outsideRange" : [
+
+        ]
+      },
+      "varies" : [
+
+      ]
+    },
+    "tape.wav-format" : {
+      "observed" : {
+        "formats" : [
+          {
+            "bitsPerSample" : 32,
+            "channels" : 2,
+            "encoding" : 1,
+            "sampleRate" : 44100
+          }
+        ],
+        "problems" : [
+
+        ]
+      },
+      "varies" : [
+
+      ]
+    }
+  },
+  "firmware" : "1.7.3",
+  "format" : 1,
+  "source" : {
+    "host" : {
+      "app" : "1.0",
+      "model" : "iPad",
+      "system" : "iPadOS 27.2.1"
+    },
+    "level" : 1,
+    "model" : "OP-1",
+    "started" : "2026-11-14T04:26:09Z"
+  }
+}

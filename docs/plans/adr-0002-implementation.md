@@ -122,7 +122,7 @@ firmware/1.7.3/               Baseline and reports
 
 **Split in two (decided 2026-11-13):**
 - **5a:** the nine checks and the consistency check, then a level 1 run on the OP-1. `read.partial` and `read.speed` read up to 16 MiB of the largest tape track or album side in 1 MiB GetPartialObject chunks, as FieldTapeKit will stream, with no whole-file read.
-- **5b:** the baseline format, fields marked as expected to vary, Save as baseline, and `firmware/1.7.3/baseline.json` from a fresh run.
+- **5b:** the baseline format, fields marked as expected to vary, Save as baseline, and `firmware/1.7.3/baseline.json` from a fresh run. Decided 2026-11-13: checks mark which fields vary, and ranges for them come with the comparison in step 22. Save as baseline refuses a run with any failure, records checks that didn't run as not observed, and leaves out the serial number.
 
 **A baseline holds only what the firmware decides** (decided 2026-11-13). What's on the OP-1 changes from one device to the next and over time: the number of tapes and their names, folders people make in `synth/` and `drum/`, how many files there are, and free space. Checks keep those out of `observed` and put them only in the summary, or the baseline marks them as expected to vary, as free space must be. A check never passes or fails on them.
 

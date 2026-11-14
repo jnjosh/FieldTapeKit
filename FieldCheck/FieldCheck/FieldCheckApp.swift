@@ -1,5 +1,6 @@
 // FieldCheck: checks a connected OP-1 against what FieldTapeKit expects (ADR 0003).
 // It shows connection events and device info, runs level 1, and saves each report and its log to Documents.
+// A run with no failures can be saved as its firmware's baseline, to copy into the repository's firmware/ folder.
 
 import FieldCheckKit
 import FieldTapeKit
@@ -62,6 +63,16 @@ final class ConnectionLog {
         }
     }
 
+    /// Saves the report as `baseline-<firmware>.json` in Documents, under a new name if one is there already.
+    func saveBaseline(_ report: CheckReport) {
+        do {
+            let url = try Baseline(report: report).save(in: .documentsDirectory)
+            record("Saved \(url.lastPathComponent). Copy it into the repository as firmware/\(report.device.firmware)/baseline.json.")
+        } catch {
+            record("Couldn't save the baseline: \(error.localizedDescription)")
+        }
+    }
+
     func watch() async {
         record("Watching for an OP-1 in MTP mode")
         do {
@@ -120,9 +131,17 @@ struct ConnectionsView: View {
                 }
                 ForEach(log.devices) { device in
                     if let report = log.reports[device.id] {
-                        Section("Level 1: \(report.count(.pass)) pass, \(report.count(.fail)) fail, "
-                            + "\(report.count(.notRun)) not run") {
+                        Section {
                             ForEach(report.results, id: \.expectation) { ResultRow(result: $0) }
+                            Button("Save as baseline for \(report.device.firmware)") { log.saveBaseline(report) }
+                                .disabled(report.count(.fail) > 0)
+                        } header: {
+                            Text("Level 1: \(report.count(.pass)) pass, \(report.count(.fail)) fail, "
+                                + "\(report.count(.notRun)) not run")
+                        } footer: {
+                            if report.count(.fail) > 0 {
+                                Text("A run with failures can't be a baseline.")
+                            }
                         }
                     }
                 }

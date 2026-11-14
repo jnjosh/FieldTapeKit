@@ -117,11 +117,15 @@ extension LevelOne {
         let observed: CheckValue = ["chunkBytes": .int(ReadSample.chunkSize),
                                     "reads": .list(checks.map { .string($0.label) }),
                                     "problems": .list(problems.map(CheckValue.string))]
+        // Which reads fit depends on the size of the file read, which depends on what's on the OP-1.
+        let varies = ["reads"]
         guard problems.isEmpty else {
-            return .fail("Reading \(sample.file.path): \(problems.joined(separator: "; ")).", observed: observed)
+            return .fail("Reading \(sample.file.path): \(problems.joined(separator: "; ")).", observed: observed,
+                         varies: varies)
         }
         let extra = checks.isEmpty ? "" : ". Reads of \(checks.map(\.label).formatted(.list(type: .and))) matched"
-        return .pass("\(sample.chunks.count) chunks of up to 1 MiB came back whole\(extra).", observed: observed)
+        return .pass("\(sample.chunks.count) chunks of up to 1 MiB came back whole\(extra).", observed: observed,
+                     varies: varies)
     }
 
     static func readSpeed(_ sample: ReadSample) -> Finding {
@@ -144,8 +148,10 @@ extension LevelOne {
             chunks += "."
         }
         // A big drop is reported, not failed (ADR 0003). The baseline gives the range to compare with.
+        // All of it varies: timings from run to run, and how much is read with the largest file on the OP-1.
         return .pass("Read \(megabytes) MB in 1 MiB chunks in \(time) s, \(speed) MB/s.\(chunks) On 1.7.3 the probe "
-                     + "saw 1 MiB chunks at 6.5–9.5 MB/s and whole files at about 20 MB/s.", observed: observed)
+                     + "saw 1 MiB chunks at 6.5–9.5 MB/s and whole files at about 20 MB/s.", observed: observed,
+                     varies: ["bytes", "milliseconds", "kilobytesPerSecond", "chunkMilliseconds"])
     }
 
     static func milliseconds(_ duration: Duration) -> Int {

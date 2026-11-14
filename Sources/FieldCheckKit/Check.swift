@@ -18,12 +18,32 @@ public struct CheckResult: Sendable, Hashable, Codable {
     public let summary: String
     /// What the check observed, for the baseline. Nil when it didn't run, or failed before seeing anything.
     public let observed: CheckValue?
+    /// The fields of `observed` expected to change from run to run, such as free space or read speed, so a
+    /// comparison with a baseline leaves their values out. Each is a path of keys, with `[]` for every element of
+    /// a list, such as `storages[].freeSpace`. Ranges for them come with the comparison, in step 22 of the plan.
+    public let varies: [String]
 
-    public init(expectation: String, outcome: Outcome, summary: String, observed: CheckValue? = nil) {
+    public init(expectation: String, outcome: Outcome, summary: String, observed: CheckValue? = nil,
+                varies: [String] = []) {
         self.expectation = expectation
         self.outcome = outcome
         self.summary = summary
         self.observed = observed
+        self.varies = varies
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case expectation, outcome, summary, observed, varies
+    }
+
+    /// Reports from before `varies` existed have none.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        expectation = try container.decode(String.self, forKey: .expectation)
+        outcome = try container.decode(Outcome.self, forKey: .outcome)
+        summary = try container.decode(String.self, forKey: .summary)
+        observed = try container.decodeIfPresent(CheckValue.self, forKey: .observed)
+        varies = try container.decodeIfPresent([String].self, forKey: .varies) ?? []
     }
 }
 
@@ -32,13 +52,14 @@ struct Finding: Sendable, Hashable {
     let outcome: CheckResult.Outcome
     let summary: String
     let observed: CheckValue?
+    var varies: [String] = []
 
-    static func pass(_ summary: String, observed: CheckValue? = nil) -> Finding {
-        Finding(outcome: .pass, summary: summary, observed: observed)
+    static func pass(_ summary: String, observed: CheckValue? = nil, varies: [String] = []) -> Finding {
+        Finding(outcome: .pass, summary: summary, observed: observed, varies: varies)
     }
 
-    static func fail(_ summary: String, observed: CheckValue? = nil) -> Finding {
-        Finding(outcome: .fail, summary: summary, observed: observed)
+    static func fail(_ summary: String, observed: CheckValue? = nil, varies: [String] = []) -> Finding {
+        Finding(outcome: .fail, summary: summary, observed: observed, varies: varies)
     }
 
     static func notRun(_ reason: String) -> Finding {
@@ -93,7 +114,7 @@ enum CheckRunner {
                 }
             }
             results.append(CheckResult(expectation: check.expectation, outcome: finding.outcome,
-                                       summary: finding.summary, observed: finding.observed))
+                                       summary: finding.summary, observed: finding.observed, varies: finding.varies))
         }
         return results
     }

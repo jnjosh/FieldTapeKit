@@ -71,9 +71,17 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - On the OP-1: all 17 checks passed in 10.5 s and match PROBE-NOTES.md: 3 tapes and 12 tracks in the 1.7.3 format, every `tape.json` with exactly the known keys at version 1, the consistency check passing, and both album sides 16-bit. Both sides have audio, so level 2's album write checks won't be able to run.
   - **New: chunked reads get slower with the offset** (PROBE-NOTES.md, 2026-11-13). The second run timed each 1 MiB chunk: 62 ms at offset 0, rising about 58 ms for each MiB, to 960 ms at 15 MiB, so 2.0 MB/s overall. It looks as if the OP-1 reads from the start of the file for every GetPartialObject. Reading a full 127 MB track in 1 MiB chunks would take about 7 minutes, against about 6 s for one GetObject.
 
+- **Step 5b is done, so step 5 is: the 1.7.3 baseline is committed** as [firmware/1.7.3/baseline.json](../firmware/1.7.3/baseline.json), from a level 1 run on the iPad Pro on 2026-11-14 (report in [firmware/1.7.3/runs](../firmware/1.7.3/runs/fieldcheck-2026-11-14T042609Z.md)):
+  - `Baseline`, saved by FieldCheck's new **Save as baseline** button as `baseline-<firmware>.json` in Documents, never overwriting. It refuses a run with any failure, records a check that didn't run as not observed, and leaves out the serial number (decided 2026-11-13).
+  - Each check now names the fields of its observation that vary between runs, such as free space and read times, as `varies`. Ranges for them come with the comparison in step 22.
+  - Reports keep their duration in milliseconds, and `tape.json-keys` leaves out `clipKeys` when there are no clips. Older reports still read.
+  - A test checks a committed `firmware/1.7.3/baseline.json` against the 1.7.3 profile and simulator: operations, storage, folders, `tape.json` keys and versions, album files, WAV formats and folder rules. It passes on the committed baseline, and on a baseline made from the 2026-11-13 report.
+  - 121 tests pass on the Mac and the iOS simulator (64 FieldTapeKit, 57 FieldCheckKit), with none skipped. FieldCheck builds for iOS devices.
+  - The run: all 17 checks passed and match PROBE-NOTES.md, and the baseline has no serial number. The chunk times came back the same for the third time: 61 ms rising to 960 ms, about 58 ms more per MiB.
+
 ## Next steps
 
-1. Step 5b: the 1.7.3 baseline. Leave the probe in `research/` untouched.
+1. Step 6 of the plan: paths and listing, the first of the file layer, built against the 1.7.3 baseline.
 2. **Decide how FieldTapeKit reads large files, before step 7.** Decided so far (owner, 2026-11-13): not in 1 MiB GetPartialObject chunks, although ADR 0002 has `bytes(of:)`, `copyItem` and `copyTape` stream that way. Still to decide: one GetObject, larger chunks, or a mix. A level 1 run reading the same chunks in reverse order comes first, to tell whether the cost grows with the offset or with the number of requests (PROBE-NOTES.md, 2026-11-13). ADR 0002 changes once, when the whole decision is made.
 
 ## The OP-1 right now

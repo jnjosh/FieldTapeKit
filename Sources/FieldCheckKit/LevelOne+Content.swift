@@ -193,9 +193,12 @@ extension LevelOne {
                 if !missing.isEmpty { problems.append("a clip in \(file.path) lacks \(missing.joined(separator: ", "))") }
             }
         }
-        let observed: CheckValue = ["keys": .list(keys.sorted().map(CheckValue.string)),
-                                    "clipKeys": .list(clipKeys.sorted().map(CheckValue.string)),
-                                    "versions": .list(versions.sorted().map(CheckValue.int))]
+        var fields: [String: CheckValue] = ["keys": .list(keys.sorted().map(CheckValue.string)),
+                                            "versions": .list(versions.sorted().map(CheckValue.int))]
+        // With only blank tapes there are no clips, and so no clip keys to observe. Leaving the field out, rather
+        // than recording an empty list, keeps that from looking like a change.
+        if !clipKeys.isEmpty { fields["clipKeys"] = .list(clipKeys.sorted().map(CheckValue.string)) }
+        let observed = CheckValue.record(fields)
         guard problems.isEmpty else {
             return .fail("\(problems.joined(separator: "; ")).", observed: observed)
         }
