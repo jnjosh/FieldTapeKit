@@ -10,12 +10,14 @@
 		29FBE7BF46F2FC0B9E045BD2 /* FieldTapeKit in Frameworks */ = {isa = PBXBuildFile; productRef = 82861AB0DF7A10F9E864E8F3 /* FieldTapeKit */; };
 		4B9D8C155CC0B9F259F5A1BB /* FieldTapeConformance in Frameworks */ = {isa = PBXBuildFile; productRef = 3C2C04026209AA0B97AC9311 /* FieldTapeConformance */; };
 		9312C00F56B2605AD88899E0 /* FieldCheckApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D76CDF7A8E2BF2BBEBAEE7CD /* FieldCheckApp.swift */; };
+		98346D22D9D48FC72B877E24 /* ExploreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B31FE80819780667FCC473FC /* ExploreView.swift */; };
 		9D34A752DBC1E09DB278C4D6 /* FieldCheckKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F76C4B889171786FB3C1310 /* FieldCheckKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		40FE766552186C294B0AD807 /* FieldCheck.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FieldCheck.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		73874BF9378C59223B6E937F /* FieldTapeKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FieldTapeKit; path = ..; sourceTree = SOURCE_ROOT; };
+		B31FE80819780667FCC473FC /* ExploreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExploreView.swift; sourceTree = "<group>"; };
 		B3FB15055FF91A688746BA5C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		D76CDF7A8E2BF2BBEBAEE7CD /* FieldCheckApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldCheckApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -54,6 +56,7 @@
 		620AA5184E559D6365F29E14 /* FieldCheck */ = {
 			isa = PBXGroup;
 			children = (
+				B31FE80819780667FCC473FC /* ExploreView.swift */,
 				D76CDF7A8E2BF2BBEBAEE7CD /* FieldCheckApp.swift */,
 				B3FB15055FF91A688746BA5C /* Info.plist */,
 			);
@@ -134,6 +137,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				98346D22D9D48FC72B877E24 /* ExploreView.swift in Sources */,
 				9312C00F56B2605AD88899E0 /* FieldCheckApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

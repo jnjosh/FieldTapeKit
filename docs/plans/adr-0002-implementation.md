@@ -186,6 +186,19 @@ Decided by the owner at the same time, and recorded in ADR 0002's change log: `c
 
 Decided by the owner while building it (2026-11-14), and recorded in ADR 0002's change log: `removeItem(at:keepingCopyAt:)` returns the copy's URL and works on files only, and the file layer refuses to delete what belongs to the OP-1.
 
+### 8b. FieldCheck: Explore (ADR 0003)
+
+Added by the owner on 2026-11-14.
+
+**Adds:**
+- FieldCheck's two tabs: **Validate**, everything it did before, and **Explore**, a low-fidelity browser of the connected OP-1 built only on FieldTapeKit's public API, as an app would use it.
+- Explore lists folders, shows an item's path, size and format, and copies a file to the device with `copyItem`, to share from there. It's **read-only** (decided by the owner): ADR 0003 keeps FieldCheck's writes to its own scratch content.
+- In the iOS simulator, `-SimulatedOP1 YES` gives FieldCheck the simulated OP-1, so both tabs can be tried without hardware.
+
+**Later steps** add their read operations to Explore as they land. Writes and deletes stay out unless the owner decides otherwise, after step 11 has checked them on hardware.
+
+**On the OP-1 (reads only):** browse it, and copy a file off.
+
 ### 9. Writing new files and folders
 
 **Adds (public):**

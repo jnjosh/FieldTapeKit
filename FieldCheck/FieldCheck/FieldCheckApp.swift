@@ -1,7 +1,8 @@
-// FieldCheck: checks a connected OP-1 against what FieldTapeKit expects (ADR 0003).
-// It shows connection events and device info, runs level 1, and saves each report and its log to Documents.
+// FieldCheck: checks a connected OP-1 against what FieldTapeKit expects (ADR 0003), in two tabs.
+// Validate shows connection events and device info, runs level 1, and saves each report and its log to Documents.
 // A run with no failures can be saved as its firmware's baseline, to copy into the repository's firmware/ folder.
 // It also runs FieldTapeKit's conformance suite, the checks the simulator passes too, and logs the results.
+// Explore (ExploreView.swift) browses the OP-1 through FieldTapeKit's public API, as an app would. It only reads.
 
 import FieldCheckKit
 import FieldTapeConformance
@@ -13,7 +14,7 @@ import UIKit
 struct FieldCheckApp: App {
     var body: some Scene {
         WindowGroup {
-            ConnectionsView()
+            RootView()
         }
     }
 }
@@ -108,6 +109,24 @@ final class ConnectionLog {
     }
 
     func watch() async {
+        #if targetEnvironment(simulator)
+        // The simulator has no USB devices. `-SimulatedOP1 YES` gives it FieldTapeKit's simulated OP-1, to try the
+        // app's screens without hardware.
+        if UserDefaults.standard.bool(forKey: "SimulatedOP1") {
+            let device = FieldDevice.simulated {
+                Directory("tapes") {
+                    Directory("2026-220#02") {
+                        File("tape.json", data: Data(#"{"clips":[],"version":1}"#.utf8))
+                        File("track_1.wav", seconds: 3)
+                        for track in 2...4 { File("track_\(track).wav", seconds: 0) }
+                    }
+                }
+                Directory("mixdown") { File("side_a.wav", seconds: 10) }
+            }
+            devices.append(device)
+            record("Connected: a simulated OP-1, firmware \(device.info.firmware)")
+        }
+        #endif
         record("Watching for an OP-1 in MTP mode")
         do {
             for try await event in FieldDevice.connections {
@@ -131,7 +150,7 @@ final class ConnectionLog {
         }
     }
 
-    private func record(_ message: String) {
+    func record(_ message: String) {
         let line = String(format: "[%7.2f] ", Date().timeIntervalSince(started)) + message
         entries.append(Entry(line: line))
         guard let data = (line + "\n").data(using: .utf8) else { return }
@@ -145,8 +164,21 @@ final class ConnectionLog {
     }
 }
 
-struct ConnectionsView: View {
+/// Both tabs share the connections, which are watched for as long as the app runs.
+struct RootView: View {
     @State private var log = ConnectionLog()
+
+    var body: some View {
+        TabView {
+            Tab("Validate", systemImage: "checkmark.seal") { ValidateView(log: log) }
+            Tab("Explore", systemImage: "folder") { ExploreView(devices: log.devices, log: log) }
+        }
+        .task { await log.watch() }
+    }
+}
+
+struct ValidateView: View {
+    let log: ConnectionLog
 
     var body: some View {
         NavigationStack {
@@ -199,9 +231,8 @@ struct ConnectionsView: View {
                     }
                 }
             }
-            .navigationTitle("FieldCheck")
+            .navigationTitle("Validate")
         }
-        .task { await log.watch() }
     }
 }
 

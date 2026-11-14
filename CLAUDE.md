@@ -55,7 +55,7 @@ xcodegen generate
 DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcodebuild -project FieldCheck.xcodeproj -scheme FieldCheck -destination 'generic/platform=iOS' -allowProvisioningUpdates build
 ```
 
-Its bundle ID is `com.jnjosh.FieldCheck`, and each launch writes `fieldcheck-<timestamp>.txt` to Documents. The `devicectl` commands in PROBE-NOTES.md pull it off, with that bundle ID.
+Its bundle ID is `com.jnjosh.FieldCheck`, and each launch writes `fieldcheck-<timestamp>.txt` to Documents. The `devicectl` commands in PROBE-NOTES.md pull it off, with that bundle ID. It has two tabs: Validate (the checks, baselines and conformance suite) and Explore (a read-only browser). In the iOS simulator, which has no USB devices, launching with `-SimulatedOP1 YES` gives it FieldTapeKit's simulated OP-1.
 
 **The research probe** is frozen. Its project is generated with XcodeGen from `research/project.yml`, so edit the spec, not the `.xcodeproj`. Run these from `research/`:
 

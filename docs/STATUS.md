@@ -126,6 +126,11 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - The simulator now deletes, refuses a folder with files in it (an assumption: `delete.folder-with-files` is still unknown), records what it deleted in order, and can refuse deleting a named file.
   - 182 tests pass on the Mac and the iOS simulator (110 FieldTapeKit, 67 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS devices.
 
+- **Step 8b, FieldCheck's Explore tab, is done** (added by the owner on 2026-11-14, in the plan and ADR 0003's change log):
+  - FieldCheck has two tabs: **Validate**, everything it did before, and **Explore**, a read-only browser built only on FieldTapeKit's public API. It lists folders, shows an item's path, size and format, and copies a file to the device with `copyItem`, to share from there.
+  - In the iOS simulator, `-SimulatedOP1 YES` gives FieldCheck the simulated OP-1. Both tabs were checked there: Explore listed the folders and `mixdown/`, and copied side A.
+  - The owner tried it on the OP-1 on 2026-11-14, and it worked. No log was kept of that try. FieldCheck builds for iOS devices, and the package's 182 tests are unchanged.
+
 ## Next steps
 
 1. Step 9 of the plan: writing new files and folders.
