@@ -127,8 +127,9 @@ public actor FieldDevice {
     func contents(of path: FilePath, range: Range<Int>) async throws -> Data
 
     // Downloading and uploading (device ↔ local file)
+    @discardableResult
     func copyItem(at source: FilePath, to destination: URL,
-                  progress: consuming Subprogress? = nil) async throws
+                  progress: consuming Subprogress? = nil) async throws -> URL   // where it went
     func copyItem(at source: URL, to destination: FilePath,
                   options: UploadOptions = .init(), progress: consuming Subprogress? = nil) async throws -> FieldItem
 
@@ -442,11 +443,11 @@ public struct FieldError: Error, Sendable, LocalizedError {
 
     public struct Code: Sendable, Hashable {
         static let disconnected, timedOut, notFound, alreadyExists,
-                   notADirectory, ambiguousPath, notAllowed, invalidName,
+                   notADirectory, isADirectory, ambiguousPath, notAllowed, invalidName, tooLarge,
                    tapeLimitReached, tapeTooLong, insufficientSpace,
                    invalidArchive, archiveMismatch,
                    changedSinceConfirmation, confirmationAlreadyUsed,
-                   verificationFailed, deviceRefused, deviceInUse, notAuthorized
+                   verificationFailed, localFileFailed, deviceRefused, deviceInUse, notAuthorized
     }
 }
 ```
@@ -613,3 +614,7 @@ These are possible later features, deliberately left out for now:
   - `copyItem(at:to:)` and `copyTape` read each file with one GetObject. Downloads hold at most one track in memory, as uploads already did, and progress and cancellation are per file.
   - `contents(of:range:)` stays, for small reads near the start of a file.
   - A full 127 MB GetObject hasn't been tried. Level 2's long check (`tape.track-limit`) is its first test.
+- **2026-11-14:** Decided by the owner while building step 7 of the plan:
+  - **`copyItem(at: FilePath, to: URL)` returns the URL it wrote.** It never overwrites a local file and adds a number when the name is taken, as Finder does (`side_a 2.wav`), so the caller needs to know where the copy went.
+  - **Three new codes:** `tooLarge` for a file over `maximumSize`, `isADirectory` for reading or copying a folder, and `localFileFailed` for a local file that can't be written or read back, with the system's error as `underlying`. FieldTapeKit still throws only `FieldError` and `CancellationError`.
+  - **`contents(of:range:)` past the end** gives the bytes up to the end, and empty data from the end onwards, as reading a file normally does.

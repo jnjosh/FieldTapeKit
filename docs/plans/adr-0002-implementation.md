@@ -163,6 +163,12 @@ Decided by the owner at the same time, and recorded in ADR 0002's change log: an
 
 **Relies on:** `read.partial`, `read.cost`, `rebuild.stale-size`.
 
+**Split in two (decided 2026-11-14):**
+- **7a:** the two `contents` reads and `copyItem(at:to:)` with SHA-256 read-back, cancellation, and the simulator's stale sizes, tested on the simulator. Nothing on the OP-1.
+- **7b:** conformance checks that copy a tape track and an album side off, and the run on the OP-1, compared with `shasum` on the Mac.
+
+Decided by the owner at the same time, and recorded in ADR 0002's change log: `copyItem` returns the URL it wrote, the new codes `tooLarge`, `isADirectory` and `localFileFailed`, and range reads past the end return what's there.
+
 ### 8. Deleting files safely
 
 **Adds (public):**

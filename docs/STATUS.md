@@ -103,9 +103,18 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - 149 tests pass on the Mac and the iOS simulator (78 FieldTapeKit, 67 FieldCheckKit, 4 conformance tests). FieldCheck builds for iOS devices.
 - **Not yet tried on hardware:** a GetObject of a full 6-minute, 127 MB track. Step 11's long check (`tape.track-limit`) is its first test.
 
+- **Step 7 is split into 7a and 7b** (decided 2026-11-14, recorded in the plan and ADR 0002's change log).
+- **Step 7a is done, and needed no OP-1 run:**
+  - Public: `contents(of:maximumSize:)` and `copyItem(at: FilePath, to: URL, progress:)`, each reading the whole file with one GetObject, and `contents(of:range:)` with one GetPartialObject.
+  - `copyItem` never overwrites a local file: a taken name gets a number, as Finder does (`side_a 2.wav`), and it returns the URL it wrote. It checks the read's length against the fresh size, writes, reads the copy back and matches it by SHA-256, and deletes a copy that doesn't match. Progress is three steps: read, write and read back.
+  - New `FieldError` codes: `tooLarge`, `isADirectory`, `verificationFailed` and `localFileFailed`.
+  - The simulator rebuilds a file as the OP-1 does, still listing and serving its old size (`rebuild.stale-size`), and can cut a data phase short. A copy of a rebuilt file is of what the OP-1 serves; nothing over MTP shows the new size.
+  - Not tested: a copy that reads back wrong from disk, which needs a way to corrupt a local file between write and read-back.
+  - 165 tests pass on the Mac and the iOS simulator (94 FieldTapeKit, 67 FieldCheckKit, 4 conformance tests). FieldCheck builds for iOS devices.
+
 ## Next steps
 
-1. Step 7 of the plan: reading and downloading, with whole files read by one GetObject.
+1. Step 7b: conformance checks that copy a tape track and an album side off, and the OP-1 run, compared with `shasum` on the Mac.
 
 ## The OP-1 right now
 

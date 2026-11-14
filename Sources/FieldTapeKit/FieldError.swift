@@ -50,6 +50,16 @@ public struct FieldError: Error, Sendable, LocalizedError {
         /// `path` matches more than one item when case is ignored, and none exactly. The OP-1 lowercases a new
         /// name only after it leaves MTP mode, so a folder can briefly hold two names that differ only in case.
         public static let ambiguousPath = Code("ambiguousPath")
+        /// `path` is a folder, where a file was needed.
+        public static let isADirectory = Code("isADirectory")
+        /// The file at `path` is bigger than a read into memory allows.
+        public static let tooLarge = Code("tooLarge")
+        /// A copy didn't match what came from the OP-1 when it was read back, so it isn't a verified copy. Nothing
+        /// unverified is left behind.
+        public static let verificationFailed = Code("verificationFailed")
+        /// A file on this device, not the OP-1, couldn't be written or read: a full disk, a missing folder, or no
+        /// permission. `underlying` is the system's error, and `path` is the OP-1 file being copied.
+        public static let localFileFailed = Code("localFileFailed")
     }
 
     public var errorDescription: String? {
@@ -64,6 +74,18 @@ public struct FieldError: Error, Sendable, LocalizedError {
             "On the OP-1, \(pathDescription) is a file, not a folder."
         case .ambiguousPath:
             "More than one item on the OP-1 matches \(pathDescription) when case is ignored."
+        case .isADirectory:
+            "On the OP-1, \(pathDescription) is a folder, not a file."
+        case .tooLarge:
+            "On the OP-1, \(pathDescription) is too large to read into memory."
+        case .verificationFailed:
+            "The copy of \(pathDescription) didn't match the OP-1's when it was read back."
+        case .localFileFailed:
+            if let underlying = underlying as? LocalizedError, let reason = underlying.errorDescription {
+                "Couldn't save the copy of \(pathDescription) on this device. \(reason)"
+            } else {
+                "Couldn't save the copy of \(pathDescription) on this device."
+            }
         case .deviceRefused:
             if let responseCode {
                 "The OP-1 refused the request (response \(String(format: "0x%04X", responseCode)))."
@@ -84,6 +106,12 @@ public struct FieldError: Error, Sendable, LocalizedError {
             "Allow this app to use connected devices, then connect the OP-1 again."
         case .ambiguousPath:
             "Use the path exactly as a listing spells it."
+        case .tooLarge:
+            "Copy it to a file with copyItem(at:to:), or read it with a larger maximum size."
+        case .verificationFailed:
+            "Copy it again. If it fails again, disconnect the OP-1 and connect it again first."
+        case .localFileFailed:
+            "Check there's space, and that the folder you're copying to exists."
         case .deviceInUse:
             "Quit the other app, such as Teenage Engineering's app or Image Capture on a Mac, then connect the OP-1 again."
         default:

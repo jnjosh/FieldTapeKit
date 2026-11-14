@@ -14,6 +14,8 @@ actor SimulatedMTPDevice: MTPTransport {
         case silent(fromRequest: Int)
         /// The request is refused with this response code.
         case refuse(request: Int, responseCode: UInt16)
+        /// The request's data phase comes back cut short, after this many bytes.
+        case shortData(request: Int, keeping: Int)
     }
 
     struct Object: Sendable {
@@ -22,6 +24,12 @@ actor SimulatedMTPDevice: MTPTransport {
         var format: UInt16
         var associationType: UInt16 = 0
         var data = Data()
+        /// The size the OP-1 lists and serves, when it's not the data's: a file rebuilt within the session keeps its
+        /// old size until a reconnect (`rebuild.stale-size`).
+        var staleSize: Int?
+
+        /// What GetObject and GetPartialObject serve.
+        var served: Data { staleSize.map { Data(data.prefix($0)) } ?? data }
     }
 
     static let storageID: UInt32 = 0x0001_0001
@@ -93,6 +101,15 @@ actor SimulatedMTPDevice: MTPTransport {
         add(Object(parent: parent, name: name, format: format, data: data))
     }
 
+    /// Replaces a file's contents as the OP-1 does when it rebuilds `tape.json` after a track write: within the
+    /// session it still lists, and reads, at its size before the rebuild (`rebuild.stale-size`).
+    func rebuild(_ handle: UInt32, with data: Data) {
+        guard var object = objects[handle] else { return }
+        object.staleSize = object.staleSize ?? object.data.count
+        object.data = data
+        objects[handle] = object
+    }
+
     func add(faults more: [Fault]) {
         faults += more
     }
@@ -125,6 +142,10 @@ actor SimulatedMTPDevice: MTPTransport {
                 try await Self.neverAnswer()
             case .refuse(let number, let responseCode) where number == request:
                 return MTPTransaction(data: Data(), response: Self.response(responseCode, transactionID: transactionID))
+            case .shortData(let number, let keeping) where number == request:
+                let (data, responseCode, responseParams) = answer(code, params)
+                return MTPTransaction(data: Data(data.prefix(keeping)),
+                                      response: Self.response(responseCode, transactionID: transactionID, params: responseParams))
             default:
                 continue
             }
@@ -190,21 +211,22 @@ actor SimulatedMTPDevice: MTPTransport {
 
         case .getObjectInfo:
             guard let handle = params.first, let object = objects[handle] else { return (none, Response.invalidObjectHandle, []) }
-            let dataset = PTPObjectInfo.dataset(storageID: Self.storageID, format: object.format, size: UInt32(object.data.count),
+            let dataset = PTPObjectInfo.dataset(storageID: Self.storageID, format: object.format, size: UInt32(object.served.count),
                                                 parent: object.parent, filename: object.name,
                                                 associationType: object.associationType)
             return (dataset, Response.ok, [])
 
         case .getObject:
             guard let handle = params.first, let object = objects[handle] else { return (none, Response.invalidObjectHandle, []) }
-            return (object.data, Response.ok, [])
+            return (object.served, Response.ok, [])
 
         case .getPartialObject:
             guard params.count == 3 else { return (none, Response.invalidParameter, []) }
             guard let object = objects[params[0]] else { return (none, Response.invalidObjectHandle, []) }
-            let start = min(Int(params[1]), object.data.count)
-            let end = min(start + Int(params[2]), object.data.count)
-            let slice = Data(object.data[object.data.startIndex + start ..< object.data.startIndex + end])
+            let served = object.served
+            let start = min(Int(params[1]), served.count)
+            let end = min(start + Int(params[2]), served.count)
+            let slice = Data(served[served.startIndex + start ..< served.startIndex + end])
             return (slice, Response.ok, [UInt32(slice.count)])
 
         case .deleteObject, .sendObjectInfo, .sendObject, nil:
