@@ -49,8 +49,9 @@ The first list, from the probe's findings:
 | `tape.json-units` | Every track is `44 + 8 × last clip end` bytes; `ch` is 0-based. | Consistency check |
 | `tape.types` | `tape_type` values are 0–3. | `TapeType` |
 | `tape.track-limit` | A full 6-minute track of 127,008,044 bytes can be written and read back. Runs only when asked (section 2). | `tapeTooLong`, upload memory use |
-| `read.partial` | GetPartialObject works at any offset with chunks up to 1 MiB. | `bytes(of:)`, streaming into archives |
+| `read.partial` | GetPartialObject works at any offset with chunks up to 1 MiB. | `contents(of:range:)`, WAV header reads |
 | `read.speed` | Reads at about 20 MB/s, writes at about 7 MB/s. A big drop is reported, not failed. | Timeouts, progress estimates |
+| `read.cost` | What a GetPartialObject's time grows with: its offset, or the number of reads before it. On 1.7.3 it's the offset. Added 2026-11-14. | Whole files read with one GetObject (ADR 0002, 2026-11-14) |
 | `write.folder` | A tape folder can be made with SendObjectInfo alone (format 0x3001, association type 1). | `createTape`, `restoreTape` |
 | `write.exact` | Tracks and `tape.json` written to a tape read back byte for byte. | Read-back verification |
 | `write.refused-name` | A name a folder doesn't allow (`track_5.wav`) is refused with 0x2002. | Folder rules |
@@ -202,3 +203,4 @@ FieldCheck measures only the firmware installed, so the old-firmware rows come f
 - **2026-11-08:** Added section 5, decided by the owner, and renumbered Code and platforms to section 6. A run with changes or failures writes a draft ADR, with a suggested compatibility class and a compatibility table for each change, and leaves the decision to a person. Baselines are now kept for every firmware, to match ADR 0002, section 11.
 - **2026-11-08:** Accepted by the owner.
 - **2026-11-09:** Corrected the number of probe tests that move into FieldTapeKit from 21 to 16, as the implementation plan records.
+- **2026-11-14:** Added `read.cost`, decided by the owner. Level 1 found that 1 MiB GetPartialObject chunks read in order get slower with the offset (PROBE-NOTES.md, 2026-11-13), and how FieldTapeKit reads whole files will depend on why. The check reads the same chunks in reverse, then all of them in one GetPartialObject, then the whole file in one GetObject, and reports whether the time grows with the offset or with the number of reads. It's a level 1 check, so every firmware update re-checks it, and the 1.7.3 baseline is saved again with it. On 1.7.3 it found the offset, and ADR 0002 now reads whole files with one GetObject. `read.partial`'s "used by" changed with it, since nothing streams in chunks any more.

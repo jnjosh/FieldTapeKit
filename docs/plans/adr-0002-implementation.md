@@ -152,16 +152,16 @@ Decided by the owner at the same time, and recorded in ADR 0002's change log: an
 ### 7. Reading and downloading
 
 **Adds (public):**
-- `contents(of:maximumSize:)`, `contents(of:range:)` and `bytes(of:chunkSize:)`.
-- `copyItem(at: FilePath, to: URL, progress:)`. It reads fresh object info first, streams with GetPartialObject, and never overwrites a local file: if the name is taken, a number is added. The copy is read back from disk and checked against its SHA-256.
-- Cancellation between chunks.
+- `contents(of:maximumSize:)` and `contents(of:range:)`. `bytes(of:chunkSize:)` was dropped (owner, 2026-11-14, ADR 0002's change log).
+- `copyItem(at: FilePath, to: URL, progress:)`. It reads fresh object info first, reads the file with one GetObject, and never overwrites a local file: if the name is taken, a number is added. The copy is read back from disk and checked against its SHA-256.
+- Cancellation before each read. A GetObject already sent finishes first.
 - **The simulator:** stale sizes for a file rewritten within the session.
 
-**Tests:** ranges, the size limit, chunk sizes, local name collisions, cancellation, stale sizes and read-back mismatches.
+**Tests:** ranges, the size limit, local name collisions, cancellation, stale sizes and read-back mismatches.
 
 **On the OP-1 (reads only):** the conformance suite copies a tape track and an album side off. Compare them with `shasum` on the Mac copies.
 
-**Relies on:** `read.partial`, `rebuild.stale-size`.
+**Relies on:** `read.partial`, `read.cost`, `rebuild.stale-size`.
 
 ### 8. Deleting files safely
 
@@ -255,7 +255,7 @@ Decided by the owner at the same time, and recorded in ADR 0002's change log: an
 - `ReelArchive` and `UTType.reelArchive`.
 - `ReelArchive(contentsOf:)`: open, check every file against `reel.json`, and run the consistency check.
 - Track access for "save the tracks".
-- Internal: a streaming writer that takes chunks as they arrive and computes each SHA-256 on the way.
+- Internal: a writer that takes each track as one read from the OP-1, writes it into the archive and computes its SHA-256 on the way, holding one track at a time.
 - No compression by default, with an option for Apple Archive's compressors.
 - Format version 1, with a fixture archive kept in the tests for the semver rule.
 
@@ -267,7 +267,7 @@ Decided by the owner at the same time, and recorded in ADR 0002's change log: an
 
 ### 15. Copying tapes off → `1.0.0-alpha.1`
 
-**Adds (public):** `copyTape(_:to:progress:)`, following ADR 0002's five steps: check, stream into a temporary archive, reopen and verify, then move into place under a new name.
+**Adds (public):** `copyTape(_:to:progress:)`, following ADR 0002's five steps: check, read each file with one GetObject into a temporary archive, reopen and verify, then move into place under a new name.
 
 **Tests:** a tape changed mid-copy, a failed verify leaving nothing behind, name collisions, cancellation, and progress.
 
@@ -384,4 +384,5 @@ Decided by the owner at the same time, and recorded in ADR 0002's change log: an
 - **Timeouts:** whether ImageCaptureCore lets a ping through while an earlier request is still hung is unknown. The single 60-second hang never recurred, so step 2 is tested only on the simulator.
 - **Steps 8 to 10 are checked on hardware only in step 11.** Until then they're simulator-tested.
 - **Album writes** may never get a hardware check if both sides keep their audio.
-- **`Subprogress`** is new API. If its shape makes progress awkward, steps 7 and 15 are where that shows first.
+- **`Subprogress`** is new API. If its shape makes progress awkward, steps 7 and 15 are where that shows first. Progress is now per file, since each file is one GetObject.
+- **A full 127 MB GetObject hasn't been tried.** It worked on a 22 MB track at 18.8 MB/s. Step 11's long check is its first test, and until then copying a full track off is untested on hardware.

@@ -91,7 +91,7 @@ import Testing
     @Test func level1PassesOnTheDefaultSimulatedOP1() async {
         let report = await LevelOne.run(on: FieldDevice.simulated(), host: LevelOneTests.host)
         let notRun: Set = ["tape.files", "tape.wav-format", "tape.json-keys", "tape.json-units", "tape.types",
-                           "read.partial", "read.speed"]
+                           "read.partial", "read.speed", "read.cost"]
         for result in report.results {
             #expect(result.outcome == (notRun.contains(result.expectation) ? .notRun : .pass),
                     "\(result.expectation): \(result.summary)")

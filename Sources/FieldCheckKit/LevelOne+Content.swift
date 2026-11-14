@@ -45,6 +45,13 @@ extension LevelOne {
                 guard let sample = try await sampler.sample() else { return .notRun(noAudio) }
                 return readSpeed(sample)
             },
+            Check("read.cost") {
+                guard let sample = try await sampler.sample() else { return .notRun(noAudio) }
+                guard sample.chunks.count >= costMinimumChunks else {
+                    return .notRun("The largest audio file is under \(costMinimumChunks) MiB, too short to tell.")
+                }
+                return readCost(sample, try await costReads(of: sample, in: catalog))
+            },
         ]
     }
 

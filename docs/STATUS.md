@@ -95,10 +95,17 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - It settled one detail: a lookup through a file throws `notADirectory` with that file as the error's path, which is now documented.
   - 141 tests pass on the Mac and the iOS simulator (78 FieldTapeKit, 59 FieldCheckKit, 4 conformance tests with 22 cases). FieldCheck builds for iOS devices.
 
+- **The large-file read decision is made** (owner, 2026-11-14), and recorded in ADR 0002's change log: **whole files are read with one GetObject**, and `bytes(of:chunkSize:)` is dropped from the API. `copyItem(at:to:)` and `copyTape` hold at most one track in memory, as uploads already do, with progress and cancellation per file. `contents(of:range:)` stays, for small reads near the start of a file. The plan's steps 7, 14 and 15 are updated to match.
+- **It came from a new level 1 check, `read.cost`,** added to ADR 0003's expectations. It passed on the OP-1 (iPad Pro, 2026-11-14, report in [firmware/1.7.3/runs](../firmware/1.7.3/runs/fieldcheck-2026-11-14T172405Z.md)):
+  - After `read.speed`'s forward chunks, it reads the same chunks in reverse, then all of them in one GetPartialObject, then the whole file in one GetObject, checking every read's bytes. Only `costGrowsWith` and the byte checks go in the baseline; the times vary.
+  - **The cost grows with the offset.** In reverse the chunks still rose about 56 ms per MiB of offset. One 16 MiB GetPartialObject from offset 0 took 0.87 s (19.2 MB/s), and one GetObject of the 22 MB track 1.17 s (18.8 MB/s). So a read costs about what reading from the file's start to its end would, however it's split (PROBE-NOTES.md, 2026-11-14).
+  - All 18 level 1 checks passed in 21 s. `firmware/1.7.3/baseline.json` is replaced by this run's, which adds `read.cost`.
+  - 149 tests pass on the Mac and the iOS simulator (78 FieldTapeKit, 67 FieldCheckKit, 4 conformance tests). FieldCheck builds for iOS devices.
+- **Not yet tried on hardware:** a GetObject of a full 6-minute, 127 MB track. Step 11's long check (`tape.track-limit`) is its first test.
+
 ## Next steps
 
-1. **Decide how FieldTapeKit reads large files, before step 7.** Decided so far (owner, 2026-11-13): not in 1 MiB GetPartialObject chunks, although ADR 0002 has `bytes(of:)`, `copyItem` and `copyTape` stream that way. Still to decide: one GetObject, larger chunks, or a mix. A level 1 run reading the same chunks in reverse order comes first, to tell whether the cost grows with the offset or with the number of requests (PROBE-NOTES.md, 2026-11-13). ADR 0002 changes once, when the whole decision is made.
-2. Step 7 of the plan: reading and downloading, once that's decided.
+1. Step 7 of the plan: reading and downloading, with whole files read by one GetObject.
 
 ## The OP-1 right now
 

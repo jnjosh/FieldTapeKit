@@ -283,8 +283,15 @@ What it means:
 
 Still open, and decided before step 7 of the plan:
 - **What replaces them:** one GetObject, larger chunks, or a mix. ADR 0002 changes then, as one decision.
-- **Whether the cost grows with the offset or with the number of requests.** The chunks were read in order, so the two rose together. Reading the same chunks in reverse or shuffled order would tell them apart, and the answer favours different choices: a cost that grows with the offset favours GetObject, a cost per request favours fewer, larger chunks.
+- ~~**Whether the cost grows with the offset or with the number of requests.**~~ Answered on 2026-11-14, below: the offset.
 - **Past 16 MiB, the figures are extrapolated,** and iPhone and macOS weren't measured.
+
+**The cost grows with the offset, not the number of reads (FieldCheck `read.cost`, iPad, 2026-11-14, `firmware/1.7.3/runs/fieldcheck-2026-11-14T172405Z`).** On the same 22 MB tape track:
+- **The same 1 MiB chunks read in reverse,** last chunk first, still rose with the offset: 105 ms at offset 0, up to 918 ms at 15 MiB, about 56 ms per MiB. In order they rose by about 58 ms per MiB. A cost per read would have made the reverse times fall with the offset instead.
+- **One GetPartialObject for all 16 MiB from offset 0** took 0.87 s, 19.2 MB/s, against 8.5 s in 1 MiB chunks.
+- **One GetObject of the whole 22,056,500-byte track** took 1.17 s, 18.8 MB/s, and matched the chunks.
+
+So a read costs about what reading the file from its start to the read's end would, at about 19 MB/s, however it's split. Reading a whole file once is linear. Reading it in pieces costs time that grows with the square of its size. A small read near the end of a large file costs nearly a whole read: about 6.7 s near the end of a full 127 MB track, if the rate holds that far. GetObject also worked on a 22 MB track, which partly answers the question below about full-size tapes.
 
 ## Entering MTP mode from the app (paused 2026-11-08: possible, a future feature)
 
@@ -328,7 +335,7 @@ Open questions:
 
 ## Questions for the real app
 
-- Does GetObject work for full-size tapes? It holds the whole file in memory. Reading in GetPartialObject chunks avoids that, but each chunk costs time in proportion to its offset (2026-11-13, above), so chunked reads of large files are slow.
+- Does GetObject work for full-size tapes? It worked on a 22 MB track at 18.8 MB/s (2026-11-14), and holds the whole file in memory. A full 127 MB track hasn't been tried. Reading in GetPartialObject chunks avoids holding it, but every read costs time in proportion to where it ends (2026-11-14, above), so chunked reads of large files are slow.
 - Is `mixdown/` stored byte for byte like `tapes/`, and is 5.8 MB/s representative of large writes?
 - Does the OP-1 use a written file without a restart, and does replacing a tape track need `tape.json` updated?
 - Do writes work the same from iPhone?

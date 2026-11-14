@@ -4,11 +4,11 @@ import Foundation
 /// A simulated OP-1 laid out as the probe listed one on 1.7.3 (`probe-results/large-tape-ipad-2026-11-08b/`),
 /// with the readme texts from `probe-results/folder-rules-ipad-2026-11-05/`. It has two tapes, as the probe read
 /// them on 2026-11-08 (`probe-results/tape-json-ipad-2026-11-08/`): 2026-220#02 with two recorded tracks, and the
-/// blank 2026-312#01. Side A has 2 MB of audio, and side B is empty.
+/// blank 2026-312#01. Side A has 5 MB of audio, enough for `read.cost`, and side B is empty.
 enum OP1Fixture {
     static let recordedTapeJSON = #"{"clips":[{"ch":0,"id":0,"padding":[112,113,-1,-1],"start":0,"stop":145601},{"ch":1,"id":1,"padding":[114,115,-1,-1],"start":0,"stop":150849}],"loop":true,"loop_in":0,"loop_out":264600,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":1,"tempobpmdecimal":1200,"tempometronomelevel":0.0,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":1,"version":1}"#
     static let blankTapeJSON = #"{"clips":[],"loop":false,"loop_in":0,"loop_out":0,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"tape_type":3,"tempobpmdecimal":1200,"tempometronomelevel":0.0,"tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":0,"version":1}"#
-    static let sideABytes = 2_000_044
+    static let sideABytes = 5_000_044
 
     /// A canonical 44-byte header and `dataBytes` of patterned audio, so reads at different offsets differ.
     static func wav(_ format: WAVFormat, dataBytes: Int) -> Data {
@@ -25,7 +25,11 @@ enum OP1Fixture {
         data.appendLittleEndian(UInt16(format.bitsPerSample))
         data.append(contentsOf: Array("data".utf8))
         data.appendLittleEndian(UInt32(dataBytes))
-        data.append(Data((0..<dataBytes).map { UInt8(truncatingIfNeeded: $0 % 251) }))
+        // A 251-byte ramp, repeated, so reads at different offsets differ.
+        let ramp = Data((0..<251).map { UInt8($0) })
+        var audio = Data(capacity: dataBytes)
+        while audio.count < dataBytes { audio.append(ramp.prefix(dataBytes - audio.count)) }
+        data.append(audio)
         return data
     }
 

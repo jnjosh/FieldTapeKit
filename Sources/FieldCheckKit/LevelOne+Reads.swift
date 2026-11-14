@@ -2,7 +2,7 @@ import FieldTapeKit
 import Foundation
 
 /// The largest tape track or album side with audio, read once from the start in 1 MiB GetPartialObject chunks,
-/// up to 16 MiB, as FieldTapeKit will stream. `read.partial` and `read.speed` both use it.
+/// up to 16 MiB. `read.partial`, `read.speed` and `read.cost` all use it.
 struct ReadSample: Sendable {
     static let chunkSize = 1 << 20
     static let limit = 16 << 20
@@ -173,5 +173,114 @@ extension LevelOne {
             variance += (Double(x) - meanX) * (Double(x) - meanX)
         }
         return Int((covariance / variance).rounded())
+    }
+}
+
+// MARK: read.cost
+
+extension LevelOne {
+    /// Fewer chunks than this give too few points for a slope.
+    static let costMinimumChunks = 4
+
+    /// The reads `read.cost` adds to the sample's: its chunks again in reverse, all of it in one GetPartialObject,
+    /// and the whole file in one GetObject.
+    struct CostReads: Sendable {
+        /// In the order read, from the last chunk to the first.
+        let reverse: [(offset: Int, data: Data, time: Duration)]
+        let single: (data: Data, time: Duration)
+        let whole: (data: Data, time: Duration)
+    }
+
+    static func costReads(of sample: ReadSample, in catalog: Catalog) async throws -> CostReads {
+        let clock = ContinuousClock()
+        var reverse: [(offset: Int, data: Data, time: Duration)] = []
+        for (index, chunk) in sample.chunks.enumerated().reversed() {
+            let offset = index * ReadSample.chunkSize
+            let start = clock.now
+            let data = try await catalog.read(sample.file, offset: offset, length: chunk.count)
+            reverse.append((offset, data, clock.now - start))
+        }
+        var start = clock.now
+        let single = try await catalog.read(sample.file, offset: 0, length: sample.count)
+        let singleTime = clock.now - start
+        start = clock.now
+        let whole = try await catalog.wholeObject(sample.file)
+        return CostReads(reverse: reverse, single: (single, singleTime), whole: (whole, clock.now - start))
+    }
+
+    /// What the time grows with, from the slopes of chunk time against offset. Read in order, offset and request
+    /// count rise together. Read in reverse, a cost from the offset still rises with the offset, and a cost per
+    /// request falls with it.
+    static func costGrowth(forward: [Int], reverseByOffset: [Int]) -> String {
+        guard let ahead = slope(forward), let back = slope(reverseByOffset) else { return "unclear" }
+        // Under 5 ms per MiB both ways is no growth worth the name.
+        if abs(ahead) < 5 && abs(back) < 5 { return "neither" }
+        guard ahead > 0 else { return "unclear" }
+        if Double(back) >= 0.5 * Double(ahead) { return "offset" }
+        if Double(back) <= -0.5 * Double(ahead) { return "requests" }
+        return "unclear"
+    }
+
+    static func readCost(_ sample: ReadSample, _ reads: CostReads) -> Finding {
+        let forward = sample.chunkTimes.map(milliseconds)
+        let reverseByOffset = reads.reverse.sorted { $0.offset < $1.offset }.map { milliseconds($0.time) }
+        let growth = costGrowth(forward: forward, reverseByOffset: reverseByOffset)
+
+        var problems: [String] = []
+        for read in reads.reverse {
+            let index = read.offset / ReadSample.chunkSize
+            if read.data != sample.chunks[index] { problems.append("the chunk at \(index) MiB read in reverse differs") }
+        }
+        if reads.single.data != sample.bytes { problems.append("one \(sample.count)-byte read differs from the chunks") }
+        if reads.whole.data.count != sample.file.size {
+            problems.append("GetObject returned \(reads.whole.data.count) bytes, not \(sample.file.size)")
+        } else if reads.whole.data.prefix(sample.count) != sample.bytes {
+            problems.append("GetObject's first \(sample.count) bytes differ from the chunks")
+        }
+
+        let observed: CheckValue = [
+            "costGrowsWith": .string(growth),
+            "forwardMilliseconds": .list(forward.map(CheckValue.int)),
+            "reverseMilliseconds": .list(reverseByOffset.map(CheckValue.int)),
+            "singleReadBytes": .int(reads.single.data.count),
+            "singleReadMilliseconds": .int(milliseconds(reads.single.time)),
+            "wholeFileBytes": .int(reads.whole.data.count),
+            "wholeFileMilliseconds": .int(milliseconds(reads.whole.time)),
+            "problems": .list(problems.map(CheckValue.string)),
+        ]
+        // Only what the cost grows with, and whether the bytes matched, are the firmware's. The rest is timing.
+        let varies = ["forwardMilliseconds", "reverseMilliseconds", "singleReadBytes", "singleReadMilliseconds",
+                      "wholeFileBytes", "wholeFileMilliseconds"]
+        guard problems.isEmpty else {
+            return .fail("Reading \(sample.file.path): \(problems.joined(separator: "; ")).", observed: observed, varies: varies)
+        }
+
+        let meaning = switch growth {
+        case "offset": "The time grows with the offset, not the number of reads"
+        case "requests": "The time grows with the number of reads, not the offset"
+        case "neither": "The time doesn't grow with the offset or the number of reads"
+        default: "It's unclear what the time grows with"
+        }
+        let slopes = "in order about \(slope(forward) ?? 0) ms more per MiB of offset, in reverse about "
+            + "\(slope(reverseByOffset) ?? 0) ms"
+        return .pass("\(meaning): \(slopes). One \(megabytes(reads.single.data.count)) MB read took "
+                     + "\(seconds(reads.single.time)) s, \(rate(reads.single.data.count, reads.single.time)) MB/s. "
+                     + "One GetObject of the whole \(megabytes(reads.whole.data.count)) MB file took "
+                     + "\(seconds(reads.whole.time)) s, \(rate(reads.whole.data.count, reads.whole.time)) MB/s.",
+                     observed: observed, varies: varies)
+    }
+
+    private static func megabytes(_ bytes: Int) -> String {
+        (Double(bytes) / 1_000_000).formatted(.number.precision(.fractionLength(1)))
+    }
+
+    private static func seconds(_ duration: Duration) -> String {
+        (Double(milliseconds(duration)) / 1_000).formatted(.number.precision(.fractionLength(2)))
+    }
+
+    private static func rate(_ bytes: Int, _ duration: Duration) -> String {
+        let seconds = Double(milliseconds(duration)) / 1_000
+        guard seconds > 0 else { return "—" }
+        return (Double(bytes) / 1_000_000 / seconds).formatted(.number.precision(.fractionLength(1)))
     }
 }

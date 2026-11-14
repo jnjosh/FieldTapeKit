@@ -22,6 +22,7 @@ import Testing
             "device.identity", "device.operations", "device.storage", "session.implicit", "session.data-phase",
             "layout.folders", "layout.readmes", "names.lowercase", "tape.files", "tape.wav-format", "tape.json-keys",
             "tape.json-units", "tape.types", "album.files", "album.wav-format", "read.partial", "read.speed",
+            "read.cost",
         ])
         for result in report.results {
             #expect(result.outcome == .pass, "\(result.expectation): \(result.summary)")
@@ -34,7 +35,7 @@ import Testing
         let device = FieldDevice.simulated(simulator, timeout: .milliseconds(100), pingTimeout: .milliseconds(100))
         let report = await LevelOne.run(on: device, host: Self.host)
         // device.identity sends nothing, so it still passes.
-        #expect(report.results.map(\.outcome) == [.pass, .fail] + Array(repeating: .notRun, count: 15))
+        #expect(report.results.map(\.outcome) == [.pass, .fail] + Array(repeating: .notRun, count: 16))
         #expect(report.results[1].summary == "The OP-1 disconnected during this check.")
     }
 

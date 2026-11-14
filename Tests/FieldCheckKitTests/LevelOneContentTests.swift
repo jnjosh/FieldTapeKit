@@ -29,7 +29,7 @@ import Testing
         #expect(summaries["tape.types"] == "Every tape_type is 0–3. Seen: 1, 3.")
         #expect(summaries["album.files"] == "mixdown/ holds side_a.wav and side_b.wav, and nothing else but readme.txt: "
                 + "side_a.wav has audio and side_b.wav is empty.")
-        #expect(summaries["read.partial"] == "2 chunks of up to 1 MiB came back whole. Reads of 16 KiB at offset 1001, "
+        #expect(summaries["read.partial"] == "5 chunks of up to 1 MiB came back whole. Reads of 16 KiB at offset 1001, "
                 + "64 KiB across the first chunk boundary, and 1 MiB from 100 bytes before the end matched.")
     }
 
@@ -38,7 +38,7 @@ import Testing
         let result = try await LevelOneTests.run("read.speed", on: device)
         guard case .record(let observed) = result.observed else { Issue.record("no observation"); return }
         #expect(observed["bytes"] == .int(OP1Fixture.sideABytes))
-        #expect(result.summary.hasPrefix("Read 2.0 MB in 1 MiB chunks in "))
+        #expect(result.summary.hasPrefix("Read 5.0 MB in 1 MiB chunks in "))
     }
 
     @Test func anOP1WithNoTapesOrAudioSkipsThoseChecks() async {
@@ -51,7 +51,7 @@ import Testing
         let report = await LevelOne.run(on: FieldDevice.simulated(simulator), host: LevelOneTests.host)
         let outcomes = Dictionary(uniqueKeysWithValues: report.results.map { ($0.expectation, $0.outcome) })
         for id in ["tape.files", "tape.wav-format", "tape.json-keys", "tape.json-units", "tape.types", "read.partial",
-                   "read.speed"] {
+                   "read.speed", "read.cost"] {
             #expect(outcomes[id] == .notRun, "\(id)")
         }
         #expect(outcomes["album.files"] == .pass)
@@ -214,6 +214,6 @@ import Testing
         let catalog = Catalog(device.session)
         let sample = try #require(try await ReadSampler(catalog).sample())
         #expect(sample.chunkTimes.count == sample.chunks.count)
-        #expect(sample.chunks.count == 2)
+        #expect(sample.chunks.count == 5)
     }
 }

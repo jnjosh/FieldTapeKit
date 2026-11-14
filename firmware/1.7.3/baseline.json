@@ -142,6 +142,62 @@
 
       ]
     },
+    "read.cost" : {
+      "observed" : {
+        "costGrowsWith" : "offset",
+        "forwardMilliseconds" : [
+          62,
+          163,
+          221,
+          280,
+          334,
+          390,
+          447,
+          505,
+          561,
+          618,
+          677,
+          734,
+          788,
+          846,
+          904,
+          960
+        ],
+        "problems" : [
+
+        ],
+        "reverseMilliseconds" : [
+          105,
+          162,
+          231,
+          279,
+          335,
+          392,
+          449,
+          510,
+          564,
+          620,
+          674,
+          732,
+          790,
+          846,
+          904,
+          918
+        ],
+        "singleReadBytes" : 16777216,
+        "singleReadMilliseconds" : 873,
+        "wholeFileBytes" : 22056500,
+        "wholeFileMilliseconds" : 1174
+      },
+      "varies" : [
+        "forwardMilliseconds",
+        "reverseMilliseconds",
+        "singleReadBytes",
+        "singleReadMilliseconds",
+        "wholeFileBytes",
+        "wholeFileMilliseconds"
+      ]
+    },
     "read.partial" : {
       "observed" : {
         "chunkBytes" : 1048576,
@@ -162,25 +218,25 @@
       "observed" : {
         "bytes" : 16777216,
         "chunkMilliseconds" : [
-          61,
-          162,
-          220,
-          278,
-          337,
-          398,
-          448,
-          504,
-          562,
+          62,
+          163,
+          221,
+          280,
+          334,
+          390,
+          447,
+          505,
+          561,
           618,
           677,
-          735,
-          791,
+          734,
+          788,
           846,
-          905,
+          904,
           960
         ],
-        "kilobytesPerSecond" : 1973,
-        "milliseconds" : 8504
+        "kilobytesPerSecond" : 1976,
+        "milliseconds" : 8491
       },
       "varies" : [
         "bytes",
@@ -308,6 +364,6 @@
     },
     "level" : 1,
     "model" : "OP-1",
-    "started" : "2026-11-14T04:26:09Z"
+    "started" : "2026-11-14T17:24:05Z"
   }
 }

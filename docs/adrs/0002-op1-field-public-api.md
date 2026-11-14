@@ -26,7 +26,8 @@ Some of this applies to the OP-1 directly, and some doesn't, because the OP-1 is
 | OP-1 behavior (from the probe) | What it means for the API |
 | --- | --- |
 | Every request is one PTP transaction at a time over USB. Reads run at about 20 MB/s and writes at about 7 MB/s. | Everything is async. There is no sync API, because no call is ever cheap. One actor per device serializes requests. |
-| No open, close or seek. Files are read whole (GetObject) or in ranges (GetPartialObject), and written whole (SendObjectInfo then SendObject). | No file handles. Reads take an optional byte range, and large files stream in chunks. |
+| No open, close or seek. Files are read whole (GetObject) or in ranges (GetPartialObject), and written whole (SendObjectInfo then SendObject). | No file handles. Reads take an optional byte range. |
+| Every read costs about what reading the file from its start to the read's end would, at about 19 MB/s, however it's split (FieldCheck `read.cost`, 2026-11-14). | Whole files are read with one GetObject. Reading one in chunks would take time that grows with the square of its size. |
 | The OP-1 doesn't list MoveObject (0x1019) or CopyObject (0x101A) among its operations. Overwriting means delete, then send. | No `moveItem`. Replacing a file can't be atomic, so anything that replaces a file keeps a verified copy first. |
 | Object handles change after the OP-1 leaves MTP mode, and names come back lowercased. | Paths are the public identity, and handles stay private. Paths match ignoring case. |
 | A file the OP-1 rewrites mid-session (such as `tape.json`) reads back truncated to its old size. | The framework fetches fresh object info before every read. Nothing cached is trusted for size. |
@@ -124,7 +125,6 @@ public actor FieldDevice {
     // Reading into memory
     func contents(of path: FilePath, maximumSize: Int = 32 << 20) async throws -> Data
     func contents(of path: FilePath, range: Range<Int>) async throws -> Data
-    func bytes(of path: FilePath, chunkSize: Int = 1 << 20) -> some AsyncSequence<Data, any Error>
 
     // Downloading and uploading (device ↔ local file)
     func copyItem(at source: FilePath, to destination: URL,
@@ -159,8 +159,11 @@ public struct UploadOptions: Sendable {
 
 Choices, and why:
 
-- **No file handles.** A range read and a chunked `bytes(of:)` sequence cover what a read handle would do. Why not handles is under Alternatives Considered.
-- **`maximumSize` on whole reads**, as in NIO, because a tape track can be 127 MB. `bytes(of:)` and `copyItem(at:to:)` stream instead, using GetPartialObject in chunks.
+- **No file handles.** Whole reads and range reads cover what a read handle would do. Why not handles is under Alternatives Considered.
+- **Whole files are read with one GetObject**, including by `copyItem(at:to:)` and `copyTape`. The OP-1 charges every read for everything before it in the file (`read.cost`), so one read is the only linear way. A 22 MB track reads in about 1.2 s, and a full 127 MB track should take about 7 s.
+- **Downloads hold the file in memory,** at most one track (127 MB) at a time, as uploads do. Progress and cancellation are per file, so one read of a full track can run about 7 s before a cancel takes effect.
+- **`maximumSize` on whole reads into memory**, as in NIO, because a tape track can be 127 MB. `copyItem(at:to:)` has no limit, because it writes the file to disk.
+- **Range reads stay small.** `contents(of:range:)` uses GetPartialObject, and costs time up to where the range ends, so a small read near the end of a large file costs nearly a whole read. It suits headers and other reads near the start.
 - **Uploads hold the file in memory.** `requestSendPTPCommand` takes the whole data phase as one `Data`, so an upload holds at most one track (127 MB) at a time. That's acceptable on current iPads, iPhones and Macs, and the framework never holds two.
 - **Every write is read back by default.** That costs about 4 extra seconds on a 78 MB tape. It's on because harmless matters more than fast here.
 - **Folder rules are checked before sending.** Writing `mixdown/probe.wav` fails locally with `.notAllowed` and the folder's rule, rather than with the OP-1's `0x2002` General Error. The rules come from the `readme.txt` files, encoded in the framework.
@@ -293,7 +296,7 @@ A filter parameter on `tapes()` wouldn't save any work: there are at most 8 tape
 
 - **Apple Archive, with no dependency and no archive code of our own.** `import AppleArchive` is public on iOS, iPadOS and macOS, well below the version 27 minimum.
 - **No compression by default.** Uncompressed PCM barely shrinks, and skipping compression keeps archiving at the speed of the USB read. An option allows Apple Archive's compressors (LZ4, LZFSE, zlib, LZMA) for an app that wants smaller files.
-- **Streaming:** FieldTapeKit writes each entry's header and then its data as it arrives from the OP-1, so tracks go straight into the archive with the SHA-256 computed on the way. Nothing is staged in a temporary folder.
+- **Writing entries:** FieldTapeKit reads each track with one GetObject and writes it straight into the archive, with the SHA-256 computed as it's written. Only one track is held in memory at a time, and nothing is staged in a temporary folder.
 - **It's one ordinary file,** so it survives AirDrop, email, iCloud, Dropbox and USB drives unchanged.
 - **Getting the WAVs out needs a tool that reads Apple Archive.** On a Mac that's Archive Utility or the `aa` command. iOS has no built-in way that we know of. FieldTapeKit itself can read them (`ReelArchive` exposes each track), so an app can offer "save the tracks".
 - **For apps that share archives:** the person receiving one may not have an app that reads `.aar`. An app that offers sharing should decide how people get at the audio. It could export the WAVs alongside, or add its own dependency to export another format, such as zip. FieldTapeKit stays dependency-free and documents this.
@@ -302,7 +305,7 @@ A filter parameter on `tapes()` wouldn't save any work: there are at most 8 tape
 
 **`copyTape` and `moveTape`:**
 1. Read `tape.json` fresh, and check it against the track sizes.
-2. Stream each track and `tape.json` into a temporary archive next to the destination.
+2. Read each track and `tape.json` with one GetObject, and write it into a temporary archive next to the destination.
 3. Reopen the archive from disk with Apple Archive's decoder and check every SHA-256 against what came off the OP-1.
 4. Move it into place. An archive is never overwritten: if the name is taken, a number is added, as Finder does.
 5. `moveTape` only: check the tape on the OP-1 still matches the archive by name, sizes and `tape.json`, then delete its files and its folder.
@@ -479,7 +482,7 @@ let device = FieldDevice.simulated {
   - Only one app can hold the device. Teenage Engineering's own Mac app, and macOS's Image Capture, may grab it first, so FieldTapeKit must report that clearly, as `.deviceInUse`, rather than hang. How ImageCaptureCore signals this is unknown until the first Mac run.
   - A sandboxed Mac app may need a USB or camera entitlement for ImageCaptureCore. Find out which on the first run.
 - **Concurrency:** `FieldDevice` is an `actor`, because PTP allows one transaction at a time. Every value type is `Sendable`, and nothing depends on the app's default `MainActor` isolation.
-- **Cancellation** is checked between chunks and between tracks. A cancelled restore deletes the partial file it was sending, reports what it had finished in `changed`, and leaves any archive in place.
+- **Cancellation** is checked between files and between tracks. A read or write already sent can't be cancelled, so it finishes first: up to about 7 s for a full track read, and about 18 s for a write. A cancelled restore deletes the partial file it was sending, reports what it had finished in `changed`, and leaves any archive in place.
 - **Packaging:**
   - One Swift package, `FieldTapeKit`, with one library product, plus a test target with the conformance suite.
   - No SwiftUI or UIKit module for now: `AsyncSequence`, `Subprogress` and `LocalizedError` already work with both. An `@Observable` connection model can come later if the app needs it.
@@ -543,7 +546,11 @@ These are possible later features, deliberately left out for now:
 - **Zip or tar archives.** Rejected: zip has no public API on iOS, and tar's (libarchive) is macOS-only, so either would mean owning a format or adding a dependency.
 - **A folder of WAVs and `tape.json`,** with no archive. Rejected: a folder doesn't travel through AirDrop, email or cloud storage as one item, and one file of it can be lost or changed without anyone noticing.
 - **Compression on by default.** Rejected: PCM barely shrinks, and compressing would slow archiving below the speed of the USB read. It stays an option.
-- **Staging tracks in a temporary folder** before writing the archive. Rejected for streaming each track straight into the archive, with the SHA-256 computed on the way.
+- **Staging tracks in a temporary folder** before writing the archive. Rejected for writing each track straight into the archive, with the SHA-256 computed on the way.
+
+**Reading**
+- **Streaming large files in 1 MiB GetPartialObject chunks,** with a `bytes(of:chunkSize:)` sequence. Rejected by the owner (2026-11-13 and 14): each chunk costs time up to where it ends, so 16 MiB took 8.5 s in chunks against 0.9 s in one read, and a full 127 MB track would take about 7 minutes.
+- **Larger chunks, such as 16 MiB.** Rejected by the owner: they would hold less in memory and report progress more often, but a full track would take about 35 s against about 7 s, and the gap grows with the file's size.
 
 **Safety**
 - **Read-back off by default,** for speed. Rejected: it costs about 4 seconds on a 78 MB tape, and harmless matters more than fast here.
@@ -601,3 +608,8 @@ These are possible later features, deliberately left out for now:
   - **Ambiguous paths:** a lookup uses an exact match first, then a single match ignoring case. If several items match ignoring case and none exactly, it throws the new code `ambiguousPath`, so nothing acts on an item the caller didn't mean. That can happen because the OP-1 keeps a new folder's name as typed until it leaves MTP mode.
   - **`FieldFormat`** comes from the MTP format code the OP-1 reports, not the file's name, because `drum/user/` keeps a converted file's `.wav` name. `tape.json` is reported as Text and `readme.txt` as Undefined, so those two are told apart by name.
   - **`FieldDevice.simulated()`** starts as a 1.7.3 OP-1 with no tapes, with every folder, the `readme.txt` files and both album sides empty, and the builder adds to that.
+- **2026-11-14:** Decided by the owner, from FieldCheck's `read.cost` (ADR 0003): **whole files are read with one GetObject.** The OP-1 charges each GetPartialObject for everything before it in the file, at about 19 MB/s, so chunked streaming takes time that grows with the square of a file's size (PROBE-NOTES.md, 2026-11-13 and 14).
+  - `bytes(of:chunkSize:)` is dropped from the API. It can come back if a firmware reads ranges cheaply.
+  - `copyItem(at:to:)` and `copyTape` read each file with one GetObject. Downloads hold at most one track in memory, as uploads already did, and progress and cancellation are per file.
+  - `contents(of:range:)` stays, for small reads near the start of a file.
+  - A full 127 MB GetObject hasn't been tried. Level 2's long check (`tape.track-limit`) is its first test.

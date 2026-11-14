@@ -50,6 +50,11 @@ actor Catalog {
         return data
     }
 
+    /// The whole file with one GetObject, not kept: a tape track can be 127 MB.
+    func wholeObject(_ entry: CatalogEntry) async throws -> Data {
+        try await session.object(entry.handle)
+    }
+
     /// Up to `length` bytes from `offset`, with GetPartialObject.
     func read(_ entry: CatalogEntry, offset: Int, length: Int) async throws -> Data {
         try await session.partialObject(entry.handle, offset: UInt32(offset), maxLength: UInt32(length))
