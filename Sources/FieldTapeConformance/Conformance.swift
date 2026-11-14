@@ -5,9 +5,9 @@ import System
 /// Checks that run the same way against the simulator and a real OP-1, to keep the simulator honest
 /// (ADR 0002, section 8).
 ///
-/// They use only FieldTapeKit's public API, so they check what apps see. For now they only read: steps 7 to 10 of
-/// the plan add reads, downloads and writes. None of them depends on what's on the OP-1. A check that needs
-/// something that isn't there, such as a tape, is skipped.
+/// They use only FieldTapeKit's public API, so they check what apps see. They read the OP-1 and never change it;
+/// copies go into a folder the caller gives. Steps 8 to 10 of the plan add writes. None of them depends on what's on
+/// the OP-1. A check that needs something that isn't there, such as a tape, is skipped.
 public enum Conformance {
     public struct Result: Sendable, Hashable, Identifiable {
         public enum Outcome: Sendable, Hashable {
@@ -18,23 +18,42 @@ public enum Conformance {
 
         public let name: String
         public let outcome: Outcome
+        /// What a passing check found worth recording, such as a copy's SHA-256.
+        public let detail: String?
         public var id: String { name }
+
+        init(name: String, outcome: Outcome, detail: String? = nil) {
+            self.name = name
+            self.outcome = outcome
+            self.detail = detail
+        }
     }
 
     public struct Check: Sendable {
         public let name: String
-        let body: @Sendable (FieldDevice) async throws -> Void
+        /// Takes the folder for copies, and returns a detail to record.
+        let body: @Sendable (FieldDevice, URL) async throws -> String?
 
         init(_ name: String, _ body: @escaping @Sendable (FieldDevice) async throws -> Void) {
+            self.name = name
+            self.body = { device, _ in
+                try await body(device)
+                return nil
+            }
+        }
+
+        /// A check that copies files into `workspace`, and returns what it copied.
+        init(_ name: String, copying body: @escaping @Sendable (FieldDevice, _ workspace: URL) async throws -> String) {
             self.name = name
             self.body = body
         }
 
-        /// Runs the check. It never throws: a failure, an unexpected error or a skip is its outcome.
-        public func run(on device: FieldDevice) async -> Result {
+        /// Runs the check, copying anything it copies into `workspace`, a folder that exists. It never throws: a
+        /// failure, an unexpected error or a skip is its outcome.
+        public func run(on device: FieldDevice, workspace: URL) async -> Result {
             do {
-                try await body(device)
-                return Result(name: name, outcome: .pass)
+                let detail = try await body(device, workspace)
+                return Result(name: name, outcome: .pass, detail: detail)
             } catch let skip as Skip {
                 return Result(name: name, outcome: .skipped(skip.reason))
             } catch let failure as Failure {
@@ -46,12 +65,16 @@ public enum Conformance {
         }
     }
 
-    /// Every check, in order.
-    public static func run(on device: FieldDevice) async -> [Result] {
+    /// Every check, in order. Copies of OP-1 files are left in `workspace`, a folder that exists, so they can be
+    /// compared with copies made another way, such as on a Mac.
+    public static func run(on device: FieldDevice, workspace: URL) async -> [Result] {
         var results: [Result] = []
-        for check in checks { results.append(await check.run(on: device)) }
+        for check in checks { results.append(await check.run(on: device, workspace: workspace)) }
         return results
     }
+
+    /// Every check: listing first, then reading and copying.
+    public static let checks = listingChecks + readingChecks
 
     struct Failure: Error {
         let message: String
@@ -79,9 +102,9 @@ public enum Conformance {
     /// A name nothing on an OP-1 has.
     static let missing = "fieldtapekit-conformance-missing"
 
-    // MARK: The checks
+    // MARK: Listing
 
-    public static let checks: [Check] = [
+    static let listingChecks: [Check] = [
         Check("The root holds the four well-known folders") { device in
             let root = try await device.contentsOfDirectory(at: "")
             for path in [FilePath.op1Synth, .op1Drum, .op1Tapes, .op1Mixdown] {

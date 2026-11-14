@@ -67,17 +67,28 @@ final class ConnectionLog {
         }
     }
 
-    /// The conformance suite only reads, so it needs no confirmation either. The log is its record.
+    /// The conformance suite only reads the OP-1, so it needs no confirmation either. It copies a tape track and an
+    /// album side into a new folder in Documents, kept so they can be compared with copies made on a Mac. The log
+    /// is its record, with each copy's SHA-256.
     func runConformance(on device: FieldDevice) async {
         guard running == nil else { return }
         running = device.id
         defer { running = nil }
-        record("Conformance: running")
-        let results = await Conformance.run(on: device)
+        let stamp = Date.now.formatted(.iso8601.year().month().day().timeZone(separator: .omitted)
+            .time(includingFractionalSeconds: false).timeSeparator(.omitted))
+        let workspace = URL.documentsDirectory.appending(path: "conformance-\(stamp)")
+        do {
+            try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: false)
+        } catch {
+            record("Conformance: couldn't make \(workspace.lastPathComponent): \(error.localizedDescription)")
+            return
+        }
+        record("Conformance: running, copies go in \(workspace.lastPathComponent)")
+        let results = await Conformance.run(on: device, workspace: workspace)
         conformance[device.id] = results
         for result in results {
             switch result.outcome {
-            case .pass: record("Conformance: pass: \(result.name)")
+            case .pass: record("Conformance: pass: \(result.name)\(result.detail.map { ". \($0)" } ?? "")")
             case .fail(let message): record("Conformance: FAIL: \(result.name): \(message)")
             case .skipped(let reason): record("Conformance: skipped: \(result.name): \(reason)")
             }
@@ -151,7 +162,7 @@ struct ConnectionsView: View {
                             Task { await log.runLevelOne(on: device) }
                         }
                         .disabled(log.running != nil)
-                        Button("Run conformance suite (reads only)") {
+                        Button("Run conformance suite (reads only, copies to Documents)") {
                             Task { await log.runConformance(on: device) }
                         }
                         .disabled(log.running != nil)
@@ -262,7 +273,7 @@ struct ConformanceRow: View {
 
     private var detail: String? {
         switch result.outcome {
-        case .pass: nil
+        case .pass: result.detail
         case .fail(let message), .skipped(let message): message
         }
     }

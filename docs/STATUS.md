@@ -112,9 +112,15 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - Not tested: a copy that reads back wrong from disk, which needs a way to corrupt a local file between write and read-back.
   - 165 tests pass on the Mac and the iOS simulator (94 FieldTapeKit, 67 FieldCheckKit, 4 conformance tests). FieldCheck builds for iOS devices.
 
+- **Step 7b is done, so step 7 is, and it passed on the OP-1** (iPad Pro, 2026-11-14, log in [firmware/1.7.3/runs](../firmware/1.7.3/runs/fieldcheck-2026-11-14T213915Z.txt)): all 15 conformance checks passed in about 4 s. The copies of `mixdown/side_a.wav` (12,235,308 bytes) and `tapes/2026-220#01/track_4.wav` (22,056,500 bytes) have the SHA-256s the probe recorded for the same files with its own code: `65c9af35…138aeb1a` on 2026-11-03, and `9aecf102…ecb69497` on 2026-11-08. The copies pulled to the Mac hash the same. So FieldTapeKit's one-GetObject copies match the OP-1 byte for byte.
+  - Five more conformance checks, 15 in all. They read, and never change, the OP-1: a whole read against a range read, a range past the end, `tooLarge` and `isADirectory`, and copying album side A and the largest tape track off.
+  - Each copy is made twice, and both are checked against the listing's size, a header read straight from the OP-1, and each other. The first copy is kept, the second, which got a numbered name, is deleted, and the check reports the copy's SHA-256.
+  - Checks now take a folder for copies. FieldCheck makes `conformance-<time>` in Documents for each run and keeps the copies there, so they can be compared with copies made on a Mac. The log has each SHA-256.
+  - 166 tests pass on the Mac and the iOS simulator (94 FieldTapeKit, 67 FieldCheckKit, 5 conformance tests with 33 cases). FieldCheck builds for iOS devices.
+
 ## Next steps
 
-1. Step 7b: conformance checks that copy a tape track and an album side off, and the OP-1 run, compared with `shasum` on the Mac.
+1. Step 8 of the plan: deleting files safely.
 
 ## The OP-1 right now
 
