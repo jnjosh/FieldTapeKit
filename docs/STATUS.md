@@ -88,10 +88,17 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - Tests check that level 1 passes on the default simulated OP-1, and that its readme texts are the baseline's.
   - 137 tests pass on the Mac and the iOS simulator (78 FieldTapeKit, 59 FieldCheckKit). FieldCheck builds for iOS devices.
 
+- **Step 6b is done, so step 6 is, and it passed on the OP-1** (iPad Pro, 2026-11-14, log in [firmware/1.7.3/runs](../firmware/1.7.3/runs/fieldcheck-2026-11-14T044246Z.txt)): all 10 conformance checks passed in about 0.2 s, the tape check included, so the simulator and a real 1.7.3 OP-1 agree on the listing API.
+  - `FieldTapeConformance`, a third library product. It has 10 read-only checks of the listing API that use only FieldTapeKit's public API and don't depend on what's on the OP-1: the well-known folders, paths and spelling, lowercase names, case-insensitive lookups, `item(at:)` agreeing with listings, formats, and the `notFound` and `notADirectory` errors. The tape check is skipped when there are no tapes.
+  - A Swift Testing wrapper runs every check against an empty and a populated simulated OP-1.
+  - FieldCheck has a **Run conformance suite (reads only)** button, and logs each result.
+  - It settled one detail: a lookup through a file throws `notADirectory` with that file as the error's path, which is now documented.
+  - 141 tests pass on the Mac and the iOS simulator (78 FieldTapeKit, 59 FieldCheckKit, 4 conformance tests with 22 cases). FieldCheck builds for iOS devices.
+
 ## Next steps
 
-1. Step 6b: the conformance suite, FieldCheck's Conformance button, and a read-only run on the OP-1.
-2. **Decide how FieldTapeKit reads large files, before step 7.** Decided so far (owner, 2026-11-13): not in 1 MiB GetPartialObject chunks, although ADR 0002 has `bytes(of:)`, `copyItem` and `copyTape` stream that way. Still to decide: one GetObject, larger chunks, or a mix. A level 1 run reading the same chunks in reverse order comes first, to tell whether the cost grows with the offset or with the number of requests (PROBE-NOTES.md, 2026-11-13). ADR 0002 changes once, when the whole decision is made.
+1. **Decide how FieldTapeKit reads large files, before step 7.** Decided so far (owner, 2026-11-13): not in 1 MiB GetPartialObject chunks, although ADR 0002 has `bytes(of:)`, `copyItem` and `copyTape` stream that way. Still to decide: one GetObject, larger chunks, or a mix. A level 1 run reading the same chunks in reverse order comes first, to tell whether the cost grows with the offset or with the number of requests (PROBE-NOTES.md, 2026-11-13). ADR 0002 changes once, when the whole decision is made.
+2. Step 7 of the plan: reading and downloading, once that's decided.
 
 ## The OP-1 right now
 

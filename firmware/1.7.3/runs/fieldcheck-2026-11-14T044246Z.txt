@@ -1,0 +1,16 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.38] Watching for an OP-1 in MTP mode
+[  13.00] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  13.00] Storage: 6429185024 bytes, 6285685760 free
+[  15.06] Conformance: running
+[  15.27] Conformance: pass: The root holds the four well-known folders
+[  15.27] Conformance: pass: Every listed item's path is its folder's path and its name
+[  15.27] Conformance: pass: Names are lowercase
+[  15.27] Conformance: pass: Lookups ignore case and answer with the OP-1's spelling
+[  15.27] Conformance: pass: item(at:) agrees with the listing
+[  15.27] Conformance: pass: The album sides are WAV files, and the readmes text
+[  15.27] Conformance: pass: A tape's tape.json is JSON and its tracks are WAV files
+[  15.27] Conformance: pass: Something missing is nil, and doesn't exist
+[  15.27] Conformance: pass: Listing a missing folder is notFound
+[  15.27] Conformance: pass: Listing a file is notADirectory
+[  15.27] Conformance: 10 of 10 without a failure

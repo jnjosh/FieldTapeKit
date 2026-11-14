@@ -22,6 +22,8 @@ targets:
         product: FieldTapeKit
       - package: FieldTapeKit
         product: FieldCheckKit
+      - package: FieldTapeKit
+        product: FieldTapeConformance
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jnjosh.FieldCheck

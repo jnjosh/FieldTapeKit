@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		29FBE7BF46F2FC0B9E045BD2 /* FieldTapeKit in Frameworks */ = {isa = PBXBuildFile; productRef = 82861AB0DF7A10F9E864E8F3 /* FieldTapeKit */; };
+		4B9D8C155CC0B9F259F5A1BB /* FieldTapeConformance in Frameworks */ = {isa = PBXBuildFile; productRef = 3C2C04026209AA0B97AC9311 /* FieldTapeConformance */; };
 		9312C00F56B2605AD88899E0 /* FieldCheckApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D76CDF7A8E2BF2BBEBAEE7CD /* FieldCheckApp.swift */; };
 		9D34A752DBC1E09DB278C4D6 /* FieldCheckKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8F76C4B889171786FB3C1310 /* FieldCheckKit */; };
 /* End PBXBuildFile section */
@@ -26,6 +27,7 @@
 			files = (
 				29FBE7BF46F2FC0B9E045BD2 /* FieldTapeKit in Frameworks */,
 				9D34A752DBC1E09DB278C4D6 /* FieldCheckKit in Frameworks */,
+				4B9D8C155CC0B9F259F5A1BB /* FieldTapeConformance in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,6 +86,7 @@
 			packageProductDependencies = (
 				82861AB0DF7A10F9E864E8F3 /* FieldTapeKit */,
 				8F76C4B889171786FB3C1310 /* FieldCheckKit */,
+				3C2C04026209AA0B97AC9311 /* FieldTapeConformance */,
 			);
 			productName = FieldCheck;
 			productReference = 40FE766552186C294B0AD807 /* FieldCheck.app */;
@@ -326,6 +329,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		3C2C04026209AA0B97AC9311 /* FieldTapeConformance */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FieldTapeConformance;
+		};
 		82861AB0DF7A10F9E864E8F3 /* FieldTapeKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = FieldTapeKit;

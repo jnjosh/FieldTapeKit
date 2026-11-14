@@ -1,8 +1,10 @@
 // FieldCheck: checks a connected OP-1 against what FieldTapeKit expects (ADR 0003).
 // It shows connection events and device info, runs level 1, and saves each report and its log to Documents.
 // A run with no failures can be saved as its firmware's baseline, to copy into the repository's firmware/ folder.
+// It also runs FieldTapeKit's conformance suite, the checks the simulator passes too, and logs the results.
 
 import FieldCheckKit
+import FieldTapeConformance
 import FieldTapeKit
 import SwiftUI
 import UIKit
@@ -28,6 +30,8 @@ final class ConnectionLog {
     private(set) var devices: [FieldDevice] = []
     /// The latest report for each connection.
     private(set) var reports: [FieldDevice.ID: CheckReport] = [:]
+    /// The latest conformance results for each connection.
+    private(set) var conformance: [FieldDevice.ID: [Conformance.Result]] = [:]
     private(set) var running: FieldDevice.ID?
     private let started = Date()
     private let fileURL: URL
@@ -63,6 +67,25 @@ final class ConnectionLog {
         }
     }
 
+    /// The conformance suite only reads, so it needs no confirmation either. The log is its record.
+    func runConformance(on device: FieldDevice) async {
+        guard running == nil else { return }
+        running = device.id
+        defer { running = nil }
+        record("Conformance: running")
+        let results = await Conformance.run(on: device)
+        conformance[device.id] = results
+        for result in results {
+            switch result.outcome {
+            case .pass: record("Conformance: pass: \(result.name)")
+            case .fail(let message): record("Conformance: FAIL: \(result.name): \(message)")
+            case .skipped(let reason): record("Conformance: skipped: \(result.name): \(reason)")
+            }
+        }
+        let failed = results.filter { if case .fail = $0.outcome { true } else { false } }.count
+        record("Conformance: \(results.count - failed) of \(results.count) without a failure")
+    }
+
     /// Saves the report as `baseline-<firmware>.json` in Documents, under a new name if one is there already.
     func saveBaseline(_ report: CheckReport) {
         do {
@@ -87,6 +110,7 @@ final class ConnectionLog {
                 case .disconnected(let id):
                     devices.removeAll { $0.id == id }
                     reports[id] = nil
+                    conformance[id] = nil
                     record("Disconnected")
                 }
             }
@@ -127,6 +151,10 @@ struct ConnectionsView: View {
                             Task { await log.runLevelOne(on: device) }
                         }
                         .disabled(log.running != nil)
+                        Button("Run conformance suite (reads only)") {
+                            Task { await log.runConformance(on: device) }
+                        }
+                        .disabled(log.running != nil)
                     }
                 }
                 ForEach(log.devices) { device in
@@ -142,6 +170,13 @@ struct ConnectionsView: View {
                             if report.count(.fail) > 0 {
                                 Text("A run with failures can't be a baseline.")
                             }
+                        }
+                    }
+                }
+                ForEach(log.devices) { device in
+                    if let results = log.conformance[device.id] {
+                        Section("Conformance") {
+                            ForEach(results) { ConformanceRow(result: $0) }
                         }
                     }
                 }
@@ -197,6 +232,46 @@ struct ResultRow: View {
         case .pass: .green
         case .fail: .red
         case .notRun: .secondary
+        }
+    }
+}
+
+struct ConformanceRow: View {
+    let result: Conformance.Result
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(result.name)
+                Spacer()
+                Text(label).font(.caption.bold()).foregroundStyle(color)
+            }
+            if let detail {
+                Text(detail).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+            }
+        }
+    }
+
+    private var label: String {
+        switch result.outcome {
+        case .pass: "pass"
+        case .fail: "fail"
+        case .skipped: "skipped"
+        }
+    }
+
+    private var detail: String? {
+        switch result.outcome {
+        case .pass: nil
+        case .fail(let message), .skipped(let message): message
+        }
+    }
+
+    private var color: Color {
+        switch result.outcome {
+        case .pass: .green
+        case .fail: .red
+        case .skipped: .secondary
         }
     }
 }

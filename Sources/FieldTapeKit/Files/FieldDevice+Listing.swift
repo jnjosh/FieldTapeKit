@@ -20,7 +20,8 @@ extension FieldDevice {
 
     /// The item at `path`, or nil if there's nothing there. An empty path is the root, which has no item.
     ///
-    /// - Throws: `FieldError` with `.notADirectory` if a folder on the way is a file, `.ambiguousPath`,
+    /// - Throws: `FieldError` with `.notADirectory` if a folder on the way is a file, with that file as its `path`,
+    ///   `.ambiguousPath`,
     ///   `.disconnected`, `.timedOut` or `.deviceRefused`, or `CancellationError`.
     public func item(at path: FilePath) async throws -> FieldItem? {
         do {
