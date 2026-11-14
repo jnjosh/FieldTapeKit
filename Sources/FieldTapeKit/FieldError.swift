@@ -43,6 +43,13 @@ public struct FieldError: Error, Sendable, LocalizedError {
         public static let deviceInUse = Code("deviceInUse")
         /// The OP-1 refused a request, or sent a reply that couldn't be read. `responseCode` says which, if known.
         public static let deviceRefused = Code("deviceRefused")
+        /// Nothing is at `path`.
+        public static let notFound = Code("notFound")
+        /// `path`, or a folder on the way to it, is a file.
+        public static let notADirectory = Code("notADirectory")
+        /// `path` matches more than one item when case is ignored, and none exactly. The OP-1 lowercases a new
+        /// name only after it leaves MTP mode, so a folder can briefly hold two names that differ only in case.
+        public static let ambiguousPath = Code("ambiguousPath")
     }
 
     public var errorDescription: String? {
@@ -51,6 +58,12 @@ public struct FieldError: Error, Sendable, LocalizedError {
         case .timedOut: "The OP-1 didn't answer in time."
         case .notAuthorized: "This app isn't allowed to use connected devices."
         case .deviceInUse: "Another app is using the OP-1."
+        case .notFound:
+            "There's nothing on the OP-1 at \(pathDescription)."
+        case .notADirectory:
+            "On the OP-1, \(pathDescription) is a file, not a folder."
+        case .ambiguousPath:
+            "More than one item on the OP-1 matches \(pathDescription) when case is ignored."
         case .deviceRefused:
             if let responseCode {
                 "The OP-1 refused the request (response \(String(format: "0x%04X", responseCode)))."
@@ -69,11 +82,20 @@ public struct FieldError: Error, Sendable, LocalizedError {
             "It's still connected, so try again."
         case .notAuthorized:
             "Allow this app to use connected devices, then connect the OP-1 again."
+        case .ambiguousPath:
+            "Use the path exactly as a listing spells it."
         case .deviceInUse:
             "Quit the other app, such as Teenage Engineering's app or Image Capture on a Mac, then connect the OP-1 again."
         default:
             nil
         }
+    }
+}
+
+extension FieldError {
+    private var pathDescription: String {
+        guard let path, !path.isEmpty else { return "that path" }
+        return path.string
     }
 }
 

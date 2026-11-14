@@ -439,7 +439,7 @@ public struct FieldError: Error, Sendable, LocalizedError {
 
     public struct Code: Sendable, Hashable {
         static let disconnected, timedOut, notFound, alreadyExists,
-                   notADirectory, notAllowed, invalidName,
+                   notADirectory, ambiguousPath, notAllowed, invalidName,
                    tapeLimitReached, tapeTooLong, insufficientSpace,
                    invalidArchive, archiveMismatch,
                    changedSinceConfirmation, confirmationAlreadyUsed,
@@ -597,3 +597,7 @@ These are possible later features, deliberately left out for now:
   - Untested firmware works, with a warning.
 - **2026-11-08:** Correction to the API gap fix above: `Error` already refines `Sendable` in Swift 6 (SE-0302), so `(any Error)?` was fine as written. The sketch is back to `(any Error)?`, which is the same type.
 - **2026-11-09:** `FieldDevice.connections` throws, so the examples use `for try await`. Without that, `.notAuthorized` would have no way to reach the caller when the person denies access. Found while building step 3, and approved by the owner.
+- **2026-11-13:** Decided by the owner while building step 6 of the plan, keeping the file layer as designed:
+  - **Ambiguous paths:** a lookup uses an exact match first, then a single match ignoring case. If several items match ignoring case and none exactly, it throws the new code `ambiguousPath`, so nothing acts on an item the caller didn't mean. That can happen because the OP-1 keeps a new folder's name as typed until it leaves MTP mode.
+  - **`FieldFormat`** comes from the MTP format code the OP-1 reports, not the file's name, because `drum/user/` keeps a converted file's `.wav` name. `tape.json` is reported as Text and `readme.txt` as Undefined, so those two are told apart by name.
+  - **`FieldDevice.simulated()`** starts as a 1.7.3 OP-1 with no tapes, with every folder, the `readme.txt` files and both album sides empty, and the builder adds to that.

@@ -84,6 +84,35 @@ import Testing
         #expect(observed["versions"] == [1])
     }
 
+    // MARK: The default simulated OP-1
+
+    /// `FieldDevice.simulated()` is a 1.7.3 OP-1 with no tapes and empty album sides, so level 1 passes, apart from
+    /// the checks that need tapes or audio.
+    @Test func level1PassesOnTheDefaultSimulatedOP1() async {
+        let report = await LevelOne.run(on: FieldDevice.simulated(), host: LevelOneTests.host)
+        let notRun: Set = ["tape.files", "tape.wav-format", "tape.json-keys", "tape.json-units", "tape.types",
+                           "read.partial", "read.speed"]
+        for result in report.results {
+            #expect(result.outcome == (notRun.contains(result.expectation) ? .notRun : .pass),
+                    "\(result.expectation): \(result.summary)")
+        }
+    }
+
+    /// The simulator's readme texts are the ones in the committed baseline.
+    @Test(.enabled(if: FileManager.default.fileExists(atPath: committed.path(percentEncoded: false))))
+    func theSimulatorsReadmesMatchTheBaseline() async throws {
+        let baseline = try Baseline(json: Data(contentsOf: Self.committed))
+        let readmes = try #require(baseline.expectations["layout.readmes"]?.observed)
+        let report = await LevelOne.run(on: FieldDevice.simulated(), host: LevelOneTests.host)
+        let simulated = try #require(report.results.first { $0.expectation == "layout.readmes" }?.observed)
+        guard case .record(let fromBaseline) = readmes, case .record(let fromSimulator) = simulated else {
+            Issue.record("no readmes")
+            return
+        }
+        // The default simulated OP-1 has no tapes, so no tape readme.
+        #expect(fromSimulator == fromBaseline.filter { $0.key != "tapes/*/readme.txt" })
+    }
+
     // MARK: Older reports
 
     /// A real report saved on 2026-11-13, before reports had `durationMilliseconds` or `varies`.

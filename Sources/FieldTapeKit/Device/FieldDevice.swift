@@ -112,11 +112,6 @@ public struct FieldStorage: Sendable, Hashable {
 // MARK: - Simulated
 
 extension FieldDevice {
-    /// An empty OP-1 that exists only in memory, for tests and SwiftUI previews. It behaves like OP-1
-    /// firmware 1.7.3 at the MTP level (ADR 0002, section 8).
-    public static func simulated() -> FieldDevice {
-        simulated(SimulatedMTPDevice())
-    }
 
     static func simulated(_ simulator: SimulatedMTPDevice, timeout: Duration = .seconds(30),
                           pingTimeout: Duration = .seconds(5)) -> FieldDevice {
@@ -124,7 +119,7 @@ extension FieldDevice {
         let info = FieldDeviceInfo(model: "OP-1", firmware: simulator.firmware, isFirmwareTested: isTested,
                                    serialNumber: simulator.serialNumber,
                                    storage: FieldStorage(capacity: Int(clamping: simulator.capacity),
-                                                         freeSpace: Int(clamping: simulator.capacity)))
+                                                         freeSpace: Int(clamping: simulator.initialFreeSpace)))
         return FieldDevice(session: MTPSession(transport: simulator, timeout: timeout, pingTimeout: pingTimeout),
                            info: info, profile: profile, usb: .op1)
     }

@@ -67,6 +67,24 @@ package struct WAVHeader: Sendable, Hashable {
         dataSize = u32(40)
     }
 
+    /// The header the OP-1 writes for `dataBytes` of audio in `format`.
+    package static func bytes(format: WAVFormat, dataBytes: Int) -> Data {
+        var data = Data()
+        data.append(contentsOf: Array("RIFF".utf8))
+        data.appendLittleEndian(UInt32(36 + dataBytes))
+        data.append(contentsOf: Array("WAVEfmt ".utf8))
+        data.appendLittleEndian(UInt32(16))
+        data.appendLittleEndian(format.encoding)
+        data.appendLittleEndian(UInt16(format.channels))
+        data.appendLittleEndian(UInt32(format.sampleRate))
+        data.appendLittleEndian(UInt32(format.sampleRate * format.frameBytes))
+        data.appendLittleEndian(UInt16(format.frameBytes))
+        data.appendLittleEndian(UInt16(format.bitsPerSample))
+        data.append(contentsOf: Array("data".utf8))
+        data.appendLittleEndian(UInt32(dataBytes))
+        return data
+    }
+
     /// What's inconsistent about this header for a file of `fileSize` bytes, or nothing.
     package func problems(fileSize: Int) -> [String] {
         var problems: [String] = []

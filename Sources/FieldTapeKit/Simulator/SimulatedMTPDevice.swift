@@ -46,13 +46,38 @@ actor SimulatedMTPDevice: MTPTransport {
     private var faults: [Fault]
     private(set) var requestCount = 0
 
+    /// Free space when it was made, before any later `addFile`.
+    let initialFreeSpace: UInt64
+
+    /// `contents` is laid out under the root, in order.
     init(firmware: String = "1.7.3", serialNumber: String = "SIMULATED", capacity: UInt64 = 6_429_185_024,
-         operations: [UInt16] = operations173, faults: [Fault] = []) {
+         operations: [UInt16] = operations173, faults: [Fault] = [], contents: [SimulatedNode] = []) {
         self.firmware = firmware
         self.serialNumber = serialNumber
         self.operations = operations
         self.capacity = capacity
         self.faults = faults
+        var objects: [UInt32: Object] = [:]
+        var nextHandle: UInt32 = 1
+        func lay(_ nodes: [SimulatedNode], in parent: UInt32) {
+            for node in nodes {
+                let handle = nextHandle
+                nextHandle += 1
+                switch node {
+                case .folder(let name, let children):
+                    objects[handle] = Object(parent: parent, name: name, format: PTPObjectFormat.association,
+                                             associationType: PTPAssociationType.genericFolder)
+                    lay(children, in: handle)
+                case .file(let name, let data, let format):
+                    objects[handle] = Object(parent: parent, name: name, format: format, data: data)
+                }
+            }
+        }
+        lay(contents, in: Self.root)
+        self.objects = objects
+        self.nextHandle = nextHandle
+        let used = objects.values.reduce(UInt64(0)) { $0 + UInt64($1.data.count) }
+        initialFreeSpace = capacity - min(used, capacity)
     }
 
     // MARK: Contents

@@ -79,9 +79,18 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - 121 tests pass on the Mac and the iOS simulator (64 FieldTapeKit, 57 FieldCheckKit), with none skipped. FieldCheck builds for iOS devices.
   - The run: all 17 checks passed and match PROBE-NOTES.md, and the baseline has no serial number. The chunk times came back the same for the third time: 61 ms rising to 960 ms, about 58 ms more per MiB.
 
+- **Step 6 is split into 6a and 6b** (decided 2026-11-13, recorded in the plan and ADR 0002's change log).
+- **Step 6a is done, and needed no OP-1 run:**
+  - The second public API, the start of the file layer: `FilePath.op1Tapes`, `.op1Mixdown`, `.op1Synth` and `.op1Drum`, `FieldItem`, `FieldFormat`, and `contentsOfDirectory(at:)`, `item(at:)` and `fileExists(at:)`.
+  - Lookups walk the path from the root with fresh object info at every step, match names ignoring case, and answer with the OP-1's spelling. An exact match wins. Several matches that differ only in case throw `ambiguousPath`. There's no handle cache.
+  - New `FieldError` codes: `notFound`, `notADirectory` and `ambiguousPath`.
+  - `FieldDevice.simulated { Directory … File … }`, starting from the 1.7.3 layout with no tapes. `File(_:seconds:)` makes silent WAVs: 32-bit in a tape, 16-bit anywhere else.
+  - Tests check that level 1 passes on the default simulated OP-1, and that its readme texts are the baseline's.
+  - 137 tests pass on the Mac and the iOS simulator (78 FieldTapeKit, 59 FieldCheckKit). FieldCheck builds for iOS devices.
+
 ## Next steps
 
-1. Step 6 of the plan: paths and listing, the first of the file layer, built against the 1.7.3 baseline.
+1. Step 6b: the conformance suite, FieldCheck's Conformance button, and a read-only run on the OP-1.
 2. **Decide how FieldTapeKit reads large files, before step 7.** Decided so far (owner, 2026-11-13): not in 1 MiB GetPartialObject chunks, although ADR 0002 has `bytes(of:)`, `copyItem` and `copyTape` stream that way. Still to decide: one GetObject, larger chunks, or a mix. A level 1 run reading the same chunks in reverse order comes first, to tell whether the cost grows with the offset or with the number of requests (PROBE-NOTES.md, 2026-11-13). ADR 0002 changes once, when the whole decision is made.
 
 ## The OP-1 right now

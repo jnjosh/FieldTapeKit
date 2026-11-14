@@ -143,6 +143,12 @@ firmware/1.7.3/               Baseline and reports
 
 **Relies on:** `names.lowercase`, `layout.folders`.
 
+**Split in two (decided 2026-11-13):**
+- **6a:** the well-known paths, `FieldItem`, `FieldFormat`, the listing calls and their errors, and the simulator builder, tested on the simulator. Nothing on the OP-1.
+- **6b:** the conformance suite (`FieldTapeConformance`), its Swift Testing wrapper, FieldCheck's Conformance button, and the read-only run on the OP-1.
+
+Decided by the owner at the same time, and recorded in ADR 0002's change log: an ambiguous lookup throws `ambiguousPath`, formats come from the MTP code, and `FieldDevice.simulated()` starts as a 1.7.3 OP-1 with no tapes.
+
 ### 7. Reading and downloading
 
 **Adds (public):**
