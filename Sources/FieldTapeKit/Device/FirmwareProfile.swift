@@ -10,6 +10,9 @@ package struct FirmwareProfile: Sendable, Equatable {
     /// The names the `readme.txt` in each kind of folder allows (`layout.readmes`). `tapes/*` stands for every
     /// tape folder.
     package let allowedNames: [String: [String]]
+    /// Files the OP-1 puts in its folders itself, which FieldTapeKit never deletes on their own. They go with a tape
+    /// folder when it's deleted.
+    package let ownFiles: [String]
     /// What each tape folder holds (`tape.files`).
     package let tapeFiles: FolderFiles
     /// What `mixdown/` holds (`album.files`).
@@ -32,6 +35,7 @@ package struct FirmwareProfile: Sendable, Equatable {
             "mixdown": ["side_a.wav", "side_b.wav"],
             "tapes/*": ["track_1.wav", "track_2.wav", "track_3.wav", "track_4.wav"],
         ],
+        ownFiles: ["readme.txt", "you may create folders here"],
         tapeFiles: FolderFiles(required: ["tape.json", "track_1.wav", "track_2.wav", "track_3.wav", "track_4.wav"],
                                optional: ["readme.txt"]),
         albumFiles: FolderFiles(required: ["side_a.wav", "side_b.wav"], optional: ["readme.txt"]),

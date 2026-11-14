@@ -138,7 +138,8 @@ public actor FieldDevice {
 
     // Folders and deleting
     func createDirectory(at path: FilePath) async throws -> FieldItem
-    func removeItem(at path: FilePath, keepingCopyAt backup: URL) async throws   // copy, verify, delete
+    @discardableResult
+    func removeItem(at path: FilePath, keepingCopyAt backup: URL) async throws -> URL   // copy, verify, delete; files only
     func prepareToRemove(at path: FilePath) async throws -> FileDeletion         // for a person to confirm
     func removeItem(_ deletion: FileDeletion) async throws                       // confirmed; see section 6
 }
@@ -150,6 +151,15 @@ public struct FieldItem: Sendable, Hashable, Identifiable {
     var size: Int                 // fresh from the device at listing time
     var format: FieldFormat         // .wav, .aiff, .json, .text, .folder, .other(UInt16)
     var id: FilePath { path }
+}
+
+public struct FileDeletion: Sendable, Hashable, Identifiable {
+    let id: UUID
+    let item: FieldItem                // as read fresh by prepareToRemove
+    let contents: [FieldItem]          // for a folder, everything in it at every depth
+    var size: Int                      // the bytes that would be lost
+    var losesNothing: Bool             // an empty folder: safe to skip the prompt
+    // Internal: the device it belongs to. It works once, and only while item and contents match the OP-1 exactly.
 }
 
 public struct UploadOptions: Sendable {
@@ -618,3 +628,8 @@ These are possible later features, deliberately left out for now:
   - **`copyItem(at: FilePath, to: URL)` returns the URL it wrote.** It never overwrites a local file and adds a number when the name is taken, as Finder does (`side_a 2.wav`), so the caller needs to know where the copy went.
   - **Three new codes:** `tooLarge` for a file over `maximumSize`, `isADirectory` for reading or copying a folder, and `localFileFailed` for a local file that can't be written or read back, with the system's error as `underlying`. FieldTapeKit still throws only `FieldError` and `CancellationError`.
   - **`contents(of:range:)` past the end** gives the bytes up to the end, and empty data from the end onwards, as reading a file normally does.
+- **2026-11-14:** Decided by the owner while building step 8 of the plan:
+  - **`removeItem(at:keepingCopyAt:)` returns the copy's URL,** as `copyItem` does, and works on files only. A folder throws `isADirectory` and needs `prepareToRemove` and a person's confirmation. Tapes get archives in the tape layer.
+  - **The file layer refuses what belongs to the OP-1,** with `notAllowed`, before anything happens: the root, the folders every OP-1 has (from the firmware profile), and the files it puts in them itself, `readme.txt` and `you may create folders here`, on their own. A tape folder can still be deleted, and its `readme.txt` goes with it.
+  - **`FileDeletion`** is defined, mirroring `TapeDeletion`. A confirmation from another connection is `changedSinceConfirmation`. It's used up when the first delete is sent, so a cancel before that keeps it.
+  - **The simulator refuses DeleteObject on a folder with files in it** (0x2002). That isn't observed: what the OP-1 does is `delete.folder-with-files`, still unknown. FieldTapeKit always empties a folder first, so it doesn't depend on the answer.

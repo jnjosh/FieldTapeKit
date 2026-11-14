@@ -25,6 +25,8 @@ public actor FieldDevice: Identifiable {
     /// What ImageCaptureCore reported about the USB device, or nil if it wasn't asked (`device.identity`).
     package nonisolated let usb: USBIdentity?
     private var wasRemoved = false
+    /// Confirmations already used. Each works once (ADR 0002, safety rule 1).
+    var usedConfirmations: Set<UUID> = []
 
     init(session: MTPSession, info: FieldDeviceInfo, profile: FirmwareProfile, usb: USBIdentity?) {
         self.session = session

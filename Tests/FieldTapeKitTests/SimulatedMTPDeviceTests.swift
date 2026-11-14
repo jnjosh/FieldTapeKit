@@ -99,7 +99,8 @@ import Testing
         #expect(try await session.partialObject(handles.track, offset: 2_000, maxLength: 50).isEmpty)
     }
 
-    @Test(arguments: [PTPOperation.deleteObject, .sendObjectInfo, .sendObject])
+    /// DeleteObject arrived in step 8. Sending files arrives in step 9.
+    @Test(arguments: [PTPOperation.sendObjectInfo, .sendObject])
     func refusesWritesForNow(operation: PTPOperation) async {
         await #expect(throws: MTPError.refused(operation, responseCode: 0x2005)) {
             try await session(SimulatedMTPDevice()).send(operation, [1])

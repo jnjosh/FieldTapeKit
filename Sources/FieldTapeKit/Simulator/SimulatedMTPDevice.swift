@@ -16,6 +16,8 @@ actor SimulatedMTPDevice: MTPTransport {
         case refuse(request: Int, responseCode: UInt16)
         /// The request's data phase comes back cut short, after this many bytes.
         case shortData(request: Int, keeping: Int)
+        /// Deleting the object with this name is refused with this response code.
+        case refuseDeleting(name: String, responseCode: UInt16)
     }
 
     struct Object: Sendable {
@@ -53,6 +55,8 @@ actor SimulatedMTPDevice: MTPTransport {
     private var nextHandle: UInt32 = 1
     private var faults: [Fault]
     private(set) var requestCount = 0
+    /// The names of deleted objects, in the order they went.
+    private(set) var deleted: [String] = []
 
     /// Free space when it was made, before any later `addFile`.
     let initialFreeSpace: UInt64
@@ -108,6 +112,12 @@ actor SimulatedMTPDevice: MTPTransport {
         object.staleSize = object.staleSize ?? object.data.count
         object.data = data
         objects[handle] = object
+    }
+
+    /// Replaces a file's contents with ones of another size, as if it were rewritten before this session.
+    func replace(_ handle: UInt32, with data: Data) {
+        objects[handle]?.data = data
+        objects[handle]?.staleSize = nil
     }
 
     func add(faults more: [Fault]) {
@@ -229,7 +239,21 @@ actor SimulatedMTPDevice: MTPTransport {
             let slice = Data(served[served.startIndex + start ..< served.startIndex + end])
             return (slice, Response.ok, [UInt32(slice.count)])
 
-        case .deleteObject, .sendObjectInfo, .sendObject, nil:
+        case .deleteObject:
+            guard let handle = params.first, let object = objects[handle] else { return (none, Response.invalidObjectHandle, []) }
+            for case .refuseDeleting(let name, let responseCode) in faults where name == object.name {
+                return (none, responseCode, [])
+            }
+            // Whether the OP-1 deletes a folder with files in it is unknown (`delete.folder-with-files`), so the
+            // simulator refuses, and FieldTapeKit always empties a folder first.
+            if object.format == PTPObjectFormat.association, objects.values.contains(where: { $0.parent == handle }) {
+                return (none, PTPResponseCode.generalError, [])
+            }
+            objects[handle] = nil
+            deleted.append(object.name)
+            return (none, Response.ok, [])
+
+        case .sendObjectInfo, .sendObject, nil:
             return (none, Response.operationNotSupported, [])
         }
     }

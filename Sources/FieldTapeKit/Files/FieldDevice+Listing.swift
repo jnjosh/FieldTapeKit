@@ -68,7 +68,7 @@ extension FieldDevice {
         return current
     }
 
-    private func children(of folder: Located) async throws -> [(handle: UInt32, info: PTPObjectInfo)] {
+    func children(of folder: Located) async throws -> [(handle: UInt32, info: PTPObjectInfo)] {
         var children: [(handle: UInt32, info: PTPObjectInfo)] = []
         for handle in try await session.objectHandles(parent: folder.handle) {
             children.append((handle, try await session.objectInfo(handle)))

@@ -118,9 +118,17 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - Checks now take a folder for copies. FieldCheck makes `conformance-<time>` in Documents for each run and keeps the copies there, so they can be compared with copies made on a Mac. The log has each SHA-256.
   - 166 tests pass on the Mac and the iOS simulator (94 FieldTapeKit, 67 FieldCheckKit, 5 conformance tests with 33 cases). FieldCheck builds for iOS devices.
 
+- **Step 8 is done, tested only on the simulator,** as the plan says. Hardware checks it in step 11, the first step that writes something safe to delete:
+  - Public: `removeItem(at:keepingCopyAt:)`, which copies and verifies a file, checks it's listed as it was, then deletes it, and returns the copy's URL. `prepareToRemove(at:)` returns a `FileDeletion`, and `removeItem(_:)` deletes what it describes.
+  - A confirmation works once, only on the connection that made it, and only while the item and everything in it are listed exactly as they were. A folder's contents go deepest first, then the folder. A failure partway stops, and `changed` lists what was deleted.
+  - The root, the OP-1's own folders, and its own files (`readme.txt`, `you may create folders here`) are refused with `notAllowed`. A tape folder can still be deleted, with its `readme.txt`.
+  - New `FieldError` codes: `notAllowed`, `changedSinceConfirmation` and `confirmationAlreadyUsed`.
+  - The simulator now deletes, refuses a folder with files in it (an assumption: `delete.folder-with-files` is still unknown), records what it deleted in order, and can refuse deleting a named file.
+  - 182 tests pass on the Mac and the iOS simulator (110 FieldTapeKit, 67 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS devices.
+
 ## Next steps
 
-1. Step 8 of the plan: deleting files safely.
+1. Step 9 of the plan: writing new files and folders.
 
 ## The OP-1 right now
 

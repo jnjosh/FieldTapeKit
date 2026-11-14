@@ -99,6 +99,11 @@ package actor MTPSession {
         try await send(.getObject, [handle]).payload
     }
 
+    /// Deletes one object. A folder is deleted only once it's empty (`delete.files-then-folder`).
+    package func deleteObject(_ handle: UInt32) async throws {
+        _ = try await send(.deleteObject, [handle, 0])
+    }
+
     /// Up to `maxLength` bytes from `offset`. Fewer come back at the end of the file.
     package func partialObject(_ handle: UInt32, offset: UInt32, maxLength: UInt32) async throws -> Data {
         try await send(.getPartialObject, [handle, offset, maxLength]).payload

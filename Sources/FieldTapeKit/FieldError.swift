@@ -60,6 +60,17 @@ public struct FieldError: Error, Sendable, LocalizedError {
         /// A file on this device, not the OP-1, couldn't be written or read: a full disk, a missing folder, or no
         /// permission. `underlying` is the system's error, and `path` is the OP-1 file being copied.
         public static let localFileFailed = Code("localFileFailed")
+        /// FieldTapeKit doesn't do that at `path`, such as deleting a folder or file that belongs to the OP-1.
+        public static let notAllowed = Code("notAllowed")
+        /// A confirmation no longer matches what's on the OP-1, or was made on another connection. Nothing changed.
+        public static let changedSinceConfirmation = Code("changedSinceConfirmation")
+        /// A confirmation was already used. Each works once. Nothing changed.
+        public static let confirmationAlreadyUsed = Code("confirmationAlreadyUsed")
+    }
+
+    /// The same error, also saying what had already been changed on the OP-1.
+    func adding(changed more: [FilePath]) -> FieldError {
+        FieldError(code, path: path, responseCode: responseCode, changed: changed + more, underlying: underlying)
     }
 
     public var errorDescription: String? {
@@ -74,6 +85,12 @@ public struct FieldError: Error, Sendable, LocalizedError {
             "On the OP-1, \(pathDescription) is a file, not a folder."
         case .ambiguousPath:
             "More than one item on the OP-1 matches \(pathDescription) when case is ignored."
+        case .notAllowed:
+            "FieldTapeKit doesn't change \(pathDescription), because it belongs to the OP-1."
+        case .changedSinceConfirmation:
+            "\(pathDescriptionCapitalized) changed on the OP-1 since it was confirmed, so nothing was deleted."
+        case .confirmationAlreadyUsed:
+            "That confirmation for \(pathDescription) was already used, so nothing was deleted."
         case .isADirectory:
             "On the OP-1, \(pathDescription) is a folder, not a file."
         case .tooLarge:
@@ -106,6 +123,8 @@ public struct FieldError: Error, Sendable, LocalizedError {
             "Allow this app to use connected devices, then connect the OP-1 again."
         case .ambiguousPath:
             "Use the path exactly as a listing spells it."
+        case .changedSinceConfirmation, .confirmationAlreadyUsed:
+            "Ask again, with what's on the OP-1 now."
         case .tooLarge:
             "Copy it to a file with copyItem(at:to:), or read it with a larger maximum size."
         case .verificationFailed:
@@ -123,6 +142,12 @@ public struct FieldError: Error, Sendable, LocalizedError {
 extension FieldError {
     private var pathDescription: String {
         guard let path, !path.isEmpty else { return "that path" }
+        return path.string
+    }
+
+    /// A path stays as the OP-1 spells it, so only the fallback is capitalized.
+    private var pathDescriptionCapitalized: String {
+        guard let path, !path.isEmpty else { return "That path" }
         return path.string
     }
 }

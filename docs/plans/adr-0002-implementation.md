@@ -184,6 +184,8 @@ Decided by the owner at the same time, and recorded in ADR 0002's change log: `c
 
 **Relies on:** `delete.files-then-folder`.
 
+Decided by the owner while building it (2026-11-14), and recorded in ADR 0002's change log: `removeItem(at:keepingCopyAt:)` returns the copy's URL and works on files only, and the file layer refuses to delete what belongs to the OP-1.
+
 ### 9. Writing new files and folders
 
 **Adds (public):**
