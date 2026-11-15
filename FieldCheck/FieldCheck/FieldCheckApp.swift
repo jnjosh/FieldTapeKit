@@ -260,11 +260,28 @@ final class ConnectionLog {
             let baseline = try Baseline(reports: reports)
             let url = try baseline.save(in: .documentsDirectory)
             let levels = baseline.levels.map { "\($0.source.level)" }.joined(separator: ", ")
+            savedBaseline = SavedBaseline(file: url.lastPathComponent, from: reports.map(\.started), problem: nil)
             record("Saved \(url.lastPathComponent), with levels \(levels). Copy it into the repository as "
                 + "firmware/\(baseline.firmware)/baseline.json.")
         } catch {
+            savedBaseline = SavedBaseline(file: nil, from: reports.map(\.started), problem: error.localizedDescription)
             record("Couldn't save the baseline: \(error.localizedDescription)")
         }
+    }
+
+    /// The last time Save as baseline was tapped: the file it wrote or why it couldn't, and the runs it was made from.
+    struct SavedBaseline: Equatable {
+        let file: String?
+        let from: [Date]
+        let problem: String?
+    }
+
+    private(set) var savedBaseline: SavedBaseline?
+
+    /// What was saved from the runs a baseline would be made from now, or nil if they've changed since.
+    var baselineSavedFromCurrentRuns: SavedBaseline? {
+        guard let savedBaseline, savedBaseline.from == baselineReports.map(\.started) else { return nil }
+        return savedBaseline
     }
 
     func watch() async {
@@ -476,8 +493,17 @@ struct BaselineSection: View {
                     LabeledContent("Level \(level)", value: "not run yet")
                 }
             }
-            Button("Save as baseline for \(log.baselineReports.first?.device.firmware ?? "this firmware")") { log.saveBaseline() }
-                .disabled(included.isEmpty)
+            if let saved = log.baselineSavedFromCurrentRuns, let file = saved.file {
+                // Saved already: a second tap would only write the same runs again under another name.
+                Label("Saved as \(file) in Documents", systemImage: "checkmark.circle")
+                    .foregroundStyle(.green)
+            } else {
+                Button("Save as baseline for \(log.baselineReports.first?.device.firmware ?? "this firmware")") { log.saveBaseline() }
+                    .disabled(included.isEmpty)
+                if let problem = log.baselineSavedFromCurrentRuns?.problem {
+                    Text("Couldn't save: \(problem)").foregroundStyle(.red)
+                }
+            }
         } header: {
             Text("Baseline")
         } footer: {
