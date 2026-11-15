@@ -216,10 +216,11 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - `notAllowed` and `verificationFailed`'s descriptions were reworded to fit copying as well as writing.
   - 299 tests pass on the Mac and 298 on the iOS simulator (201 and 200 FieldTapeKit, 93 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS.
 
+- **Explore copies tapes** (2026-11-15, asked for by the owner): a tape's folder shows its type, length and recorded tracks, or why it isn't sound, and **Copy tape to this device** saves it to `Documents/explore` as a `.reelarchive` with `copyTape`, with progress and a share button. Explore still never changes the OP-1. Tried in the iOS simulator on the simulated OP-1, not yet on hardware.
+
 ## Next steps
 
-1. Commit step 15 and tag `1.0.0-alpha.1`.
-2. Step 16: creating and duplicating tapes.
+1. Step 16: creating and duplicating tapes.
 2. `album.write-exact` on hardware, whenever an album side is empty.
 
 ## The OP-1 right now
