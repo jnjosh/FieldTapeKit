@@ -322,6 +322,8 @@ Decided by the owner for step 14 (2026-11-15), and recorded in ADR 0002's change
 
 **Tag:** `1.0.0-alpha.1`. This is the first thing the owner's app needs: taking tapes off.
 
+Decided by the owner for step 15 (2026-11-15), and recorded in ADR 0002's change log: the tape is copied as it is when the copy starts, a change mid-copy is refused, and memory is measured on the OP-1 through the conformance suite.
+
 ### 16. Creating and duplicating tapes
 
 **Adds (public):**
@@ -434,4 +436,5 @@ Decided by the owner for step 14 (2026-11-15), and recorded in ADR 0002's change
 - **Steps 8 to 10 are checked on hardware only in step 11.** Until then they're simulator-tested.
 - **Album writes** may never get a hardware check if both sides keep their audio.
 - **`Subprogress`** is new API. If its shape makes progress awkward, steps 7 and 15 are where that shows first. Progress is now per file, since each file is one GetObject.
+- **Memory after transfers levels off (2026-11-15).** ImageCaptureCore's path keeps transferred data for a while: after copying a 78 MB tape, an app held about 130 MB more, released later, peaking near 194 MB in all over three copies in a row. It's bounded, but an app copying several large tapes should expect a peak of a few hundred MB.
 - **A full 127 MB transfer worked (2026-11-15).** Step 11's long check sent a full 6-minute track at 7.5 MB/s and read it back whole in one GetObject at 20.7 MB/s. The app's memory rose about 250 MB, two copies of the track, because a write holds the file sent and the one read back. An app writing several tracks at once would multiply that.

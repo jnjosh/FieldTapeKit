@@ -1,0 +1,42 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.78] Watching for an OP-1 in MTP mode
+[  11.45] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  11.45] Storage: 6429185024 bytes, 6285685760 free
+[  16.44] Conformance: running, copies go in conformance-2026-11-15T193118Z. Memory: 23.6 MB, peak 23.6 MB
+[  16.47] Conformance: pass: The root holds the four well-known folders
+[  16.47] Conformance: Memory: 24.0 MB, peak 24.0 MB
+[  16.50] Conformance: pass: Every listed item's path is its folder's path and its name
+[  16.50] Conformance: Memory: 24.2 MB, peak 24.2 MB
+[  16.54] Conformance: pass: Names are lowercase
+[  16.54] Conformance: Memory: 24.3 MB, peak 24.3 MB
+[  16.55] Conformance: pass: Lookups ignore case and answer with the OP-1's spelling
+[  16.55] Conformance: Memory: 24.3 MB, peak 24.3 MB
+[  16.58] Conformance: pass: item(at:) agrees with the listing
+[  16.58] Conformance: Memory: 24.3 MB, peak 24.3 MB
+[  16.60] Conformance: pass: The album sides are WAV files, and the readmes text
+[  16.60] Conformance: Memory: 24.3 MB, peak 24.3 MB
+[  16.62] Conformance: pass: A tape's tape.json is JSON and its tracks are WAV files
+[  16.62] Conformance: Memory: 24.4 MB, peak 24.4 MB
+[  16.65] Conformance: pass: Something missing is nil, and doesn't exist
+[  16.65] Conformance: Memory: 24.4 MB, peak 24.4 MB
+[  16.66] Conformance: pass: Listing a missing folder is notFound
+[  16.66] Conformance: Memory: 24.4 MB, peak 24.4 MB
+[  16.67] Conformance: pass: Listing a file is notADirectory
+[  16.67] Conformance: Memory: 24.4 MB, peak 24.4 MB
+[  16.76] Conformance: pass: Tapes list every tape folder, and the slots count them
+[  16.77] Conformance: Memory: 24.5 MB, peak 24.5 MB
+[  17.01] Conformance: pass: A tape's details agree with its files. 2026-220#01: Studio, 1:03, tracks 4. 2026-276#01: Studio, 1:00, tracks 1, 2, 3, 4. 2026-286#01: Studio, 0:04, tracks 1, 2
+[  17.01] Conformance: Memory: 24.8 MB, peak 24.8 MB
+[  21.26] Conformance: pass: Copying the largest tape off makes an archive that matches the OP-1. 2026-276#01.reelarchive: 78328519 bytes. track_1 d47bbe1d4eadbce02a8e5101dcf3e0340bde891741bbf77af788820b262f6b97, track_2 46d0b9bea155addcd1ca1689c0be96534089a647b1a3dd823b2a8b8a5da91d04, track_3 4daf143eff22043d4872176098d76b81e7d4e5be2a6e647ac1140a7f3ab21075, track_4 714da5edb9b3687dd7b24fc396c4614209dfa961f008ace8821262146594f67a
+[  21.26] Conformance: Memory: 153.6 MB, peak 153.6 MB
+[  21.28] Conformance: pass: A whole read matches a range read of the same file
+[  21.28] Conformance: Memory: 153.7 MB, peak 153.7 MB
+[  21.31] Conformance: pass: A range past the end gives what's there
+[  21.31] Conformance: Memory: 153.6 MB, peak 153.7 MB
+[  21.32] Conformance: pass: Reads refuse a file over the limit, and a folder
+[  21.32] Conformance: Memory: 153.7 MB, peak 153.7 MB
+[  22.63] Conformance: pass: Copying album side A off matches the OP-1. mixdown/side_a.wav: 12235308 bytes, SHA-256 65c9af35e997d6ea44e3370b90a0ff0473bb967862c275af494d68a0138aeb1a, copied to side_a.wav
+[  22.63] Conformance: Memory: 132.4 MB, peak 153.7 MB
+[  25.11] Conformance: pass: Copying the largest tape track off matches the OP-1. tapes/2026-220#01/track_4.wav: 22056500 bytes, SHA-256 9aecf10250d599ac807ab416de34f09f37cd6cae24f4e0d0ac5e2b02ecb69497, copied to 2026-220#01 track_4.wav
+[  25.11] Conformance: Memory: 198.6 MB, peak 198.7 MB
+[  25.11] Conformance: 18 of 18 without a failure

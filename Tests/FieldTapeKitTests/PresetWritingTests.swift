@@ -141,7 +141,7 @@ import Testing
         await #expect { try await device.write(Self.wav(), to: "drum/user/kick.wav") } throws: { error in
             let error = error as? FieldError
             return error?.code == .verificationFailed && error?.changed == []
-                && error?.errorDescription == "drum/user/kick.wav didn't come out right on the OP-1: its stored samples differ from the ones sent."
+                && error?.errorDescription == "drum/user/kick.wav couldn't be verified: its stored samples differ from the ones sent."
         }
         #expect(await simulator.deleted == ["kick.wav"])
     }

@@ -23,6 +23,11 @@ actor SimulatedMTPDevice: MTPTransport {
         case corruptStored(name: String)
         /// Every SendObject is refused with this response code, after its SendObjectInfo succeeded.
         case refuseSendObject(responseCode: UInt16)
+        /// Right after the file with this name has been read with GetObject this many times, it's replaced with this
+        /// data, as if the OP-1 rewrote it, and it lists at its new size. It happens once.
+        case changeAfterReading(name: String, to: Data, reads: Int = 1)
+        /// GetObject for the file with this name comes back a byte short, once.
+        case shortRead(name: String)
     }
 
     struct Object: Sendable {
@@ -278,6 +283,18 @@ actor SimulatedMTPDevice: MTPTransport {
 
         case .getObject:
             guard let handle = params.first, let object = objects[handle] else { return (none, Response.invalidObjectHandle, []) }
+            if let index = faults.firstIndex(where: { if case .changeAfterReading(let name, _, _) = $0 { name == object.name } else { false } }),
+               case .changeAfterReading(let name, let data, let reads) = faults.remove(at: index) {
+                if reads > 1 {
+                    faults.append(.changeAfterReading(name: name, to: data, reads: reads - 1))
+                } else {
+                    replace(handle, with: data)
+                }
+            }
+            if let index = faults.firstIndex(where: { if case .shortRead(let name) = $0 { name == object.name } else { false } }) {
+                faults.remove(at: index)
+                return (Data(object.served.dropLast()), Response.ok, [])
+            }
             return (object.served, Response.ok, [])
 
         case .getPartialObject:

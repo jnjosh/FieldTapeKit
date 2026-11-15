@@ -208,9 +208,18 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **Tests** cover a round trip with each compression, a damaged track, every kind of refusal, extracting, the Mac's `aa extract`, and a kept format 1 fixture.
   - 289 tests pass on the Mac and 288 on the iOS simulator, where the `aa` test doesn't run (191 and 190 FieldTapeKit, 93 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS.
 
+- **Step 15 passed on the OP-1** (iPad Pro, 2026-11-15, log `firmware/1.7.3/runs/fieldcheck-2026-11-15T193102Z.txt`). The conformance suite passed 18 of 18. `copyTape` copied 2026-276#01 (78 MB, 16 clips) in about 4 s into a 78,328,519-byte archive. On the Mac, `aa extract` took it apart, every track's SHA-256 matched the log, and every track is 44 + 8 × the end of its last clip. **Memory levels off:** FieldCheck starts at about 22 MB. After copying the 78 MB tape it held about 150 MB, but three copies in one launch left 152, 149 and 133 MB, and it fell to 47 MB between them, peaking at 194 MB. On the simulator, copying an 84 MB tape three times kept about 2 MB. So FieldTapeKit's own code holds nothing, and the ImageCaptureCore path keeps transferred data for a while and releases it later: a bounded cost, not a leak. Decided 2026-11-15, recorded in the plan and ADR 0002's change log:
+  - **`copyTape(_:to:compression:progress:)`** reads the tape fresh, refuses one that isn't sound, reads each track and then `tape.json` with one GetObject into a hidden temporary archive, lists the tape again, finishes `reel.json`, reopens the archive and checks it against the SHA-256 of what came off the OP-1, and moves it into place as `<tape name>.reelarchive`, never over a file. One track is in memory at a time.
+  - **A tape that changes mid-copy is refused,** whether it's caught as a file is read or when the tape is listed again, and nothing is left behind. So is a cancelled copy.
+  - **The simulator** has two new faults for this: a file that changes after it's read, and a short read.
+  - **The conformance suite** copies the largest sound tape off, and FieldCheck now runs it one check at a time and logs its memory after each.
+  - `notAllowed` and `verificationFailed`'s descriptions were reworded to fit copying as well as writing.
+  - 299 tests pass on the Mac and 298 on the iOS simulator (201 and 200 FieldTapeKit, 93 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS.
+
 ## Next steps
 
-1. Step 15: copying tapes off, `1.0.0-alpha.1`. Watch FieldCheck's resting memory there (about 300 MB before the long check on 2026-11-15).
+1. Commit step 15 and tag `1.0.0-alpha.1`.
+2. Step 16: creating and duplicating tapes.
 2. `album.write-exact` on hardware, whenever an album side is empty.
 
 ## The OP-1 right now

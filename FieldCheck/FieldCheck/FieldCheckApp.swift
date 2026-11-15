@@ -230,18 +230,29 @@ final class ConnectionLog {
             record("Conformance: couldn't make \(workspace.lastPathComponent): \(error.localizedDescription)")
             return
         }
-        record("Conformance: running, copies go in \(workspace.lastPathComponent)")
-        let results = await Conformance.run(on: device, workspace: workspace)
-        conformance[device.id] = results
-        for result in results {
+        record("Conformance: running, copies go in \(workspace.lastPathComponent). \(memory())")
+        // One check at a time, so the memory each one takes shows in the log.
+        var results: [Conformance.Result] = []
+        for check in Conformance.checks {
+            let result = await check.run(on: device, workspace: workspace)
+            results.append(result)
             switch result.outcome {
             case .pass: record("Conformance: pass: \(result.name)\(result.detail.map { ". \($0)" } ?? "")")
             case .fail(let message): record("Conformance: FAIL: \(result.name): \(message)")
             case .skipped(let reason): record("Conformance: skipped: \(result.name): \(reason)")
             }
+            record("Conformance: \(memory())")
         }
+        conformance[device.id] = results
         let failed = results.filter { if case .fail = $0.outcome { true } else { false } }.count
         record("Conformance: \(results.count - failed) of \(results.count) without a failure")
+    }
+
+    /// FieldCheck's memory now, and its highest since launch, to see what each check costs.
+    private func memory() -> String {
+        guard let use = MemoryUse.now() else { return "Memory: unknown" }
+        let megabytes = { (bytes: Int) in (Double(bytes) / 1_000_000).formatted(.number.precision(.fractionLength(1))) }
+        return "Memory: \(megabytes(use.footprint)) MB, peak \(megabytes(use.peak)) MB"
     }
 
     /// The runs a baseline would be made from: this launch's latest of each level, if it passed and is from the same

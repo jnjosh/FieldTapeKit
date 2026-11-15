@@ -24,6 +24,7 @@ import Testing
 
     /// Checks that need a tape, or a tape track with audio, skip on the empty OP-1.
     static let needTapes: Set = ["A tape's tape.json is JSON and its tracks are WAV files", "A tape's details agree with its files",
+                                 "Copying the largest tape off makes an archive that matches the OP-1",
                                  "Copying the largest tape track off matches the OP-1"]
 
     static func workspace() throws -> URL {
@@ -68,7 +69,11 @@ import Testing
         defer { try? FileManager.default.removeItem(at: workspace) }
         let results = await Conformance.run(on: Self.populated, workspace: workspace)
         let copies = try FileManager.default.contentsOfDirectory(atPath: workspace.path(percentEncoded: false)).sorted()
-        #expect(copies == ["2026-220#02 track_1.wav", "side_a.wav"])
+        #expect(copies == ["2026-220#02 track_1.wav", "2026-220#02.reelarchive", "side_a.wav"])
+
+        let tape = try #require(results.first { $0.name == "Copying the largest tape off makes an archive that matches the OP-1" })
+        #expect(tape.detail?.hasPrefix("2026-220#02.reelarchive: ") == true)
+        #expect(try ReelArchive(contentsOf: workspace.appending(path: "2026-220#02.reelarchive")).name.string == "2026-220#02")
 
         let side = try #require(results.first { $0.name == "Copying album side A off matches the OP-1" })
         let detail = try #require(side.detail)

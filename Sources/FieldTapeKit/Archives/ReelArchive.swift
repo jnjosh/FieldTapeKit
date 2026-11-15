@@ -78,7 +78,7 @@ public struct ReelArchive: Sendable, Hashable {
         }
     }
 
-    public let url: URL
+    public internal(set) var url: URL
     /// The format it was written in.
     public let format: Int
     /// The tape's name on the OP-1 when it was archived.

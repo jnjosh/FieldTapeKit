@@ -363,6 +363,17 @@ Step 13's tape layer, through the conformance suite (log `firmware/1.7.3/runs/fi
 
 So none of the three has changed since the probe read them. Each manifest's bytes equal `tape.json` read on its own, and `tape(named:)` gives the same tape as `tapes()`. The conformance copies of `side_a.wav` and `track_4.wav` have the same SHA-256s as every earlier run.
 
+## Copying a tape off, and the memory it leaves (FieldCheck conformance suite, iPad, 2026-11-15)
+
+Step 15's `copyTape`, through the conformance suite from a fresh launch (log `firmware/1.7.3/runs/fieldcheck-2026-11-15T193102Z.txt`): 18 of 18 passed. It copied 2026-276#01, the largest tape (four tracks of 21.2, 18.0, 18.0 and 21.2 MB, 16 clips), in about 4.3 s into a 78,328,519-byte `.reelarchive`. On the Mac, `aa extract` took the archive apart. Every track's SHA-256 matched the one logged, and every track is 44 + 8 × the end of its last clip in the archived `tape.json`. The other copies matched every earlier run.
+
+**Memory, logged after each check:**
+- FieldCheck started at 23.6 MB, so it's small at rest. The 300 MB seen before the long check on 2026-11-15 wasn't FieldCheck at rest.
+- After `copyTape` returned, it held 153.6 MB, 129 MB more than before, though only one 21 MB track should be in memory at a time, and only during the copy.
+- Copying `side_a.wav` (12 MB) after it brought it down to 132 MB. Copying `track_4.wav` (22 MB) then took it to 199 MB, about three times the file's size.
+- On the Mac's simulator, copying an 84 MB simulated tape three times in a row kept about 2 MB in all. So FieldTapeKit's own code doesn't keep the data. What stays comes from the ImageCaptureCore path: its own buffers, or the `NSData` it returns being released late.
+- **It levels off (three runs in one launch, log `fieldcheck-2026-11-15T193457Z.txt`).** After each copy of the 78 MB tape, FieldCheck held 151.9, then 148.9, then 132.6 MB. It never grew by the tape's size. Between runs it fell to about 112 MB, and early in the third run, with nothing transferring, to 47.4 MB. The highest it reached was 194.1 MB. So the ImageCaptureCore path keeps transferred data for a while and releases it later: a bounded cost of up to about 170 MB over the app's own, not a leak. All three copies had the same track hashes.
+
 ## Entering MTP mode from the app (paused 2026-11-08: possible, a future feature)
 
 **Status:** paused by the user as too fragile for now, and kept as a possible future feature for the framework. What works: detecting a plugged-in OP-1 over USB MIDI, `greet`, and switching it into MTP mode with `mode`, from both the Mac and the iPad. What doesn't yet: on the iPad, ImageCaptureCore never saw the OP-1 after any switch in that session. Even MTP mode entered with the buttons failed until the OP-1 was restarted. Not tested: Leave MTP mode (closing the session), and a full app-triggered switch on a freshly restarted OP-1. To pick this up, start there, and restart the OP-1 whenever it shows connected but the app sees nothing. **The MIDI code was removed from the probe on 2026-11-08,** at the user's request, so it can't recreate the stuck state. That was `OP1MIDI.swift` (the `TESysEx` encoder and the CoreMIDI client), its tests, and the MIDI toggle and Enter and Leave MTP mode buttons. The format and bytes are kept below, and the Mac tools `tools/op1-midi-listen.swift` and `tools/op1-sysex.swift` remain. They only send when run by hand. The probe still logs each device's USB IDs.

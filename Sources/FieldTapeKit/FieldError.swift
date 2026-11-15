@@ -58,13 +58,14 @@ public struct FieldError: Error, Sendable, LocalizedError {
         /// The file at `path` is bigger than a read into memory allows.
         public static let tooLarge = Code("tooLarge")
         /// A copy didn't match what came from the OP-1 when it was read back, so it isn't a verified copy, or a file
-        /// written to the OP-1 didn't read back as what was sent. Nothing unverified is left behind, unless `changed`
-        /// says so.
+        /// written to the OP-1 didn't read back as what was sent, or a tape changed on the OP-1 while it was copied.
+        /// Nothing unverified is left behind, unless `changed` says so.
         public static let verificationFailed = Code("verificationFailed")
         /// A file on this device, not the OP-1, couldn't be written or read: a full disk, a missing folder, or no
         /// permission. `underlying` is the system's error, and `path` is the OP-1 file being copied.
         public static let localFileFailed = Code("localFileFailed")
-        /// FieldTapeKit doesn't do that at `path`, such as deleting a folder or file that belongs to the OP-1.
+        /// FieldTapeKit doesn't do that at `path`, such as deleting a folder or file that belongs to the OP-1, or
+        /// copying a tape that isn't sound. `reason` says why.
         public static let notAllowed = Code("notAllowed")
         /// A confirmation no longer matches what's on the OP-1, or was made on another connection. Nothing changed.
         public static let changedSinceConfirmation = Code("changedSinceConfirmation")
@@ -108,7 +109,7 @@ public struct FieldError: Error, Sendable, LocalizedError {
         case .ambiguousPath:
             "More than one item on the OP-1 matches \(pathDescription) when case is ignored."
         case .notAllowed:
-            "FieldTapeKit doesn't change \(pathDescription), because \(reason ?? "it belongs to the OP-1")."
+            "FieldTapeKit won't do that with \(pathDescription), because \(reason ?? "it belongs to the OP-1")."
         case .alreadyExists:
             "Something is already at \(pathDescription) on the OP-1."
         case .invalidName:
@@ -133,8 +134,8 @@ public struct FieldError: Error, Sendable, LocalizedError {
             "On the OP-1, \(pathDescription) is too large to read into memory."
         case .verificationFailed:
             if let reason {
-                // A write: what the OP-1 stored, read back, isn't what was sent.
-                "\(pathDescriptionCapitalized) didn't come out right on the OP-1: \(reason)."
+                // Such as a write whose read-back isn't what was sent, or a tape that changed while it was copied.
+                "\(pathDescriptionCapitalized) couldn't be verified: \(reason)."
             } else {
                 "The copy of \(pathDescription) didn't match the OP-1's when it was read back."
             }

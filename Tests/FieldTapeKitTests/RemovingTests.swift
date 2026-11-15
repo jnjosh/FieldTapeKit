@@ -99,7 +99,7 @@ import Testing
 
     @Test func explainsWhyItRefuses() {
         #expect(FieldError(.notAllowed, path: "mixdown/readme.txt").errorDescription
-                == "FieldTapeKit doesn't change mixdown/readme.txt, because it belongs to the OP-1.")
+                == "FieldTapeKit won't do that with mixdown/readme.txt, because it belongs to the OP-1.")
     }
 
     // MARK: Confirmed by a person

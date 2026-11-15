@@ -196,7 +196,7 @@ extension FieldDevice {
     func tapeSlots() async throws -> TapeSlots       // used, available, limit (8)
 
     // Off the OP-1: writes <tape name>.reelarchive into a folder, and verifies it
-    func copyTape(_ tape: Tape, to folder: URL,
+    func copyTape(_ tape: Tape, to folder: URL, compression: ReelArchive.Compression = .none,
                   progress: consuming Subprogress? = nil) async throws -> ReelArchive
 
     // Off the OP-1 and free the slot: copy, verify, then delete the tape
@@ -646,6 +646,15 @@ These are possible later features, deliberately left out for now:
   - **`synth/user/` follows the same rules,** with no cap assumed. Nothing has been written there yet, so level 2 checks it on hardware.
 - **2026-11-15:** FieldCheck's first level 2 run (PROBE-NOTES.md) found that **`synth/user/` keeps 6 seconds**, where `drum/user/` keeps 20, and that **a converted preset keeps the format code it was sent with:** a WAV stored as AIFC is still listed as WAV. Neither changes a decision. A shortened preset was already allowed, and nothing in FieldTapeKit depends on a cap, which only the simulator models. But `FieldFormat` in a preset folder says what was sent, not what's stored, unlike the 2026-11-14 entry's reasoning for reading it from the format code. Its documentation says so now.
   - Also settled while building it: a preset WAV's chunks are walked, so WAVs from other apps with extra chunks are accepted. The read-back would catch the OP-1 handling one differently. A write that reads back wrong now says why in its error.
+- **2026-11-15:** Decided by the owner while building step 15 of the plan, copying tapes off:
+  - **`copyTape` copies the tape as it is when the copy starts,** read fresh, even if that differs from the `Tape` it was given, and the archive returned describes what it copied. A copy changes nothing, so an older listing isn't a reason to refuse. If a file or `tape.json` changes while it's being copied, it's refused (`verificationFailed`), and nothing is left in the folder. `moveTape`, which deletes, checks against the archive in step 18.
+  - **Memory is measured on the OP-1:** the conformance suite copies the largest tape off, and FieldCheck logs its memory after each check.
+  - Also settled while building it:
+    - `copyTape` takes `compression:`, none by default, as section 4 offers.
+    - It writes a hidden temporary archive in the destination folder, so the final move is on one volume and never replaces a file. A taken name gets a number, as Finder does.
+    - A tape that isn't sound is refused with `notAllowed`, giving its problems.
+    - Progress counts bytes, completed as each file is in the archive.
+    - `notAllowed` now reads "FieldTapeKit won't do that with …", and `verificationFailed` with a reason "… couldn't be verified: …", so both fit copying as well as writing.
 - **2026-11-15:** Decided by the owner while building step 14 of the plan, reel archives:
   - **`reel.json` keeps the OP-1's serial number,** as this ADR says, though archives are made to be shared. It's the only thing in an archive that identifies anyone.
   - **A track comes out of an archive as a file:** `extractTrack(_:to:)` streams it into a WAV in a folder, `<tape name> track_<n>.wav`, never overwriting, checking its SHA-256 on the way. Nothing large is held in memory, and a track that no longer matches isn't kept.

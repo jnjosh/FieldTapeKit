@@ -45,5 +45,19 @@ extension Conformance {
             }
             return details.joined(separator: ". ")
         }),
+        Check("Copying the largest tape off makes an archive that matches the OP-1", copying: { device, workspace in
+            let sound = try await device.tapes().filter(\.isSound)
+            guard let largest = sound.max(by: { $0.tracks.reduce(0) { $0 + $1.size } < $1.tracks.reduce(0) { $0 + $1.size } }) else {
+                throw Skip(reason: "There's no sound tape on the OP-1.")
+            }
+            let archive = try await device.copyTape(largest, to: workspace)
+            try expect(archive.name == largest.name, "the archive is named \(archive.name), not \(largest.name)")
+            try expect(archive.tracks.map(\.size) == largest.tracks.map(\.size), "the archive's tracks aren't the tape's sizes")
+            try expect(archive.manifest.data == largest.manifest?.data, "the archive's tape.json isn't the tape's")
+            try expect(try await device.tape(named: largest.name) == largest, "\(largest.name) changed on the OP-1")
+            let bytes = (try FileManager.default.attributesOfItem(atPath: archive.url.path)[.size] as? Int) ?? 0
+            let tracks = archive.tracks.map { "track_\($0.number) \($0.sha256)" }.joined(separator: ", ")
+            return "\(archive.url.lastPathComponent): \(bytes) bytes. \(tracks)"
+        }),
     ]
 }
