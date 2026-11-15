@@ -217,23 +217,28 @@ final class ConnectionLog {
     /// The conformance suite only reads the OP-1, so it needs no confirmation either. It copies a tape track and an
     /// album side into a new folder in Documents, kept so they can be compared with copies made on a Mac. The log
     /// is its record, with each copy's SHA-256.
-    func runConformance(on device: FieldDevice) async {
+    ///
+    /// With `writing`, it runs the writing checks instead, which the person confirms first: each makes the scratch
+    /// tape `tapes/conformance` in a free slot, checks it and deletes it. The person's tapes are only read.
+    func runConformance(on device: FieldDevice, writing: Bool = false) async {
         guard running == nil else { return }
         running = device.id
         defer { running = nil }
         let stamp = Date.now.formatted(.iso8601.year().month().day().timeZone(separator: .omitted)
             .time(includingFractionalSeconds: false).timeSeparator(.omitted))
-        let workspace = URL.documentsDirectory.appending(path: "conformance-\(stamp)")
+        // The writing checks copy nothing, so they don't leave an empty folder in Documents.
+        let workspace = (writing ? URL.temporaryDirectory : URL.documentsDirectory).appending(path: "conformance-\(stamp)")
         do {
             try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: false)
         } catch {
             record("Conformance: couldn't make \(workspace.lastPathComponent): \(error.localizedDescription)")
             return
         }
-        record("Conformance: running, copies go in \(workspace.lastPathComponent). \(memory())")
+        let kind = writing ? "writing checks, making and deleting tapes/\(Conformance.scratchTape)" : "copies go in \(workspace.lastPathComponent)"
+        record("Conformance: running, \(kind). \(memory())")
         // One check at a time, so the memory each one takes shows in the log.
         var results: [Conformance.Result] = []
-        for check in Conformance.checks {
+        for check in writing ? Conformance.writingChecks : Conformance.checks {
             let result = await check.run(on: device, workspace: workspace)
             results.append(result)
             switch result.outcome {
@@ -370,6 +375,8 @@ struct ValidateView: View {
     @State private var cleanup: FieldDevice?
     /// The device a level 3 is waiting for the person to confirm on.
     @State private var levelThree: FieldDevice?
+    /// The device the writing conformance checks are waiting for the person to confirm on.
+    @State private var writingConformance: FieldDevice?
 
     var body: some View {
         NavigationStack {
@@ -389,6 +396,8 @@ struct ValidateView: View {
                             Task { await log.runConformance(on: device) }
                         }
                         .disabled(log.running != nil)
+                        Button("Run writing conformance (scratch tape)…") { writingConformance = device }
+                            .disabled(log.running != nil)
                         Button("Run level 2 (scratch writes)…") {
                             Task { plan = (device, await log.planLevelTwo(on: device)) }
                         }
@@ -469,6 +478,17 @@ struct ValidateView: View {
                 Button("Cancel", role: .cancel) {}
             } message: { _ in
                 Text(LevelThree.steps.map { "• \($0)" }.joined(separator: "\n"))
+            }
+            .confirmationDialog("Writing conformance", isPresented: Binding(get: { writingConformance != nil },
+                                                                              set: { if !$0 { writingConformance = nil } }),
+                                titleVisibility: .visible, presenting: writingConformance) { device in
+                Button("Write to the OP-1") { Task { await log.runConformance(on: device, writing: true) } }
+                Button("Cancel", role: .cancel) {}
+            } message: { _ in
+                Text("• Makes an empty tape, tapes/\(Conformance.scratchTape), checks it, and deletes it.\n"
+                     + "• Duplicates your smallest tape to tapes/\(Conformance.scratchTape), checks the copy, and deletes "
+                     + "it. Your tape is only read.\n"
+                     + "• Needs one free tape slot, and leaves nothing behind.")
             }
             .confirmationDialog("Delete FieldCheck's content?", isPresented: Binding(get: { cleanup != nil },
                                                                                       set: { if !$0 { cleanup = nil } }),

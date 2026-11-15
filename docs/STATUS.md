@@ -218,9 +218,16 @@ Where the project stands, so a new session can pick it up. Update this when the 
 
 - **Explore copies tapes** (2026-11-15, asked for by the owner): a tape's folder shows its type, length and recorded tracks, or why it isn't sound, and **Copy tape to this device** saves it to `Documents/explore` as a `.reelarchive` with `copyTape`, with progress and a share button. Explore still never changes the OP-1. Tried in the iOS simulator on the simulated OP-1, not yet on hardware.
 
+- **Step 16 passed on the OP-1** (iPad Pro, 2026-11-15, log `firmware/1.7.3/runs/fieldcheck-2026-11-15T231051Z.txt`). Both writing checks passed in 2.8 s. `createTape` made `tapes/conformance`, an empty Studio tape with a 250-byte `tape.json`, in 0.5 s, and it was deleted and its slot freed. `duplicateTape` copied 2026-286#01 (3,036,280 bytes, tracks 1 and 2) to `tapes/conformance` in 2.3 s. Every track's SHA-256 matched the source's, and the copy was deleted. Your tapes were only read. Decided by the owner, recorded in the plan and ADR 0002's change log:
+  - **`createTape(named:type:)`** makes a complete empty tape: four 44-byte tracks, then the blank Disk Mini `tape.json` with the chosen type, last. **`duplicateTape(_:as:progress:)`** copies a sound tape on the OP-1 to a new name, one track through memory at a time, lists the source again, then writes its `tape.json` last. Both check the name, a taken name and a free slot first, then read the new tape back.
+  - **A half-made tape is removed** once, its files and then its folder. If that fails, `changed` lists it. A source that changes mid-copy is refused, and the copy removed.
+  - **The conformance suite's writing checks** make `tapes/conformance`, check it and delete it: once with `createTape`, and once duplicating the smallest tape with audio, comparing each track's SHA-256. FieldCheck runs them from **Run writing conformance (scratch tape)…**, after a confirmation. They passed in the iOS simulator on the simulated OP-1 too.
+  - The simulator records every SendObjectInfo's name, so tests can check the write order.
+  - 319 tests pass on the Mac and 318 on the iOS simulator (217 and 216 FieldTapeKit, 93 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
+
 ## Next steps
 
-1. Step 16: creating and duplicating tapes.
+1. Step 17: restoring a tape under a new name.
 2. `album.write-exact` on hardware, whenever an album side is empty.
 
 ## The OP-1 right now

@@ -107,3 +107,13 @@ public struct TapeManifest: Sendable, Hashable {
         clips.map(\.end).max() ?? 0
     }
 }
+
+extension TapeManifest {
+    /// The `tape.json` of a new, empty tape of `type`: the blank Disk Mini tape the probe read (2026-312#01), with
+    /// the keys in the order the OP-1 writes them, and only `tape_type` changed.
+    static func blankData(type: TapeType) -> Data {
+        Data((#"{"clips":[],"loop":false,"loop_in":0,"loop_out":0,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"#
+            + #""pos":0,"tape_type":\#(type.rawValue),"tempobpmdecimal":1200,"tempometronomelevel":0.0,"#
+            + #""tempometronometype":0,"temposyncout":1,"temposynctype":0,"track":0,"version":1}"#).utf8)
+    }
+}

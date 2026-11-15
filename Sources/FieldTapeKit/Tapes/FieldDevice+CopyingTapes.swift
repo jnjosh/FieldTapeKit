@@ -29,11 +29,8 @@ extension FieldDevice {
                          progress: consuming Subprogress? = nil) async throws -> ReelArchive {
         var writer: ReelArchiveWriter?
         do {
-            guard let before = try await self.tape(named: tape.name) else { throw FieldError(.notFound, path: tape.path) }
-            guard before.isSound, let type = before.type, let manifest = before.manifest else {
-                throw FieldError(.notAllowed, path: before.path,
-                                 reason: "it isn't a sound tape: " + before.problems.joined(separator: "; "))
-            }
+            let (before, manifest) = try await soundTape(tape)
+            let type = manifest.type
             var files: [(name: String, handle: UInt32, size: Int)] = []
             for name in ReelArchiveWriter.tapeFiles {
                 guard let found = try await locate(before.path.appending(name)), let info = found.info else {

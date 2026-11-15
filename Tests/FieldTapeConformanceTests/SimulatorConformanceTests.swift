@@ -91,4 +91,50 @@ import Testing
         #expect(results["The album sides are WAV files, and the readmes text"] == .fail("mixdown/side_a.wav isn't a WAV file"))
         #expect(results["The root holds the four well-known folders"] == .pass)
     }
+
+    // MARK: Writing
+
+    static func runWriting(on device: FieldDevice) async throws -> [String: Conformance.Result.Outcome] {
+        let workspace = try workspace()
+        defer { try? FileManager.default.removeItem(at: workspace) }
+        var outcomes: [String: Conformance.Result.Outcome] = [:]
+        for check in Conformance.writingChecks { outcomes[check.name] = await check.run(on: device, workspace: workspace).outcome }
+        return outcomes
+    }
+
+    static let create = "Creating a tape makes an empty, sound tape, and deleting it frees its slot"
+    static let duplicate = "Duplicating the smallest tape makes a copy that matches it"
+
+    @Test func theWritingChecksPassAndLeaveNothing() async throws {
+        let device = FieldDevice.simulated {
+            SimulatedTape("2026-220#02", type: .vintage, seconds: [2])
+            SimulatedTape("2026-286#01", seconds: [0.5, 0.25])
+        }
+        let before = try await device.tapes()
+        let outcomes = try await Self.runWriting(on: device)
+        #expect(outcomes == [Self.create: .pass, Self.duplicate: .pass])
+        #expect(try await device.tapes() == before)
+    }
+
+    @Test func onAnEmptyOP1DuplicatingIsSkipped() async throws {
+        let device = FieldDevice.simulated()
+        let outcomes = try await Self.runWriting(on: device)
+        #expect(outcomes[Self.create] == .pass)
+        #expect(outcomes[Self.duplicate] == .skipped("There's no sound tape on the OP-1."))
+        #expect(try await device.tapes().isEmpty)
+    }
+
+    @Test func aLeftoverScratchTapeIsSkippedAndKept() async throws {
+        let device = FieldDevice.simulated { SimulatedTape("conformance", seconds: [1]) }
+        let outcomes = try await Self.runWriting(on: device)
+        let reason = "tapes/conformance is already on the OP-1, from a run that didn't finish. Delete it on the OP-1 first."
+        #expect(outcomes == [Self.create: .skipped(reason), Self.duplicate: .skipped(reason)])
+        #expect(try await device.tapes().map(\.name.string) == ["conformance"])
+    }
+
+    @Test func noFreeSlotIsSkipped() async throws {
+        let device = FieldDevice.simulated { for n in 1...8 { SimulatedTape("tape \(n)") } }
+        let outcomes = try await Self.runWriting(on: device)
+        #expect(outcomes[Self.create] == .skipped("All 8 tape slots are used, and this needs one."))
+    }
 }

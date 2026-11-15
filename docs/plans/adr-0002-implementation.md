@@ -335,6 +335,8 @@ Decided by the owner for step 15 (2026-11-15), and recorded in ADR 0002's change
 
 **On the OP-1 (scratch writes):** create and duplicate under the scratch name, which needs one free slot. Then delete it on the OP-1, or with step 18.
 
+Decided by the owner for step 16 (2026-11-15), and recorded in ADR 0002's change log: a half-made tape is removed file by file, then its folder; `duplicateTape` refuses a source that changed while it was copied; and the OP-1 run is the conformance suite's writing checks, behind a confirmation in FieldCheck, which make `tapes/conformance`, check it and delete it, so nothing is left for step 18.
+
 ### 17. Restoring a tape under a new name
 
 **Adds (public):** `restoreTape(from:as:conflict:progress:)`, with `TapeConflict.fail`. It checks everything first, writes tracks first and `tape.json` last, reads each one back, and removes a half-made tape if it fails.

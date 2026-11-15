@@ -5,9 +5,10 @@ import System
 /// Checks that run the same way against the simulator and a real OP-1, to keep the simulator honest
 /// (ADR 0002, section 8).
 ///
-/// They use only FieldTapeKit's public API, so they check what apps see. They read the OP-1 and never change it;
-/// copies go into a folder the caller gives. Steps 8 to 10 of the plan add writes. None of them depends on what's on
-/// the OP-1. A check that needs something that isn't there, such as a tape, is skipped.
+/// They use only FieldTapeKit's public API, so they check what apps see. `checks` read the OP-1 and never change it;
+/// copies go into a folder the caller gives. `writingChecks` make a scratch tape and delete it, so an app asks first.
+/// None of them depends on what's on the OP-1. A check that needs something that isn't there, such as a tape, is
+/// skipped.
 public enum Conformance {
     public struct Result: Sendable, Hashable, Identifiable {
         public enum Outcome: Sendable, Hashable {

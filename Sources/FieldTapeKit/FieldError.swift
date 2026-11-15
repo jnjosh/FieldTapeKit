@@ -90,6 +90,11 @@ public struct FieldError: Error, Sendable, LocalizedError {
         public static let archiveMismatch = Code("archiveMismatch")
     }
 
+    /// The same error, saying exactly this was changed on the OP-1.
+    func replacing(changed: [FilePath]) -> FieldError {
+        FieldError(code, path: path, responseCode: responseCode, changed: changed, underlying: underlying, reason: reason)
+    }
+
     /// The same error, also saying what had already been changed on the OP-1.
     func adding(changed more: [FilePath]) -> FieldError {
         FieldError(code, path: path, responseCode: responseCode, changed: changed + more, underlying: underlying,

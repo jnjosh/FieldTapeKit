@@ -67,6 +67,8 @@ actor SimulatedMTPDevice: MTPTransport {
     private(set) var requestCount = 0
     /// The names of deleted objects, in the order they went.
     private(set) var deleted: [String] = []
+    /// The name of every object made with SendObjectInfo, in order.
+    private(set) var sentNames: [String] = []
     /// The file SendObjectInfo announced, waiting for its SendObject.
     private var pending: UInt32?
 
@@ -376,6 +378,7 @@ actor SimulatedMTPDevice: MTPTransport {
         let handle = add(Object(parent: parent, name: info.filename, format: info.format,
                                 associationType: info.isFolder ? PTPAssociationType.genericFolder : 0))
         pending = info.isFolder ? nil : handle
+        sentNames.append(info.filename)
         return (none, Response.ok, [Self.storageID, parent, handle])
     }
 
