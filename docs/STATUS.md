@@ -201,9 +201,16 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **The conformance suite** checks that `tapes()` lists every folder and `tapeSlots()` counts them, and that each tape's details agree with its files. It records each tape's type, length and tracks.
   - 277 tests pass on the Mac and the iOS simulator (179 FieldTapeKit, 93 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS.
 
+- **Step 14 is done** (decided 2026-11-15, recorded in the plan and ADR 0002's change log). It's all local files, so there's nothing to run on the OP-1.
+  - **`ReelArchive(contentsOf:)`** opens a `.reelarchive` and checks all of it: exactly a tape's files and `reel.json`, every size and SHA-256, a format it can read, and `tape.json` against the tracks. It refuses with the new `invalidArchive` or `archiveMismatch`.
+  - **`extractTrack(_:to:)`** streams one track out to a WAV file, never overwriting, checking its SHA-256.
+  - **An internal writer** for step 15 adds one file at a time, hashing as it goes, and writes `reel.json` last. Compression is off by default, with `lz4`, `lzfse`, `zlib` and `lzma` as options. `UTType.reelArchive` is `com.jnjosh.fieldtapekit.reelarchive`, one identifier every app imports, as its documentation shows.
+  - **Tests** cover a round trip with each compression, a damaged track, every kind of refusal, extracting, the Mac's `aa extract`, and a kept format 1 fixture.
+  - 289 tests pass on the Mac and 288 on the iOS simulator, where the `aa` test doesn't run (191 and 190 FieldTapeKit, 93 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS.
+
 ## Next steps
 
-1. Step 14: reel archives.
+1. Step 15: copying tapes off, `1.0.0-alpha.1`. Watch FieldCheck's resting memory there (about 300 MB before the long check on 2026-11-15).
 2. `album.write-exact` on hardware, whenever an album side is empty.
 
 ## The OP-1 right now

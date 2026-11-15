@@ -310,6 +310,8 @@ Decided by the owner for step 13 (2026-11-15), and recorded in ADR 0002's change
 
 **If it's too big:** commit reading archives first, then writing them.
 
+Decided by the owner for step 14 (2026-11-15), and recorded in ADR 0002's change log: `reel.json` keeps the serial number, a track comes out as a file with `extractTrack(_:to:)`, and writing and reading come in one step.
+
 ### 15. Copying tapes off → `1.0.0-alpha.1`
 
 **Adds (public):** `copyTape(_:to:progress:)`, following ADR 0002's five steps: check, read each file with one GetObject into a temporary archive, reopen and verify, then move into place under a new name.

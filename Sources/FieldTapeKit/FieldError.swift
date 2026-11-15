@@ -81,6 +81,12 @@ public struct FieldError: Error, Sendable, LocalizedError {
         public static let tapeTooLong = Code("tapeTooLong")
         /// The OP-1 is full (Store Full, 0x200C).
         public static let insufficientSpace = Code("insufficientSpace")
+        /// A `.reelarchive` can't be opened: it isn't an Apple Archive, it holds something a tape archive doesn't, its
+        /// `reel.json` is missing or from a newer FieldTapeKit, or its `tape.json` doesn't match its tracks.
+        public static let invalidArchive = Code("invalidArchive")
+        /// A file in a `.reelarchive` isn't the size or SHA-256 its `reel.json` records, so the archive was changed or
+        /// damaged after it was written.
+        public static let archiveMismatch = Code("archiveMismatch")
     }
 
     /// The same error, also saying what had already been changed on the OP-1.
@@ -113,6 +119,10 @@ public struct FieldError: Error, Sendable, LocalizedError {
             "\(pathDescriptionCapitalized) is longer than the 6 minutes a tape holds."
         case .insufficientSpace:
             "The OP-1 is full."
+        case .invalidArchive:
+            "That isn't a tape archive FieldTapeKit can open: \(reason ?? "it can't be read")."
+        case .archiveMismatch:
+            "The tape archive is damaged: \(reason ?? "a file doesn't match its record")."
         case .changedSinceConfirmation:
             "\(pathDescriptionCapitalized) changed on the OP-1 since it was confirmed, so nothing was deleted."
         case .confirmationAlreadyUsed:
@@ -129,11 +139,9 @@ public struct FieldError: Error, Sendable, LocalizedError {
                 "The copy of \(pathDescription) didn't match the OP-1's when it was read back."
             }
         case .localFileFailed:
-            if let underlying = underlying as? LocalizedError, let reason = underlying.errorDescription {
-                "Couldn't save the copy of \(pathDescription) on this device. \(reason)"
-            } else {
-                "Couldn't save the copy of \(pathDescription) on this device."
-            }
+            // Without an OP-1 path, it's a local file of its own, such as an archive being read.
+            (path == nil ? "Couldn't read or write a file on this device." : "Couldn't save the copy of \(pathDescription) on this device.")
+                + ((underlying as? LocalizedError)?.errorDescription.map { " \($0)" } ?? "")
         case .deviceRefused:
             if let responseCode {
                 "The OP-1 refused the request (response \(String(format: "0x%04X", responseCode)))."
