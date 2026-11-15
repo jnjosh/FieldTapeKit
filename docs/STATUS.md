@@ -187,10 +187,15 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **Level 3 keeps waiting when it's refused,** unless the scratch tape is gone, and that refusal lists what `tapes/` holds.
   - 256 tests pass on the Mac and the iOS simulator (162 FieldTapeKit, 89 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS.
 
+- **Step 12b is done, so step 12 is: the 1.7.3 baseline covers all three levels** (iPad Pro, 2026-11-15, [firmware/1.7.3/baseline.json](../firmware/1.7.3/baseline.json)). One launch ran level 1 (18 pass), the conformance suite (15 of 15), level 2 with the long check (10 pass, the album not run), and level 3 after a reconnect (6 pass), then saved them together. Level 1's figures match the previous baseline on every field that doesn't vary, and the committed-baseline test passes with levels 2 and 3 included. The conformance copies have the same SHA-256s as on 2026-11-14. Decided 2026-11-15, recorded in the plan and ADR 0003's change log:
+  - **Baselines are format 2,** with one section per level and the run each came from, so `device.storage` and `names.maximum` keep each level's fields. `Baseline(reports:)` refuses failures, mixed firmware, or two runs of one level. A format 1 file, like the committed 1.7.3 baseline, still reads as level 1.
+  - **In FieldCheck,** a Baseline section shows this launch's latest run of each level, kept across reconnects, and **Save as baseline** writes them together. Level 1 is needed, and a level with failures is left out.
+  - **The committed-baseline test** now also checks levels 2 and 3 when they're there: the refused name, the preset caps, the long track's size, the 12-character cut, the folder delete and the tape's files.
+  - 260 tests pass on the Mac and the iOS simulator (162 FieldTapeKit, 93 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS.
+
 ## Next steps
 
-1. Step 12b: baselines from several reports, covering all three levels.
-2. Step 13: reading tapes, with `TapeName` limited to 12 characters.
+1. Step 13: reading tapes, with `TapeName` limited to 12 characters.
 2. `album.write-exact` on hardware, whenever an album side is empty.
 
 ## The OP-1 right now

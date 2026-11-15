@@ -1,7 +1,7 @@
 // FieldCheck: checks a connected OP-1 against what FieldTapeKit expects (ADR 0003), in two tabs.
 // Validate shows connection events and device info, runs level 1, and saves each report and its log to Documents.
-// A level 1 run with no failures can be saved as its firmware's baseline, to copy into the repository's firmware/
-// folder. Level 2 writes only FieldCheck's own scratch content, after a person confirms its plan. A clean level 2
+// This launch's latest clean run of each level can be saved together as the firmware's baseline, to copy into the
+// repository's firmware/ folder. Level 2 writes only FieldCheck's own scratch content, after a person confirms its plan. A clean level 2
 // leaves level 3 waiting, saved in Documents, for after the OP-1 leaves MTP mode and comes back. Level 3 checks the
 // scratch tape and deletes it. FieldCheck offers to delete content left by a run that didn't finish.
 // It also runs FieldTapeKit's conformance suite, the checks the simulator passes too, and logs the results.
@@ -35,6 +35,9 @@ final class ConnectionLog {
     private(set) var devices: [FieldDevice] = []
     /// The latest report for each connection.
     private(set) var reports: [FieldDevice.ID: CheckReport] = [:]
+    /// This launch's latest report of each level, kept across reconnects, since level 3 always runs on a new
+    /// connection. A baseline is made from these.
+    private(set) var latestByLevel: [Int: CheckReport] = [:]
     /// The latest conformance results for each connection.
     private(set) var conformance: [FieldDevice.ID: [Conformance.Result]] = [:]
     private(set) var running: FieldDevice.ID?
@@ -102,6 +105,7 @@ final class ConnectionLog {
         record("Level 1: running")
         let report = await LevelOne.run(on: device, host: host)
         reports[device.id] = report
+        latestByLevel[report.level] = report
         for result in report.results where result.outcome != .pass {
             record("Level 1: \(result.expectation) \(result.outcome.rawValue): \(result.summary)")
         }
@@ -137,6 +141,7 @@ final class ConnectionLog {
         record("Level 2: running\(longCheck ? " with the long check" : ""), copies go in \(workspace.lastPathComponent)")
         let report = await LevelTwo.run(on: device, plan: plan, longCheck: longCheck, workspace: workspace, host: host)
         reports[device.id] = report
+        latestByLevel[report.level] = report
         if let pending = await LevelThree.pending(after: report, on: device) {
             setPendingLevelThree(pending)
             record("Level 3 is waiting: leave MTP mode on the OP-1, then enter it again. You can play the scratch tape "
@@ -189,6 +194,7 @@ final class ConnectionLog {
         record("Level 3: running, after level 2 at \(pending.levelTwoStarted.formatted(.iso8601))")
         let report = await LevelThree.run(on: device, pending: pending, host: host)
         reports[device.id] = report
+        latestByLevel[report.level] = report
         for result in report.results {
             record("Level 3: \(result.expectation) \(result.outcome.rawValue): \(result.summary)")
         }
@@ -238,11 +244,24 @@ final class ConnectionLog {
         record("Conformance: \(results.count - failed) of \(results.count) without a failure")
     }
 
-    /// Saves the report as `baseline-<firmware>.json` in Documents, under a new name if one is there already.
-    func saveBaseline(_ report: CheckReport) {
+    /// The runs a baseline would be made from: this launch's latest of each level, if it passed and is from the same
+    /// firmware as level 1's. Level 1 is needed.
+    var baselineReports: [CheckReport] {
+        guard let levelOne = latestByLevel[1], levelOne.count(.fail) == 0 else { return [] }
+        return latestByLevel.values
+            .filter { $0.count(.fail) == 0 && $0.device.firmware == levelOne.device.firmware }
+            .sorted { $0.level < $1.level }
+    }
+
+    /// Saves the baseline as `baseline-<firmware>.json` in Documents, under a new name if one is there already.
+    func saveBaseline() {
+        let reports = baselineReports
         do {
-            let url = try Baseline(report: report).save(in: .documentsDirectory)
-            record("Saved \(url.lastPathComponent). Copy it into the repository as firmware/\(report.device.firmware)/baseline.json.")
+            let baseline = try Baseline(reports: reports)
+            let url = try baseline.save(in: .documentsDirectory)
+            let levels = baseline.levels.map { "\($0.source.level)" }.joined(separator: ", ")
+            record("Saved \(url.lastPathComponent), with levels \(levels). Copy it into the repository as "
+                + "firmware/\(baseline.firmware)/baseline.json.")
         } catch {
             record("Couldn't save the baseline: \(error.localizedDescription)")
         }
@@ -377,21 +396,14 @@ struct ValidateView: View {
                     if let report = log.reports[device.id] {
                         Section {
                             ForEach(report.results, id: \.expectation) { ResultRow(result: $0) }
-                            if report.level == 1 {
-                                Button("Save as baseline for \(report.device.firmware)") { log.saveBaseline(report) }
-                                    .disabled(report.count(.fail) > 0)
-                            }
                         } header: {
                             Text("Level \(report.level): \(report.count(.pass)) pass, \(report.count(.fail)) fail, "
                                 + "\(report.count(.notRun)) not run")
-                        } footer: {
-                            if report.level == 1, report.count(.fail) > 0 {
-                                Text("A run with failures can't be a baseline.")
-                            } else if report.level > 1 {
-                                Text("Baselines cover level 1 for now.")
-                            }
                         }
                     }
+                }
+                if !log.latestByLevel.isEmpty {
+                    BaselineSection(log: log)
                 }
                 ForEach(log.devices) { device in
                     if let results = log.conformance[device.id] {
@@ -445,6 +457,32 @@ struct ValidateView: View {
                 Text("Deletes \(LevelTwo.ownContent.map(\.string).joined(separator: ", ")) if they're there: "
                      + "only what level 2 makes. Each tape's files, then its folder.")
             }
+        }
+    }
+}
+
+/// This launch's latest run of each level, and saving them as the baseline.
+struct BaselineSection: View {
+    let log: ConnectionLog
+
+    var body: some View {
+        let included = Set(log.baselineReports.map(\.level))
+        Section {
+            ForEach(1...3, id: \.self) { level in
+                if let report = log.latestByLevel[level] {
+                    LabeledContent("Level \(level)", value: "\(report.count(.pass)) pass, \(report.count(.fail)) fail, "
+                        + "\(report.count(.notRun)) not run\(included.contains(level) ? "" : ", left out")")
+                } else {
+                    LabeledContent("Level \(level)", value: "not run yet")
+                }
+            }
+            Button("Save as baseline for \(log.baselineReports.first?.device.firmware ?? "this firmware")") { log.saveBaseline() }
+                .disabled(included.isEmpty)
+        } header: {
+            Text("Baseline")
+        } footer: {
+            Text("Made from this launch's latest run of each level. Level 1 is needed, and a level with failures is left "
+                 + "out. For a firmware's baseline, run levels 1, 2 and 3.")
         }
     }
 }

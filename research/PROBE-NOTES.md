@@ -347,6 +347,13 @@ Levels 2 and 3 with the 12-character scratch tape (`firmware/1.7.3/runs/fieldche
 - **Deleting files then the folder** also passed again, on `fieldck #2-1`.
 - **Free space** fell by within 512 bytes of what was written, as in every earlier run: 10,237,952 for 10,237,744, now with two tapes.
 
+## The three-level baseline (FieldCheck, iPad, 2026-11-15)
+
+One launch ran level 1, the conformance suite, level 2 with the long check, and level 3 after a reconnect, then saved them as `firmware/1.7.3/baseline.json` (format 2, one section per level; log `firmware/1.7.3/runs/fieldcheck-2026-11-15T161548Z.txt`, with the level 2 and 3 reports beside it). Everything passed, and only `album.write-exact` didn't run, since both sides have audio.
+- **Nothing moved since the earlier runs.** Level 1 matches the previous baseline on every field that doesn't vary: the chunk times again rose from 61 to 959 ms, at 1,974 KB/s against 1,976. The long check sent at 7.5 MB/s and read at 20.7 MB/s, with the same memory peak, 543 MB. Free space, the preset caps, the 12-character cut and the folder delete all came out as before.
+- **The conformance copies** of `mixdown/side_a.wav` and `tapes/2026-220#01/track_4.wav` have the same SHA-256s as the probe's and 2026-11-14's.
+- The level 1 report file wasn't kept from this launch, but its results are in the baseline and the log.
+
 ## Entering MTP mode from the app (paused 2026-11-08: possible, a future feature)
 
 **Status:** paused by the user as too fragile for now, and kept as a possible future feature for the framework. What works: detecting a plugged-in OP-1 over USB MIDI, `greet`, and switching it into MTP mode with `mode`, from both the Mac and the iPad. What doesn't yet: on the iPad, ImageCaptureCore never saw the OP-1 after any switch in that session. Even MTP mode entered with the buttons failed until the OP-1 was restarted. Not tested: Leave MTP mode (closing the session), and a full app-triggered switch on a freshly restarted OP-1. To pick this up, start there, and restart the OP-1 whenever it shows connected but the app sees nothing. **The MIDI code was removed from the probe on 2026-11-08,** at the user's request, so it can't recreate the stuck state. That was `OP1MIDI.swift` (the `TESysEx` encoder and the CoreMIDI client), its tests, and the MIDI toggle and Enter and Leave MTP mode buttons. The format and bytes are kept below, and the Mac tools `tools/op1-midi-listen.swift` and `tools/op1-sysex.swift` remain. They only send when run by hand. The probe still logs each device's USB IDs.

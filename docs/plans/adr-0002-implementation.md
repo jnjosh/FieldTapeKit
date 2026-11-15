@@ -274,6 +274,8 @@ Decided by the owner for 11b (2026-11-15), and recorded in ADR 0003's change log
 - **12a:** level 3's checks, the simulator's reconnect, the pending level 3 saved across launches, and the cleanup offer for a run that didn't finish. Then a run on the OP-1.
 - **12b:** baselines made from several reports, and the 1.7.3 baseline saved again with all three levels.
 
+Decided by the owner for 12b (2026-11-15), and recorded in ADR 0003's change log: one section per level (format 2), saved by FieldCheck from the launch's latest clean run of each level, and the 1.7.3 baseline from a fresh run of all three with the long check.
+
 ## Part 3: The tape layer
 
 ### 13. Reading tapes
