@@ -43,8 +43,9 @@ package struct Expectation: Sendable, Hashable, Identifiable {
                     "Names on the device are stored lowercase.",
                     usedBy: "Case-insensitive paths, TapeName"),
         Expectation("names.maximum",
-                    "A new tape with a 15-character name, using every kind of allowed character, is accepted over MTP "
-                        + "and kept after a reconnect.",
+                    "A new tape with a 12-character name, using every kind of allowed character, is accepted over MTP "
+                        + "and kept after a reconnect. A 13-character name is accepted, then cut to 12 after a reconnect "
+                        + "(2026-11-15).",
                     usedBy: "TapeName.maximumLength"),
         Expectation("tape.files",
                     "Each tape has tape.json, track_1–4.wav, and maybe readme.txt. Nothing else.",
@@ -113,7 +114,8 @@ package struct Expectation: Sendable, Hashable, Identifiable {
                     "Deleting a tape's files, then its folder, removes it.",
                     usedBy: "deleteTape, moveTape"),
         Expectation("delete.folder-with-files",
-                    "What one DeleteObject on a folder with files in it does. Not yet known.",
+                    "What one DeleteObject on a folder with files in it does. On 1.7.3 it deletes the folder and its "
+                        + "files (2026-11-15).",
                     usedBy: "Could simplify deleteTape"),
         Expectation("reconnect.kept",
                     "After leaving MTP mode, a written tape and its tape.json are kept, apart from pos.",

@@ -217,12 +217,15 @@ import Testing
 
     // MARK: The simulator
 
-    @Test func theSimulatorRefusesAFolderWithFilesInIt() async throws {
+    /// `delete.folder-with-files`: on 1.7.3, one DeleteObject on a folder deletes it and what's in it.
+    @Test func theSimulatorDeletesAFolderWithItsFiles() async throws {
         let (simulator, _) = await Self.simulator()
         let device = FieldDevice.simulated(simulator)
         let tape = try #require(try await device.locate("tapes/2026-220#02"))
-        await #expect { try await device.session.deleteObject(tape.handle) } throws: {
-            $0 as? MTPError == .refused(.deleteObject, responseCode: 0x2002)
-        }
+        try await device.session.deleteObject(tape.handle)
+        #expect(try await !device.fileExists(at: "tapes/2026-220#02"))
+        // Everything under it, the folder inside it too, then the folder itself.
+        #expect(Set(await simulator.deleted) == ["2026-220#02", "tape.json", "readme.txt", "track_1.wav", "extra", "inside.wav"])
+        #expect(await simulator.deleted.last == "2026-220#02")
     }
 }

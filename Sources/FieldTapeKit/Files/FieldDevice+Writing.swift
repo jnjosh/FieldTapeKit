@@ -90,8 +90,8 @@ extension FieldDevice {
 
     /// Makes a new tape folder at `path`, which must be directly in `tapes/`, and returns it.
     ///
-    /// The name must be one FieldTapeKit makes: at most 15 characters, of A–Z, 0–9, `#`, `-` and space. It's sent
-    /// lowercase. One of the 8 tape slots must be free. The OP-1 makes a folder from SendObjectInfo alone
+    /// The name must be one FieldTapeKit makes: at most 12 characters, the most the OP-1 keeps, of A–Z, 0–9, `#`,
+    /// `-` and space. It's sent lowercase. One of the 8 tape slots must be free. The OP-1 makes a folder from SendObjectInfo alone
     /// (`write.folder`).
     ///
     /// - Throws: `FieldError` with `.notAllowed`, `.invalidName`, `.alreadyExists`, `.tapeLimitReached`,

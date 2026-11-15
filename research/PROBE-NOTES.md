@@ -327,6 +327,26 @@ Level 2 with step 11b's checks, and the long check asked for: 10 passed and 1 di
 - **The preset's `mtime`** was `1794697625.0` this time: 23:07:05 read as UTC, during the run, in US Eastern time. All three runs' values are within a minute and a half of their run, but the first was 23 seconds before its run started and the second 83 seconds after, so how the OP-1 sets it isn't clear.
 - **Cleanup:** **Delete FieldCheck's content** passed `delete.files-then-folder` again, in 0.1 s. The kept `track_1.wav` copy has the first tone's SHA-256.
 
+## The OP-1 cuts tape names to 12 characters (FieldCheck, iPad, 2026-11-15)
+
+FieldCheck's first level 3 run (`firmware/1.7.3/runs/fieldcheck-2026-11-15T042019Z` for level 2, `...T042129Z` for level 3, log `fieldcheck-2026-11-15T041948Z.txt`). Level 2 passed 9 checks, with the same figures as before, and left level 3 waiting. The owner left MTP mode and entered it again, and level 3 found no `tapes/fieldcheck #1-2`, so it ran nothing.
+- **The tape was there, renamed `fieldcheck #`.** The owner found it in FieldCheck's Explore tab. Free space after the reconnect was exactly level 2's figure with the tape on the OP-1, so its 2.8 MB were still there.
+- **So the OP-1 keeps 12 characters of a tape's name.** It took the 15-character name over SendObjectInfo, listed it whole for the rest of the session, then cut it to its first 12 while out of MTP mode. It wasn't the `#`: the probe's `probe 1-#a` kept what followed its `#` (2026-11-08). That name had only 10 characters, which is why the cut wasn't seen before.
+- **Not yet known:** what happens when two names cut to the same 12 characters, and whether the OP-1's own name editor stops at 12. FieldTapeKit now refuses new names over 12 (ADR 0002), so it can't cause either.
+- **A FieldCheck gap it showed:** level 3's refusal cleared the waiting level 3, and the cleanup offer looked only for FieldCheck's own names, so FieldCheck lost track of the cut tape. Both are fixed. The owner deletes `fieldcheck #` on the OP-1.
+- **Write speed with small tracks only:** 4.1 MB/s for the four 705,644-byte tracks, as in the long-check run, so the fixed cost per write holds.
+
+## Level 3 passes, and a folder deletes with its files (FieldCheck, iPad, 2026-11-15)
+
+Levels 2 and 3 with the 12-character scratch tape (`firmware/1.7.3/runs/fieldcheck-2026-11-15T043147Z` and `...T043206Z`, log `fieldcheck-2026-11-15T043130Z.txt`). The owner deleted `fieldcheck #` on the OP-1 first. Level 2 passed 9 checks, and the 2 not run were the long check and the album. The owner left MTP mode and entered it again about 3 seconds later, and level 3 passed all 6 checks in 0.9 s.
+- **Names:** `fieldck #1-2` (12 characters) was kept, and `fieldck #2-13` (13) came back as `fieldck #2-1`, its first 12. So the cut is at 12, confirmed both ways.
+- **Handles:** all 6 of the scratch tape's objects had new handles.
+- **`readme.txt`:** the OP-1 added one of 104 bytes, the same size as on the probe's tape (2026-11-08).
+- **Kept:** all four tracks read back byte for byte, and `tape.json` was unchanged, `pos` and `tempometronomelevel` included. `pos` stayed 0, so the tape probably wasn't played.
+- **New: DeleteObject on a folder deletes its files too.** One DeleteObject on the scratch tape's folder, with its 6 files in it, was answered OK. The folder was gone, and GetObjectInfo on each file's old handle was refused, so nothing was left behind. This settles `delete.folder-with-files` on 1.7.3. FieldTapeKit still deletes files first, and step 18 decides whether to change that.
+- **Deleting files then the folder** also passed again, on `fieldck #2-1`.
+- **Free space** fell by within 512 bytes of what was written, as in every earlier run: 10,237,952 for 10,237,744, now with two tapes.
+
 ## Entering MTP mode from the app (paused 2026-11-08: possible, a future feature)
 
 **Status:** paused by the user as too fragile for now, and kept as a possible future feature for the framework. What works: detecting a plugged-in OP-1 over USB MIDI, `greet`, and switching it into MTP mode with `mode`, from both the Mac and the iPad. What doesn't yet: on the iPad, ImageCaptureCore never saw the OP-1 after any switch in that session. Even MTP mode entered with the buttons failed until the OP-1 was restarted. Not tested: Leave MTP mode (closing the session), and a full app-triggered switch on a freshly restarted OP-1. To pick this up, start there, and restart the OP-1 whenever it shows connected but the app sees nothing. **The MIDI code was removed from the probe on 2026-11-08,** at the user's request, so it can't recreate the stuck state. That was `OP1MIDI.swift` (the `TESysEx` encoder and the CoreMIDI client), its tests, and the MIDI toggle and Enter and Leave MTP mode buttons. The format and bytes are kept below, and the Mac tools `tools/op1-midi-listen.swift` and `tools/op1-sysex.swift` remain. They only send when run by hand. The probe still logs each device's USB IDs.

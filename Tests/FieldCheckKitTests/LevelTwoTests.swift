@@ -118,8 +118,8 @@ import Testing
         let workspace = try Self.workspace()
         defer { try? FileManager.default.removeItem(at: workspace) }
         let summaries = Dictionary(uniqueKeysWithValues: (await Self.run(device, in: workspace)).results.map { ($0.expectation, $0.summary) })
-        #expect(summaries["names.maximum"] == "The OP-1 took FIELDCHECK #1-2, 15 characters, as fieldcheck #1-2. "
-                + "Whether it's kept after a reconnect is level 3.")
+        #expect(summaries["names.maximum"] == "The OP-1 took FIELDCK #1-2, 12 characters, as fieldck #1-2, and FIELDCK #2-13, "
+                + "13 characters, as fieldck #2-13. What it keeps after a reconnect is level 3.")
         #expect(summaries["write.refused-name"] == "track_5.wav was refused with 0x2002, before any data was sent.")
         #expect(summaries["write.preset-converted"] == "Both came back as AIFC under the same name, with the samples sent; "
                 + "of 25 s, drum/user/ kept 20.000 s, synth/user/ kept 6.000 s.")
@@ -144,9 +144,12 @@ import Testing
     // MARK: Before it starts
 
     @Test func refusesWithNoFreeSlot() async throws {
+        #expect(await LevelTwo.plan(for: Self.device(tapes: 7).0).refusal
+                == "7 of the 8 tape slots are used, and level 2 needs two for its tapes. Move a tape off the OP-1 first.")
+        #expect(await LevelTwo.plan(for: Self.device(tapes: 6).0).refusal == nil)
         let (device, simulator) = Self.device(tapes: 8)
         let plan = await LevelTwo.plan(for: device)
-        #expect(plan.refusal == "All 8 tape slots are used, and level 2 needs one for its scratch tape. Move a tape off the OP-1 first.")
+        #expect(plan.refusal == "8 of the 8 tape slots are used, and level 2 needs two for its tapes. Move two tapes off the OP-1 first.")
         let report = await LevelTwo.run(on: device, plan: plan, workspace: try Self.workspace(), host: LevelOneTests.host)
         #expect(report.results.allSatisfy { $0.outcome == .notRun && $0.summary == plan.refusal })
         #expect(await simulator.deleted.isEmpty)
@@ -170,13 +173,14 @@ import Testing
         _ = try await device.write(LevelTwo.Content.preset, to: LevelTwo.presets[1])
 
         let plan = await LevelTwo.plan(for: device)
-        #expect(plan.leftovers == [LevelTwo.scratchTape, LevelTwo.presets[1]])
+        #expect(plan.leftovers == [LevelTwo.scratchTape, LevelTwo.longTape, LevelTwo.presets[1]])
         #expect(plan.refusal?.hasPrefix("FieldCheck's content from an earlier run is on the OP-1") == true)
 
         let result = await LevelTwo.deleteLeftovers(on: device)
         #expect(result.expectation == "delete.files-then-folder")
         #expect(result.outcome == .pass, "\(result.summary)")
-        #expect(result.summary == "Deleted the scratch tape's 5 files, then its folder, and it's gone.")
+        #expect(result.summary == "Deleted fieldck #1-2's 5 files and fieldck #2-13's 5 files, each tape's files and then "
+                + "its folder, and they're gone.")
         #expect(await LevelTwo.plan(for: device).refusal == nil)
         #expect(await LevelTwo.deleteLeftovers(on: device).outcome == .notRun)
     }
@@ -189,9 +193,10 @@ import Testing
         defer { try? FileManager.default.removeItem(at: workspace) }
         let report = await Self.run(device, in: workspace)
         let outcomes = report.results.map(\.outcome)
-        #expect(outcomes == [.pass, .pass, .fail] + Array(repeating: .notRun, count: 8))
-        #expect(report.results[2].summary.contains("track_2.wav"))
-        #expect(report.results[3].summary == "Not run: write.exact failed first, so the run stopped. What it made is left for cleanup.")
+        // The long tape is filled first, in names.maximum, so that's where the bad track shows.
+        #expect(outcomes == [.fail] + Array(repeating: .notRun, count: 10))
+        #expect(report.results[0].summary.contains("track_2.wav"))
+        #expect(report.results[1].summary == "Not run: names.maximum failed first, so the run stopped. What it made is left for cleanup.")
         #expect(try await device.fileExists(at: LevelTwo.scratchTape))
         for path in LevelTwo.presets { #expect(try await !device.fileExists(at: path)) }
     }
@@ -207,7 +212,7 @@ import Testing
         #expect(LevelTwo.folder(format: PTPObjectFormat.association, associationType: 0, contents: 0).outcome == .fail)
         let finding = LevelTwo.freeSpace(before: 1_000, afterWrites: 400, afterCleanup: 700, tapeBytes: 300, presetBytes: 300)
         #expect(finding.summary == "Free space fell 600 bytes for 600 written, and after the presets were deleted it was 300 "
-                + "below the start, for the scratch tape's 300.")
+                + "below the start, for the tapes' 300.")
         #expect(finding.varies == ["before", "afterWrites", "afterCleanup"])
 
         let empty = Data(count: 44)

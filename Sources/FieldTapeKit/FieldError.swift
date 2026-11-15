@@ -72,7 +72,8 @@ public struct FieldError: Error, Sendable, LocalizedError {
         public static let confirmationAlreadyUsed = Code("confirmationAlreadyUsed")
         /// Something is already at `path`.
         public static let alreadyExists = Code("alreadyExists")
-        /// A new tape's name isn't allowed: a character the OP-1 doesn't use, or longer than 15 characters.
+        /// A new tape's name isn't allowed: a character the OP-1 doesn't use, or longer than the OP-1 keeps, which is
+        /// 12 characters on 1.7.3.
         public static let invalidName = Code("invalidName")
         /// All 8 tapes are in use.
         public static let tapeLimitReached = Code("tapeLimitReached")
@@ -160,7 +161,7 @@ public struct FieldError: Error, Sendable, LocalizedError {
         case .insufficientSpace:
             "Make space on the OP-1, such as by moving a tape off it."
         case .invalidName:
-            "Use only letters, numbers, #, - and spaces, and at most 15 characters."
+            "Use only letters, numbers, #, - and spaces, and at most 12 characters."
         case .tooLarge:
             "Copy it to a file with copyItem(at:to:), or read it with a larger maximum size."
         case .verificationFailed:

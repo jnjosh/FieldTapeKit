@@ -27,6 +27,9 @@ package struct FirmwareProfile: Sendable, Equatable {
     package let maximumTapeFrames: Int
     /// How many tapes the OP-1 holds.
     package let maximumTapes: Int
+    /// The longest tape name the OP-1 keeps. A longer one is accepted over MTP, then cut to this length once the
+    /// OP-1 leaves MTP mode (`names.maximum`).
+    package let maximumTapeNameLength: Int
     /// The folders that take presets and convert what they receive (`write.preset-converted`).
     package let presetFolders: [String]
     /// The extensions a preset's name may have, from the folders' `readme.txt`.
@@ -58,6 +61,8 @@ package struct FirmwareProfile: Sendable, Equatable {
         sideFormat: WAVFormat(encoding: WAVFormat.pcm, channels: 2, sampleRate: 44_100, bitsPerSample: 16),
         maximumTapeFrames: 6 * 60 * 44_100,
         maximumTapes: 8,
+        // FieldCheck's 15-character scratch tape came back cut to 12 after a reconnect (PROBE-NOTES.md, 2026-11-15).
+        maximumTapeNameLength: 12,
         presetFolders: ["synth/user", "drum/user"],
         presetExtensions: ["aif", "aiff", "aifc", "wav"],
         // 44.1 kHz stereo from the probe's WAV write, 22,050 Hz mono from the OP-1's own preset applefly.aif

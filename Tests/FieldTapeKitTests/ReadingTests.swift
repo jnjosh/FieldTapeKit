@@ -73,6 +73,38 @@ import Testing
         let read = try await device.contents(of: "2026-312#01/tape.json")
         #expect(read == Data(repeating: 0x62, count: 251))
     }
+
+    /// `reconnect.renamed` and `reconnect.handles`: after the OP-1 leaves MTP mode and comes back, names are
+    /// lowercase, a tape made over MTP has a readme.txt, handles are new, and a rebuilt file lists at its real size.
+    @Test func aReconnectRenamesRenumbersAndRefreshes() async throws {
+        let simulator = SimulatedMTPDevice()
+        let tapes = await simulator.addFolder("tapes")
+        let tape = await simulator.addFolder("New Tape", in: tapes)
+        let handle = await simulator.addFile("tape.json", data: Data(repeating: 0x61, count: 251), format: PTPObjectFormat.text, in: tape)
+        await simulator.rebuild(handle, with: Data(repeating: 0x62, count: 386))
+        let before = FieldDevice.simulated(simulator)
+        let old = try #require(try await before.locate("tapes/new tape/tape.json"))
+
+        await simulator.leaveAndReenterMTPMode()
+        let after = FieldDevice.simulated(simulator)
+        #expect(after.id != before.id)
+        #expect(try await after.contentsOfDirectory(at: "tapes").map(\.name) == ["new tape"])
+        #expect(Set(try await after.contentsOfDirectory(at: "tapes/new tape").map(\.name)) == ["tape.json", "readme.txt"])
+        let new = try #require(try await after.locate("tapes/new tape/tape.json"))
+        #expect(new.handle != old.handle)
+        #expect(try await after.contents(of: "tapes/new tape/tape.json") == Data(repeating: 0x62, count: 386))
+    }
+
+    /// `names.maximum`: a tape name longer than 12 characters is cut to 12 once the OP-1 leaves MTP mode.
+    @Test func aReconnectCutsALongTapeName() async throws {
+        let simulator = SimulatedMTPDevice()
+        let tapes = await simulator.addFolder("tapes")
+        await simulator.addFolder("fieldcheck #1-2", in: tapes)
+        await simulator.addFolder("fieldck #1-2", in: tapes)
+        await simulator.leaveAndReenterMTPMode()
+        let names = try await FieldDevice.simulated(simulator).contentsOfDirectory(at: "tapes").map(\.name)
+        #expect(Set(names) == ["fieldcheck #", "fieldck #1-2"])
+    }
 }
 
 @Suite struct CopyingTests {

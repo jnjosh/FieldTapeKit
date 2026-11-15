@@ -12,9 +12,6 @@ struct WriteRules {
 
     /// Characters a new tape's name may use, lowercased (ADR 0002, section 4).
     static let tapeNameCharacters = Set("abcdefghijklmnopqrstuvwxyz0123456789#- ")
-    /// FieldTapeKit's own limit for a new tape's name, so it stays readable on the OP-1's screen.
-    static let tapeNameMaximumLength = 15
-
     /// How a write is checked once it's stored.
     enum ReadBack {
         /// Byte for byte, by SHA-256 (`write.exact`).
@@ -92,8 +89,8 @@ struct WriteRules {
             let listed = Array(Set(unexpected)).sorted().map { "“\($0)”" }.joined(separator: ", ")
             throw FieldError(.invalidName, path: path, reason: "it uses \(listed)")
         }
-        if name.count > Self.tapeNameMaximumLength {
-            throw FieldError(.invalidName, path: path, reason: "it's longer than \(Self.tapeNameMaximumLength) characters")
+        if name.count > profile.maximumTapeNameLength {
+            throw FieldError(.invalidName, path: path, reason: "it's longer than \(profile.maximumTapeNameLength) characters")
         }
     }
 

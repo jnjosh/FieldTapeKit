@@ -5,7 +5,8 @@ import System
 
 /// FieldCheck's level 2: scratch writes, only to content FieldCheck makes itself (ADR 0003, sections 2 and 3).
 ///
-/// It makes the scratch tape `fieldcheck #1-2` with a new tape's `tape.json`, then generated tones, which make the
+/// It makes the scratch tape `fieldck #1-2`, and a second tape with a 13-character name, which the OP-1 should cut
+/// to 12 once it leaves MTP mode. It writes the scratch tape a new tape's `tape.json`, then generated tones, which make the
 /// OP-1 rebuild `tape.json` with its old size still listed, as the probe saw. It tries a name a tape doesn't allow,
 /// replaces a track keeping a copy, and replaces `tape.json` with a generated one, last. When asked, the long check
 /// replaces a track with a full 6-minute one and puts it back. On an empty album side it writes a tone and puts the
@@ -17,15 +18,23 @@ import System
 /// apart from the refused name, which is sent raw because FieldTapeKit refuses it before sending. It stops at the
 /// first failure and leaves what it made for cleanup.
 public enum LevelTwo {
-    /// Stored lowercase. 15 characters, FieldTapeKit's maximum, using every kind it allows (`names.maximum`).
-    public static let scratchTape: FilePath = "tapes/fieldcheck #1-2"
-    static let scratchName = "FIELDCHECK #1-2"
+    /// Stored lowercase. 12 characters, the most the OP-1 keeps, using every kind of character FieldTapeKit allows
+    /// (`names.maximum`).
+    public static let scratchTape: FilePath = "tapes/fieldck #1-2"
+    static let scratchName = "FIELDCK #1-2"
+    /// One character too long, sent raw because FieldTapeKit refuses it. The OP-1 takes it, then cuts it to 12 once it
+    /// leaves MTP mode, to `longTapeCut`, which differs from the scratch tape's name (`names.maximum`).
+    public static let longTape: FilePath = "tapes/fieldck #2-13"
+    static let longName = "FIELDCK #2-13"
+    public static let longTapeCut: FilePath = "tapes/fieldck #2-1"
+    /// The tapes level 2 makes, under every name they can have.
+    public static let tapes: [FilePath] = [scratchTape, longTape, longTapeCut]
     /// Written and deleted within the run.
     public static let presets: [FilePath] = ["drum/user/fieldcheck.wav", "synth/user/fieldcheck.wav"]
     /// The album sides, in the order an empty one is picked.
     static let sides: [FilePath] = ["mixdown/side_a.wav", "mixdown/side_b.wav"]
     /// What level 2 makes, which it may delete as leftovers.
-    public static var ownContent: [FilePath] { [scratchTape] + presets }
+    public static var ownContent: [FilePath] { tapes + presets }
 
     /// What a run will do, for a person to confirm before it starts (ADR 0003, section 3).
     public struct Plan: Sendable, Hashable {
@@ -53,14 +62,14 @@ public enum LevelTwo {
             "Both album sides have audio, so the album isn't touched."
         }
         let steps = [
-            "Make the tape \(scratchTape.lastComponent!.string) in a free slot (\(scratchName), 15 characters).",
+            "Make the tape \(scratchTape.lastComponent!.string) in a free slot (\(scratchName), 12 characters, the most the OP-1 keeps), and \(longTape.lastComponent!.string) in another (\(longName), 13 characters), with a new tape's tape.json and the same tones. Level 3 checks the OP-1 cut the second name to 12.",
             "Write a new tape's tape.json, then track_1.wav to track_4.wav, 2-second tones of \(Content.trackBytes.formatted()) bytes each.",
             "Try track_5.wav in it, which the OP-1 should refuse. If it's taken, it's deleted.",
             "Read the tape.json the OP-1 rebuilds, then replace track_1.wav with another tone, keeping a copy in this run's folder, and replace tape.json with a generated one, last.",
             "Only with the long check: replace track_2.wav with a 6-minute tone of 127 MB, read it back, then put the 2-second one back and tape.json again, last. It adds about half a minute.",
             album,
             "Write \(presets.map(\.string).joined(separator: " and ")), 25-second tones, then delete them, keeping a copy of the drum one in this run's folder.",
-            "Leave the scratch tape on the OP-1, for level 3 or Delete FieldCheck's content.",
+            "Leave both tapes on the OP-1, for level 3, which deletes them.",
         ]
         do {
             var leftovers: [FilePath] = []
@@ -69,9 +78,9 @@ public enum LevelTwo {
             let refusal: String? = if !leftovers.isEmpty {
                 "FieldCheck's content from an earlier run is on the OP-1: "
                     + leftovers.map(\.string).joined(separator: ", ") + ". Delete it first."
-            } else if tapes.count >= device.profile.maximumTapes {
-                "All \(device.profile.maximumTapes) tape slots are used, and level 2 needs one for its scratch tape. "
-                    + "Move a tape off the OP-1 first."
+            } else if tapes.count + 2 > device.profile.maximumTapes {
+                "\(tapes.count) of the \(device.profile.maximumTapes) tape slots are used, and level 2 needs two for its "
+                    + "tapes. Move \(tapes.count + 2 - device.profile.maximumTapes == 1 ? "a tape" : "two tapes") off the OP-1 first."
             } else {
                 nil
             }
@@ -100,32 +109,39 @@ public enum LevelTwo {
                            host: host, results: results)
     }
 
-    /// Deletes what level 2 made, if it's there: the presets, then the scratch tape's files and then its folder,
-    /// through `prepareToRemove(at:)` and `removeItem(_:)`. That's `delete.files-then-folder`. Until level 3 in
-    /// step 12 of the plan, this is how the scratch tape comes off the OP-1.
+    /// Deletes what level 2 made, if it's there: the presets, then each of its tapes, files first and then the
+    /// folder, through `prepareToRemove(at:)` and `removeItem(_:)`. That's `delete.files-then-folder`. Level 3 uses it
+    /// too, and FieldCheck offers it after a run that didn't finish.
     public static func deleteLeftovers(on device: FieldDevice) async -> CheckResult {
         var deleted: [String] = []
+        var removed: [(name: String, files: Int)] = []
         do {
             for path in presets where try await device.fileExists(at: path) {
                 try await device.removeItem(try await device.prepareToRemove(at: path))
                 deleted.append(path.string)
             }
-            guard try await device.fileExists(at: scratchTape) else {
+            for tape in tapes where try await device.fileExists(at: tape) {
+                let deletion = try await device.prepareToRemove(at: tape)
+                try await device.removeItem(deletion)
+                deleted += deletion.contents.map(\.path.string) + [deletion.item.path.string]
+                removed.append((deletion.item.name, deletion.contents.count))
+            }
+            guard !removed.isEmpty else {
                 let also = deleted.isEmpty ? "" : " Deleted \(deleted.joined(separator: ", "))."
                 return CheckResult(expectation: "delete.files-then-folder", outcome: .notRun,
-                                   summary: "There's no scratch tape to delete." + also)
+                                   summary: "There's no FieldCheck tape to delete." + also)
             }
-            let deletion = try await device.prepareToRemove(at: scratchTape)
-            try await device.removeItem(deletion)
-            deleted += deletion.contents.map(\.path.string) + [scratchTape.string]
-            let gone = try await !device.fileExists(at: scratchTape)
-            let observed: CheckValue = ["files": .int(deletion.contents.count), "gone": .bool(gone)]
-            return gone
+            var left: [String] = []
+            for tape in tapes where try await device.fileExists(at: tape) { left.append(tape.string) }
+            let entries: [CheckValue] = removed.map { ["name": .string($0.name), "files": .int($0.files)] }
+            let observed: CheckValue = ["tapes": .list(entries), "gone": .bool(left.isEmpty)]
+            let what = removed.map { "\($0.name)'s \($0.files) files" }.joined(separator: " and ")
+            return left.isEmpty
                 ? CheckResult(expectation: "delete.files-then-folder", outcome: .pass,
-                              summary: "Deleted the scratch tape's \(deletion.contents.count) files, then its folder, and it's gone.",
-                              observed: observed)
+                              summary: "Deleted \(what), each tape's files and then its folder, and "
+                                  + (removed.count == 1 ? "it's gone." : "they're gone."), observed: observed)
                 : CheckResult(expectation: "delete.files-then-folder", outcome: .fail,
-                              summary: "Deleted the scratch tape's files and folder, but it's still listed.", observed: observed)
+                              summary: "Deleted \(what), but \(left.joined(separator: ", ")) is still listed.", observed: observed)
         } catch {
             let changed = (error as? FieldError)?.changed.map(\.string) ?? []
             return CheckResult(expectation: "delete.files-then-folder", outcome: .fail,
@@ -191,7 +207,19 @@ public enum LevelTwo {
             Check("names.maximum") {
                 await run.set(freeBefore: try await free())
                 let item = try await device.createDirectory(at: FilePath("tapes/\(scratchName)"))
-                return namesMaximum(sent: scratchName, listed: item)
+                // The long name is sent raw, as FieldTapeKit refuses it, then filled through FieldTapeKit like any tape.
+                guard let tapes = try await device.locate(.op1Tapes) else { return .fail("tapes/ isn't listed.") }
+                let lowered = longName.lowercased()
+                let dataset = PTPObjectInfo.dataset(storageID: device.storageID, format: PTPObjectFormat.association,
+                                                    size: 0, parent: tapes.handle, filename: lowered,
+                                                    associationType: PTPAssociationType.genericFolder)
+                _ = try await device.session.sendObjectInfo(storage: device.storageID, parent: tapes.handle, dataset: dataset)
+                guard let long = try await device.item(at: longTape) else { return .fail("\(longTape) isn't listed after it was made.") }
+                for (name, data) in [("tape.json", Content.blankTapeJSON)] + Content.tracks {
+                    _ = try await device.write(data, to: longTape.appending(name))
+                    await run.add(tapeBytes: data.count)
+                }
+                return namesMaximum(sent: scratchName, listed: item, long: longName, longListed: long)
             },
             Check("write.folder") {
                 guard let found = try await device.locate(tape), let info = found.info else {
@@ -316,13 +344,17 @@ public enum LevelTwo {
 
     // MARK: Judging
 
-    static func namesMaximum(sent: String, listed: FieldItem) -> Finding {
-        let observed: CheckValue = ["name": .string(sent), "length": .int(sent.count), "listedAs": .string(listed.name)]
+    static func namesMaximum(sent: String, listed: FieldItem, long: String, longListed: FieldItem) -> Finding {
+        let observed: CheckValue = ["name": .string(sent), "length": .int(sent.count), "listedAs": .string(listed.name),
+                                    "longName": .string(long), "longLength": .int(long.count), "longListedAs": .string(longListed.name)]
         guard listed.isDirectory, listed.name == sent.lowercased() else {
             return .fail("Made \(sent), but it's listed as \(listed.name).", observed: observed)
         }
-        return .pass("The OP-1 took \(sent), \(sent.count) characters, as \(listed.name). Whether it's kept after a "
-                     + "reconnect is level 3.", observed: observed)
+        guard longListed.isDirectory, longListed.name == long.lowercased() else {
+            return .fail("Made \(long), but it's listed as \(longListed.name).", observed: observed)
+        }
+        return .pass("The OP-1 took \(sent), \(sent.count) characters, as \(listed.name), and \(long), \(long.count) characters, "
+                     + "as \(longListed.name). What it keeps after a reconnect is level 3.", observed: observed)
     }
 
     static func folder(format: UInt16, associationType: UInt16, contents: Int) -> Finding {
@@ -490,7 +522,7 @@ public enum LevelTwo {
         let kept = before - afterCleanup
         // Judging how close is left to the baseline comparison in step 22 of the plan.
         return .pass("Free space fell \(fell.formatted()) bytes for \((tapeBytes + presetBytes).formatted()) written, and "
-                     + "after the presets were deleted it was \(kept.formatted()) below the start, for the scratch tape's "
+                     + "after the presets were deleted it was \(kept.formatted()) below the start, for the tapes' "
                      + "\(tapeBytes.formatted()).", observed: observed,
                      varies: ["before", "afterWrites", "afterCleanup"])
     }

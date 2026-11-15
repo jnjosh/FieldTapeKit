@@ -253,7 +253,7 @@ public struct Tape: Sendable, Identifiable, Hashable {
 }
 
 public struct TapeName: Sendable, Hashable, CustomStringConvertible {
-    static let maximumLength = 15      // for new names; see below
+    static let maximumLength = 12      // for new names, from the firmware profile; see below
     init(_ string: String) throws      // .invalidName: lists the characters not allowed, or says it's too long
     // Stored lowercase; compares ignoring case
 }
@@ -274,11 +274,11 @@ public enum TapeConflict: Sendable {
 
 **The 8-tape limit is checked in one place.** Every call that adds a tape checks `tapeSlots()` from a fresh listing of `tapes/` before it changes anything, and throws `.tapeLimitReached` if none is free. That's `createTape`, `duplicateTape`, and `restoreTape` when the name is new. Replacing an existing tape doesn't need a slot. The file layer's `createDirectory(at:)` runs the same check for a new folder in `tapes/`, so the limit can't be bypassed from below. The error's recovery suggestion says to move a tape off the OP-1 first.
 
-**Tape names are at most 15 characters, when FieldTapeKit makes them.**
+**Tape names are at most 12 characters, when FieldTapeKit makes them.**
 - The allowed characters are A–Z, 0–9, `#`, `-` and space, stored lowercase.
-- 15 is FieldTapeKit's own limit, not the OP-1's. The OP-1's name editor doesn't scroll, so the owner couldn't find where it stops, but past about 13 or 14 characters a name can't be read on the OP-1's screen. A limit of 15 keeps every name FieldTapeKit makes readable, or nearly so, on the device. It may be stricter than the OP-1 needs, and it can be raised later without breaking anything.
-- The limit applies only to names for a new tape: `createTape`, `duplicateTape`, and `restoreTape(from:as:)` with a new name. A name that's already on the OP-1, or in an archive, is accepted at any length, so a longer tape named on the OP-1 itself can still be listed, copied off and restored under its own name.
-- FieldCheck creates its scratch tape with a 15-character name, which confirms the OP-1 accepts one over MTP (ADR 0003, `names.maximum`).
+- 12 is the most the OP-1 keeps on 1.7.3. It accepts a longer name over MTP, then cuts it to 12 once it leaves MTP mode (2026-11-15), so FieldTapeKit refuses a longer name instead of making a tape that comes back under another name. The limit comes from the firmware profile, so another firmware can have its own.
+- The limit applies only to names for a new tape: `createTape`, `duplicateTape`, and `restoreTape(from:as:)` with a new name. A name that's already on the OP-1, or in an archive, is accepted at any length, so a tape can still be listed, copied off and restored under its own name.
+- FieldCheck creates its scratch tape with a 12-character name, and a second tape with 13, to confirm the OP-1 keeps 12 and cuts 13 (ADR 0003, `names.maximum`).
 
 **Filtering is left to the app.** `tapes()` returns an array, and Swift's own collection methods already do the job:
 
@@ -644,6 +644,7 @@ These are possible later features, deliberately left out for now:
   - **`synth/user/` follows the same rules,** with no cap assumed. Nothing has been written there yet, so level 2 checks it on hardware.
 - **2026-11-15:** FieldCheck's first level 2 run (PROBE-NOTES.md) found that **`synth/user/` keeps 6 seconds**, where `drum/user/` keeps 20, and that **a converted preset keeps the format code it was sent with:** a WAV stored as AIFC is still listed as WAV. Neither changes a decision. A shortened preset was already allowed, and nothing in FieldTapeKit depends on a cap, which only the simulator models. But `FieldFormat` in a preset folder says what was sent, not what's stored, unlike the 2026-11-14 entry's reasoning for reading it from the format code. Its documentation says so now.
   - Also settled while building it: a preset WAV's chunks are walked, so WAVs from other apps with extra chunks are accepted. The read-back would catch the OP-1 handling one differently. A write that reads back wrong now says why in its error.
+- **2026-11-15:** **New tape names are limited to 12 characters, not 15,** decided by the owner. FieldCheck's first level 3 run found the OP-1 had cut its 15-character scratch tape, `fieldcheck #1-2`, to `fieldcheck #` once it left MTP mode (PROBE-NOTES.md). The OP-1 took the full name over MTP and listed it whole within the session, so nothing showed the cut until the reconnect. A name of 13 or more would make a tape that comes back under another name, which could also collide with a tape already there. The limit moves into the firmware profile as `maximumTapeNameLength`. Names already on the OP-1 or in an archive are still accepted at any length. The 2026-11-08 entry below gave the earlier reasoning.
 - **2026-11-14:** Decided by the owner while building step 10 of the plan, replacing files:
   - **`.replace(keepingCopyAt:)` needs a free URL.** A taken one throws `localFileFailed` before anything changes, so the copy is always exactly where the caller said, and `write` still returns only the `FieldItem`. Unlike `removeItem(at:keepingCopyAt:)`, it never adds a number.
   - **A replace with nothing at the path** writes the file as new. `.replace(keepingCopyAt:)` makes no copy. `.replace(confirmed:)` throws `changedSinceConfirmation`, because what the person confirmed is gone.

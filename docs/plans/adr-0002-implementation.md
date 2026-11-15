@@ -237,7 +237,7 @@ Decided by the owner (2026-11-14), and recorded in ADR 0002's change log: the co
 ### 11. FieldCheck level 2 (ADR 0003)
 
 **Adds:**
-- The scratch tape `fieldcheck #1-2`, with generated tones and a generated `tape.json`.
+- The scratch tape `fieldck #1-2` (`fieldcheck #1-2` until 2026-11-15), with generated tones and a generated `tape.json`, and a 13-character tape the OP-1 should cut to 12 (12a).
 - `drum/user/fieldcheck.wav` and `synth/user/fieldcheck.wav`. The first run found that `synth/user/` keeps 6 seconds, and that a converted file keeps the format code it was sent with (2026-11-15).
 - Free-space readings before and after.
 - The album checks, on an empty side only.
@@ -270,12 +270,16 @@ Decided by the owner for 11b (2026-11-15), and recorded in ADR 0003's change log
 
 **Done when:** the 1.7.3 baseline covers all three levels.
 
+**Split in two (decided 2026-11-15), and recorded in ADR 0003's change log:**
+- **12a:** level 3's checks, the simulator's reconnect, the pending level 3 saved across launches, and the cleanup offer for a run that didn't finish. Then a run on the OP-1.
+- **12b:** baselines made from several reports, and the 1.7.3 baseline saved again with all three levels.
+
 ## Part 3: The tape layer
 
 ### 13. Reading tapes
 
 **Adds (public):**
-- `TapeName`: the allowed characters, stored lowercase and compared ignoring case. New names are limited to 15 characters, but names already on the OP-1 are accepted at any length.
+- `TapeName`: the allowed characters, stored lowercase and compared ignoring case. New names are limited to 12 characters, the most the OP-1 keeps (2026-11-15), but names already on the OP-1 are accepted at any length.
 - `TapeType`, `TapeTrack` and `TapeManifest`. The manifest keeps the original JSON and round-trips unknown keys and `padding`.
 - `Tape`, `tapes()`, `tape(named:)` and `tapeSlots()`.
 - **The simulator builder:** `Tape(…)`.
@@ -342,6 +346,8 @@ Decided by the owner for 11b (2026-11-15), and recorded in ADR 0003's change log
 **Tests:** a copy that doesn't match is refused, a stale or reused confirmation is refused, `losesNothing`, and move refusing to delete when the tape changed after archiving.
 
 **On the OP-1 (scratch writes):** move the scratch tape off, then delete what's left.
+
+**To decide first:** on 1.7.3, one DeleteObject on a tape's folder deletes its files too (`delete.folder-with-files`, 2026-11-15). Whether `deleteTape` uses that, or keeps deleting files first so a failure part way is easier to report, is an open choice.
 
 ### 19. Restoring over an existing tape → `1.0.0-alpha.2`
 

@@ -1,0 +1,68 @@
+{
+  "device" : {
+    "firmware" : "1.7.3",
+    "isFirmwareTested" : true,
+    "model" : "OP-1",
+    "serialNumber" : "L1PXE14W"
+  },
+  "durationMilliseconds" : 26,
+  "finished" : "2026-11-15T04:21:29Z",
+  "format" : 1,
+  "host" : {
+    "app" : "1.0",
+    "model" : "iPad",
+    "system" : "iPadOS 27.2.1"
+  },
+  "level" : 3,
+  "results" : [
+    {
+      "expectation" : "reconnect.handles",
+      "outcome" : "not run",
+      "summary" : "The scratch tape isn't on the OP-1 any more, so there's nothing for level 3 to check.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "names.maximum",
+      "outcome" : "not run",
+      "summary" : "The scratch tape isn't on the OP-1 any more, so there's nothing for level 3 to check.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "reconnect.renamed",
+      "outcome" : "not run",
+      "summary" : "The scratch tape isn't on the OP-1 any more, so there's nothing for level 3 to check.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "reconnect.kept",
+      "outcome" : "not run",
+      "summary" : "The scratch tape isn't on the OP-1 any more, so there's nothing for level 3 to check.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "delete.folder-with-files",
+      "outcome" : "not run",
+      "summary" : "The scratch tape isn't on the OP-1 any more, so there's nothing for level 3 to check.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "delete.files-then-folder",
+      "outcome" : "not run",
+      "summary" : "The scratch tape isn't on the OP-1 any more, so there's nothing for level 3 to check.",
+      "varies" : [
+
+      ]
+    }
+  ],
+  "started" : "2026-11-15T04:21:29Z"
+}

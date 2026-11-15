@@ -138,6 +138,41 @@ actor SimulatedMTPDevice: MTPTransport {
         faults += more
     }
 
+    /// What the OP-1 does between leaving MTP mode and entering it again, as seen on 1.7.3: names are stored
+    /// lowercase, a tape's name is cut to 12 characters, a tape made over MTP gets a `readme.txt`, every object gets a
+    /// new handle, and files list at their real size again (`reconnect.renamed`, `names.maximum`,
+    /// `reconnect.handles`, `rebuild.stale-size`; PROBE-NOTES.md, 2026-11-08 and 2026-11-15). What happens when two
+    /// cut names collide isn't known, so the simulator leaves both. Make a new `FieldDevice` on it afterwards, as a
+    /// real reconnect does.
+    func leaveAndReenterMTPMode() {
+        var handles: [UInt32: UInt32] = [Self.root: Self.root]
+        for handle in objects.keys.sorted() {
+            handles[handle] = nextHandle
+            nextHandle += 1
+        }
+        var renumbered: [UInt32: Object] = [:]
+        for (handle, var object) in objects {
+            object.parent = handles[object.parent] ?? object.parent
+            object.name = object.name.lowercased()
+            object.staleSize = nil
+            renumbered[handles[handle]!] = object
+        }
+        objects = renumbered
+        pending = nil
+        if let tapes = tapesFolder {
+            let folders = objects.filter { $0.value.parent == tapes && $0.value.format == PTPObjectFormat.association }.keys
+            let limit = FirmwareProfile.v1_7_3.maximumTapeNameLength
+            for folder in folders {
+                let name = objects[folder]!.name
+                objects[folder]!.name = String(name.prefix(limit))
+            }
+            for folder in folders.sorted()
+            where !objects.values.contains(where: { $0.parent == folder && $0.name == "readme.txt" }) {
+                addFile("readme.txt", data: Data(SimulatedNode.tapeReadme.utf8), format: PTPObjectFormat.undefined, in: folder)
+            }
+        }
+    }
+
     private func add(_ object: Object) -> UInt32 {
         defer { nextHandle += 1 }
         objects[nextHandle] = object
@@ -259,13 +294,18 @@ actor SimulatedMTPDevice: MTPTransport {
             for case .refuseDeleting(let name, let responseCode) in faults where name == object.name {
                 return (none, responseCode, [])
             }
-            // Whether the OP-1 deletes a folder with files in it is unknown (`delete.folder-with-files`), so the
-            // simulator refuses, and FieldTapeKit always empties a folder first.
-            if object.format == PTPObjectFormat.association, objects.values.contains(where: { $0.parent == handle }) {
-                return (none, PTPResponseCode.generalError, [])
+            // On 1.7.3, DeleteObject on a folder deletes what's in it too (`delete.folder-with-files`, 2026-11-15).
+            // FieldTapeKit still empties a folder first.
+            var gone = [handle]
+            var index = 0
+            while index < gone.count {
+                gone += objects.filter { $0.value.parent == gone[index] }.keys.sorted()
+                index += 1
             }
-            objects[handle] = nil
-            deleted.append(object.name)
+            for handle in gone.reversed() {
+                deleted.append(objects[handle]!.name)
+                objects[handle] = nil
+            }
             return (none, Response.ok, [])
 
         case .sendObjectInfo:

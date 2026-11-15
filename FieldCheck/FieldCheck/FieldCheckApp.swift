@@ -1,8 +1,9 @@
 // FieldCheck: checks a connected OP-1 against what FieldTapeKit expects (ADR 0003), in two tabs.
 // Validate shows connection events and device info, runs level 1, and saves each report and its log to Documents.
 // A level 1 run with no failures can be saved as its firmware's baseline, to copy into the repository's firmware/
-// folder. Level 2 writes only FieldCheck's own scratch content, after a person confirms its plan, and FieldCheck can
-// delete what it leaves.
+// folder. Level 2 writes only FieldCheck's own scratch content, after a person confirms its plan. A clean level 2
+// leaves level 3 waiting, saved in Documents, for after the OP-1 leaves MTP mode and comes back. Level 3 checks the
+// scratch tape and deletes it. FieldCheck offers to delete content left by a run that didn't finish.
 // It also runs FieldTapeKit's conformance suite, the checks the simulator passes too, and logs the results.
 // Explore (ExploreView.swift) browses the OP-1 through FieldTapeKit's public API, as an app would. It only reads.
 
@@ -10,6 +11,7 @@ import FieldCheckKit
 import FieldTapeConformance
 import FieldTapeKit
 import SwiftUI
+import System
 import UIKit
 
 @main
@@ -36,6 +38,11 @@ final class ConnectionLog {
     /// The latest conformance results for each connection.
     private(set) var conformance: [FieldDevice.ID: [Conformance.Result]] = [:]
     private(set) var running: FieldDevice.ID?
+    /// Level 3, waiting for the OP-1 to leave MTP mode and come back after a clean level 2. Saved in Documents.
+    private(set) var pendingLevelThree: LevelThree.Pending?
+    /// FieldCheck's own content found on each connection, from a run that didn't finish.
+    private(set) var leftovers: [FieldDevice.ID: [FilePath]] = [:]
+    private let pendingURL = URL.documentsDirectory.appending(path: "level3-pending.json")
     private let started = Date()
     private let fileURL: URL
     private let host: CheckReport.Host
@@ -48,6 +55,43 @@ final class ConnectionLog {
         let app = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
         host = CheckReport.Host(app: app, model: device.model, system: "\(device.systemName) \(device.systemVersion)")
         record("FieldCheck \(app) on \(device.model), \(device.systemName) \(device.systemVersion)")
+        if let data = try? Data(contentsOf: pendingURL) {
+            do {
+                pendingLevelThree = try LevelThree.Pending(json: data)
+                record("Level 3 is waiting, after level 2 on \(pendingLevelThree!.serialNumber)")
+            } catch {
+                record("Couldn't read \(pendingURL.lastPathComponent): \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Saves or clears the waiting level 3.
+    private func setPendingLevelThree(_ pending: LevelThree.Pending?) {
+        pendingLevelThree = pending
+        do {
+            if let pending {
+                try pending.jsonData().write(to: pendingURL, options: .atomic)
+            } else if FileManager.default.fileExists(atPath: pendingURL.path) {
+                try FileManager.default.removeItem(at: pendingURL)
+            }
+        } catch {
+            record("Couldn't save \(pendingURL.lastPathComponent): \(error.localizedDescription)")
+        }
+    }
+
+    /// Whether level 3 is waiting for this OP-1.
+    func isLevelThreePending(for device: FieldDevice) -> Bool {
+        pendingLevelThree?.serialNumber == device.info.serialNumber
+    }
+
+    /// Whether this is the connection level 2 ran on, so the OP-1 hasn't left MTP mode since.
+    func isLevelTwoConnection(_ device: FieldDevice) -> Bool {
+        pendingLevelThree?.connection == device.id
+    }
+
+    /// Looks for FieldCheck's own content on the OP-1. It only reads.
+    private func findLeftovers(on device: FieldDevice) async {
+        leftovers[device.id] = await LevelTwo.plan(for: device).leftovers
     }
 
     /// Level 1 only reads, so it needs no confirmation.
@@ -93,6 +137,12 @@ final class ConnectionLog {
         record("Level 2: running\(longCheck ? " with the long check" : ""), copies go in \(workspace.lastPathComponent)")
         let report = await LevelTwo.run(on: device, plan: plan, longCheck: longCheck, workspace: workspace, host: host)
         reports[device.id] = report
+        if let pending = await LevelThree.pending(after: report, on: device) {
+            setPendingLevelThree(pending)
+            record("Level 3 is waiting: leave MTP mode on the OP-1, then enter it again. You can play the scratch tape "
+                + "on the OP-1 in between.")
+        }
+        await findLeftovers(on: device)
         for result in report.results {
             record("Level 2: \(result.expectation) \(result.outcome.rawValue): \(result.summary)")
         }
@@ -113,6 +163,44 @@ final class ConnectionLog {
         record("Deleting FieldCheck's content")
         let result = await LevelTwo.deleteLeftovers(on: device)
         record("\(result.expectation) \(result.outcome.rawValue): \(result.summary)")
+        if isLevelThreePending(for: device) {
+            setPendingLevelThree(nil)
+            record("Level 3 isn't waiting any more, since FieldCheck's tapes were deleted")
+        }
+        await findLeftovers(on: device)
+    }
+
+    /// Runs the waiting level 3, after a person confirms, since it deletes FieldCheck's tapes. Once it has run, level
+    /// 3 is no longer waiting, and a tape it leaves behind is offered for cleanup instead. If it can't run on this
+    /// connection, it keeps waiting, unless the scratch tape is gone.
+    func runLevelThree(on device: FieldDevice) async {
+        guard running == nil, let pending = pendingLevelThree else { return }
+        running = device.id
+        defer { running = nil }
+        if let refusal = await LevelThree.refusal(on: device, pending: pending) {
+            record("Level 3: can't run: \(refusal)")
+            if refusal.endsLevelThree {
+                setPendingLevelThree(nil)
+                record("Level 3 isn't waiting any more")
+            }
+            await findLeftovers(on: device)
+            return
+        }
+        record("Level 3: running, after level 2 at \(pending.levelTwoStarted.formatted(.iso8601))")
+        let report = await LevelThree.run(on: device, pending: pending, host: host)
+        reports[device.id] = report
+        for result in report.results {
+            record("Level 3: \(result.expectation) \(result.outcome.rawValue): \(result.summary)")
+        }
+        record("Level 3: \(report.count(.pass)) pass, \(report.count(.fail)) fail, \(report.count(.notRun)) not run")
+        do {
+            let saved = try report.save(in: .documentsDirectory)
+            record("Saved \(saved.json.lastPathComponent) and \(saved.markdown.lastPathComponent)")
+        } catch {
+            record("Couldn't save the report: \(error.localizedDescription)")
+        }
+        setPendingLevelThree(nil)
+        await findLeftovers(on: device)
     }
 
     private static func stamp() -> String {
@@ -189,10 +277,15 @@ final class ConnectionLog {
                     record("Connected: \(info.model), firmware \(info.firmware)\(info.isFirmwareTested ? "" : " (untested)"), "
                         + "serial \(info.serialNumber)")
                     record("Storage: \(info.storage.capacity) bytes, \(info.storage.freeSpace) free")
+                    if isLevelThreePending(for: device), !isLevelTwoConnection(device) {
+                        record("Level 3 is waiting, and can run now")
+                    }
+                    await findLeftovers(on: device)
                 case .disconnected(let id):
                     devices.removeAll { $0.id == id }
                     reports[id] = nil
                     conformance[id] = nil
+                    leftovers[id] = nil
                     record("Disconnected")
                 }
             }
@@ -234,6 +327,8 @@ struct ValidateView: View {
     /// A level 2 plan waiting for the person to confirm, and the device it's for.
     @State private var plan: (device: FieldDevice, plan: LevelTwo.Plan)?
     @State private var cleanup: FieldDevice?
+    /// The device a level 3 is waiting for the person to confirm on.
+    @State private var levelThree: FieldDevice?
 
     var body: some View {
         NavigationStack {
@@ -257,8 +352,25 @@ struct ValidateView: View {
                             Task { plan = (device, await log.planLevelTwo(on: device)) }
                         }
                         .disabled(log.running != nil)
-                        Button("Delete FieldCheck's content…", role: .destructive) { cleanup = device }
-                            .disabled(log.running != nil)
+                        if log.isLevelThreePending(for: device) {
+                            if log.isLevelTwoConnection(device) {
+                                Text("Level 3 is waiting. Leave MTP mode on the OP-1, then enter it again. You can "
+                                     + "play the scratch tape on the OP-1 in between.")
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Button(log.running == device.id ? "Running level 3…" : "Run level 3 (after the reconnect)…") {
+                                    levelThree = device
+                                }
+                                .disabled(log.running != nil)
+                            }
+                        } else if let found = log.leftovers[device.id], !found.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("FieldCheck's content from a run that didn't finish is on the OP-1:")
+                                Text(found.map(\.string).joined(separator: ", ")).font(.caption.monospaced())
+                            }
+                            Button("Delete FieldCheck's content…", role: .destructive) { cleanup = device }
+                                .disabled(log.running != nil)
+                        }
                     }
                 }
                 ForEach(log.devices) { device in
@@ -275,7 +387,7 @@ struct ValidateView: View {
                         } footer: {
                             if report.level == 1, report.count(.fail) > 0 {
                                 Text("A run with failures can't be a baseline.")
-                            } else if report.level == 2 {
+                            } else if report.level > 1 {
                                 Text("Baselines cover level 1 for now.")
                             }
                         }
@@ -315,6 +427,15 @@ struct ValidateView: View {
                     Text(pending.plan.steps.map { "• \($0)" }.joined(separator: "\n"))
                 }
             }
+            .confirmationDialog("Level 3", isPresented: Binding(get: { levelThree != nil }, set: { if !$0 { levelThree = nil } }),
+                                titleVisibility: .visible, presenting: levelThree) { device in
+                Button("Check, then delete FieldCheck's tapes", role: .destructive) {
+                    Task { await log.runLevelThree(on: device) }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: { _ in
+                Text(LevelThree.steps.map { "• \($0)" }.joined(separator: "\n"))
+            }
             .confirmationDialog("Delete FieldCheck's content?", isPresented: Binding(get: { cleanup != nil },
                                                                                       set: { if !$0 { cleanup = nil } }),
                                 titleVisibility: .visible, presenting: cleanup) { device in
@@ -322,7 +443,7 @@ struct ValidateView: View {
                 Button("Cancel", role: .cancel) {}
             } message: { _ in
                 Text("Deletes \(LevelTwo.ownContent.map(\.string).joined(separator: ", ")) if they're there: "
-                     + "only what level 2 makes. Each file, then the tape's folder.")
+                     + "only what level 2 makes. Each tape's files, then its folder.")
             }
         }
     }

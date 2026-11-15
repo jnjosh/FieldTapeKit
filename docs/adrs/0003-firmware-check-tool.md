@@ -38,7 +38,7 @@ The first list, from the probe's findings:
 | `layout.folders` | `tapes/`, `mixdown/`, `synth/`, `drum/` exist, with the subfolders seen on 1.7.3. | `FilePath` well-known locations, safety rule 4 |
 | `layout.readmes` | The text of every `readme.txt` matches the baseline. | Folder rules |
 | `names.lowercase` | Names on the device are stored lowercase. | Case-insensitive paths, `TapeName` |
-| `names.maximum` | A new tape with a 15-character name, using every kind of allowed character, is accepted over MTP and kept after a reconnect. | `TapeName.maximumLength` |
+| `names.maximum` | A new tape with a 12-character name, using every kind of allowed character, is accepted over MTP and kept after a reconnect. A 13-character name is accepted, then cut to 12 after a reconnect (2026-11-15). | `TapeName.maximumLength` |
 | `tape.files` | Each tape has `tape.json`, `track_1`–`4.wav`, and maybe `readme.txt`. Nothing else. | `Tape` |
 | `tape.wav-format` | Tracks are 44-byte-header PCM WAV: 2 channels, 32 bits, 44.1 kHz. | Track sizes, consistency check |
 | `album.files` | `mixdown/` holds exactly `side_a.wav` and `side_b.wav`, and an empty side is the 44-byte header. | `Album`, `AlbumSide.isEmpty` |
@@ -60,7 +60,7 @@ The first list, from the probe's findings:
 | `rebuild.tape-json` | After a track write, the OP-1 rebuilds `tape.json` (one clip per track). | Restore order: tracks first, `tape.json` last |
 | `rebuild.stale-size` | Within the session, the rebuilt `tape.json` still lists, and reads, at its old size. | Fresh info before every read |
 | `delete.files-then-folder` | Deleting a tape's files, then its folder, removes it. | `deleteTape`, `moveTape` |
-| `delete.folder-with-files` | What one DeleteObject on a folder with files in it does. **Not yet known.** | Could simplify `deleteTape` |
+| `delete.folder-with-files` | What one DeleteObject on a folder with files in it does. On 1.7.3 it deletes the folder and its files (2026-11-15). | Could simplify `deleteTape` |
 | `reconnect.kept` | After leaving MTP mode, a written tape and its `tape.json` are kept, apart from `pos`. | Restore |
 | `reconnect.renamed` | After reconnecting, a created tape's name is lowercase and `readme.txt` has been added. | `TapeName`, `Tape` |
 | `reconnect.handles` | Object handles change after reconnecting. | Handles stay private |
@@ -72,7 +72,7 @@ New expectations are added when FieldTapeKit starts relying on something new. Re
 **Level 1: read only.** This is the default, and it changes nothing on the OP-1. It runs every expectation that only needs reading: device, storage, layout, readmes, names, every tape's files and `tape.json`, the WAV format, partial reads, and speed. It takes under a minute.
 
 **Level 2: scratch writes.** These run only on things FieldCheck makes itself:
-- **A scratch tape** named `FIELDCHECK #1-2`, stored as `fieldcheck #1-2`. It's 15 characters, FieldTapeKit's maximum, and uses letters, digits, `#`, `-` and space, so making it also checks `names.maximum`. It needs one free slot of the 8, and FieldCheck refuses to start this level without one, saying so. It never writes to a tape it didn't create.
+- **A scratch tape** named `FIELDCK #1-2`, stored as `fieldck #1-2`. It's 12 characters, FieldTapeKit's maximum and the most the OP-1 keeps, and uses letters, digits, `#`, `-` and space, so making it also checks `names.maximum`. It needs one free slot of the 8, and FieldCheck refuses to start this level without one, saying so. It never writes to a tape it didn't create.
 - **Generated content.** The tracks are short synthetic tones, about 2 seconds each, and `tape.json` is generated with several clips, a loop, a custom tempo and a non-default type. Its `padding` values are all `-1`, as on a tape the OP-1 rebuilt. No user audio or `padding` is copied (Alternatives Considered).
 - **A small generated WAV** at `drum/user/fieldcheck.wav`, deleted afterwards.
 - **Free space** is read before the first write, after the last one, and after cleanup, for `device.storage`.
@@ -92,7 +92,7 @@ It remembers a pending level 3 across app launches. If it finds a scratch tape l
 ### 3. Safety
 
 FieldCheck follows ADR 0002's safety rules, plus these:
-- It reads anything, but writes and deletes only the scratch tape `tapes/fieldcheck #1-2`, `drum/user/fieldcheck.wav`, and an album side that was empty when it started.
+- It reads anything, but writes and deletes only the scratch tape `tapes/fieldck #1-2`, the 13-character tape `tapes/fieldck #2-13` (`fieldck #2-1` once cut), `drum/user/fieldcheck.wav`, and an album side that was empty when it started.
 - Before level 2, it lists exactly what it will create and delete, and the person confirms.
 - It stops at the first unexpected write result, leaves the scratch content for cleanup, and reports what it did.
 - It never sends MIDI, vendor operations, or anything not listed in ADR 0002, safety rule 7.
@@ -218,6 +218,19 @@ FieldCheck measures only the firmware installed, so the old-firmware rows come f
     - `device.storage` records free space before, after the writes and after the presets are deleted, without judging how close it comes. Judging waits for the comparison in step 22.
     - Copies of the replaced track and the drum preset go in a `level2-<time>` folder in Documents.
     - Baselines still cover level 1 only.
+- **2026-11-15:** Level 3 passed on the OP-1, all 6 checks. `delete.folder-with-files` is no longer unknown: one DeleteObject on the scratch tape's folder deleted it and its 6 files, and none of the files' handles answered afterwards. The simulator now does the same, and a refused folder delete is a test fault. Whether `deleteTape` uses it is step 18's decision.
+- **2026-11-15:** **The scratch tape is now `FIELDCK #1-2`, 12 characters, and level 2 also makes `FIELDCK #2-13`, 13 characters,** decided by the owner. The first level 3 run found the OP-1 had cut `fieldcheck #1-2` to `fieldcheck #` after the reconnect, so 15 was more than it keeps, and ADR 0002 now limits new names to 12. This reverses part of "Trying scratch names longer than 15 characters" under Alternatives Considered: one name over the limit is now tried on purpose, to check where the OP-1 cuts, and it's deleted in level 3. Its first 12 characters differ from the scratch tape's, so the cut can't collide with it. Level 2 now needs two free slots. Sent raw, since FieldTapeKit refuses it, and filled like the scratch tape. `names.maximum` passes in level 3 only if the 12-character name is kept and the 13-character one is cut to its first 12.
+  - Level 3's refusal now lists what `tapes/` holds when the scratch tape is gone, and only that refusal ends a waiting level 3. The first run's refusal cleared it, and FieldCheck lost track of the cut tape. `delete.files-then-folder` now always runs, since the cut tape is always left for it.
+- **2026-11-15:** Decided by the owner while building step 12a of the plan, level 3:
+  - **Step 12 is split.** 12a is level 3 and the reconnect flow. 12b makes baselines from several reports, so the 1.7.3 baseline can cover all three levels.
+  - **Only a level 2 run with no failures leaves level 3 waiting.** FieldCheck saves it in Documents with the scratch tape's handles, so it survives a relaunch. After a run that stopped partway, FieldCheck offers to delete what it left instead. The **Delete FieldCheck's content** button now shows only then.
+  - **`reconnect.kept` allows `pos` and `tempometronomelevel` to change,** and records both. The probe saw the metronome level change on a copied tape, perhaps as a global setting, and restore doesn't depend on either.
+  - Also settled while building it:
+    - Level 3 refuses, changing nothing, on the connection level 2 ran on, on another OP-1, or when the scratch tape is gone.
+    - It stops at its first failure, and leaves the tape for cleanup. A relaunch without leaving MTP mode shows up as `reconnect.handles` failing, with every handle the same.
+    - `reconnect.handles` records only how many handles changed, since the handles themselves differ every run.
+    - `delete.folder-with-files` sends one raw DeleteObject on the folder, then checks the folder and each file's handle. A refusal that deleted nothing passes, and so does deleting everything. Files left without their folder fail, and are deleted by handle.
+    - `delete.files-then-folder` deletes what's left through FieldTapeKit, or is "not run" when nothing is.
 - **2026-11-15:** Decided by the owner while building step 11b of the plan, level 2's second half:
   - **Only `album.write-exact` is built.** On the first empty side, `side_a.wav` then `side_b.wav`, level 2 reads the side, checks it's still the 44-byte empty header, and replaces it with a 2-second 16-bit tone, keeping a copy. It reads the tone back, then puts the empty side back through a confirmation and reads that back too. With audio on both sides, it's "not run", and the plan says so. `album.write-other-format` stays unknown, since FieldTapeKit refuses other formats and nothing relies on what the OP-1 does with them.
   - **The long check replaces, then restores.** It replaces `track_2.wav` with a full 6-minute track of 127,008,044 bytes, through a confirmation, reads it back whole, then puts the 2-second tone back and `tape.json` again, last. So the scratch tape ends the same with or without it. It reports FieldCheck's memory before it and at its peak. FieldCheck asks for it with a second button in the level 2 confirmation.

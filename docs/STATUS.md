@@ -26,7 +26,7 @@ Where the project stands, so a new session can pick it up. Update this when the 
 - **Album calls:** `copySide`, `copyAlbum` and `restoreSide`, for `mixdown/side_a.wav` and `side_b.wav`.
 - **Backups:** `<tape name>.reelarchive`, an Apple Archive file, uncompressed by default, with no zip or tar code of our own.
 - **Safety:** nothing is deleted or overwritten without a verified copy, or a person's confirmation (`prepareToDelete` → `TapeDeletion`). Read-back is on by default.
-- **Tape names:** at most 15 characters for a new tape, FieldTapeKit's own limit so names stay readable on the OP-1's screen. Names already on the OP-1 or in an archive are accepted at any length.
+- **Tape names:** at most 12 characters for a new tape, the most the OP-1 keeps (15 until 2026-11-15, when the OP-1 was found cutting longer names after a reconnect). Names already on the OP-1 or in an archive are accepted at any length.
 - **Free space:** FieldCheck checks whether GetStorageInfo's figure is accurate. Until then nothing refuses a write on it, and Store Full is reported as `insufficientSpace`.
 - **Versioning:** strict semver, starting at `1.0.0-alpha.1`, then betas, then `1.0.0`. A major version protects the Swift API, the archive format, supported firmware and safety behavior.
 - **Firmware support is additive:** each tested firmware keeps a profile, a baseline and simulator tests. Untested firmware works, with a warning (`isFirmwareTested`).
@@ -34,9 +34,9 @@ Where the project stands, so a new session can pick it up. Update this when the 
 **Settled in ADR 0003, decided by the owner:**
 - **Name:** FieldCheck.
 - **The long check** (a 6-minute, 127 MB track) runs only when asked.
-- **The scratch tape** is `fieldcheck #1-2`, exactly 15 characters. No longer names are tried.
+- **The scratch tape** is `fieldck #1-2`, exactly 12 characters, and level 2 also makes `fieldck #2-13`, 13 characters, to check the OP-1 cuts it to 12 (2026-11-15).
 - **No user `padding`** is copied onto the scratch tape. Shared `padding` stays a known risk.
-- **`delete.folder-with-files`** runs on the scratch tape's own deletion, so only one free slot is needed.
+- **`delete.folder-with-files`** runs on the scratch tape's own deletion. Level 2 needs two free slots, for its two tapes.
 - **A draft ADR** comes with every run that finds a change: what changed, a suggested compatibility class, and who each change affects, including people who don't update. A person makes the decision.
 
 **Open questions:** none in ADRs 0002 or 0003.
@@ -135,7 +135,7 @@ Where the project stands, so a new session can pick it up. Update this when the 
 - **Step 9a is done, tested only on the simulator,** as the plan says. Hardware checks it in step 11:
   - Public: `write(_:to:options:)`, `copyItem(at: URL, to: FilePath, options:progress:)` and `createDirectory(at:)`, with `UploadOptions` (`verify` on by default) and `ExistingFile`, which has only `.fail` until step 10.
   - Everything is checked before anything is sent: the folder exists, the path is free, the folder allows the name, and audio is in the profile's format. Names are sent lowercase. A send that fails, is cancelled or reads back wrong deletes its half-made file, and `changed` lists it only if that delete fails.
-  - `createDirectory` makes only tape folders, with names of at most 15 characters from A–Z, 0–9, `#`, `-` and space, and only while one of the 8 slots is free.
+  - `createDirectory` makes only tape folders, with names of at most 15 characters (12 since 2026-11-15) from A–Z, 0–9, `#`, `-` and space, and only while one of the 8 slots is free.
   - New `FieldError` codes: `alreadyExists`, `invalidName`, `tapeLimitReached`, `tapeTooLong` and `insufficientSpace` (Store Full). Preset folders are refused with `notAllowed` until 9b.
   - The simulator now accepts SendObjectInfo and SendObject, refuses names a folder doesn't allow with 0x2002, refuses a full store with 0x200C, rebuilds `tape.json` after a track write with the old size still listed, and can corrupt a stored file or refuse a SendObject. How the OP-1 refuses a ninth tape isn't known; the simulator's 0x2002 is a guess, and FieldTapeKit refuses first anyway.
   - 205 tests pass on the Mac and the iOS simulator (133 FieldTapeKit, 67 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS devices.
@@ -174,14 +174,28 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **`write.speed`,** a new expectation split from `read.speed`: each audio write, timed less a read of the same file. Reported, never failed.
   - 245 tests pass on the Mac and the iOS simulator (160 FieldTapeKit, 80 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS.
 
+- **Step 12 is split into 12a and 12b** (decided 2026-11-15, recorded in the plan and ADR 0003's change log).
+- **Step 12a is done, and passed on the OP-1** (iPad Pro, 2026-11-15, [level 2](../firmware/1.7.3/runs/fieldcheck-2026-11-15T043147Z.md) and [level 3](../firmware/1.7.3/runs/fieldcheck-2026-11-15T043206Z.md) reports). Level 2 passed 9 checks, with 2 not run (the long check, and the album). After a reconnect, level 3 passed all 6: every handle changed, `fieldck #1-2` was kept and `fieldck #2-13` cut to `fieldck #2-1`, the OP-1 added a 104-byte `readme.txt`, and the tracks and `tape.json` were unchanged. **One DeleteObject on the scratch tape's folder deleted it and its 6 files**, so `delete.folder-with-files` is known, and the simulator now does the same. 257 tests pass on the Mac and the iOS simulator (162 FieldTapeKit, 90 FieldCheckKit, 5 conformance tests).
+- **How 12a was built:** `LevelThree` in FieldCheckKit has 6 checks: `reconnect.handles`, `names.maximum` (kept after a reconnect), `reconnect.renamed`, `reconnect.kept`, `delete.folder-with-files` and `delete.files-then-folder`.
+  - **The flow:** a clean level 2 leaves level 3 waiting, saved as `level3-pending.json` in Documents. FieldCheck says to leave MTP mode and enter it again. On the next connection, **Run level 3 (after the reconnect)…** asks, then checks the scratch tape and deletes it. After a run that didn't finish, FieldCheck instead lists what it left and offers **Delete FieldCheck's content…**.
+  - **The simulator now reconnects** (`leaveAndReenterMTPMode`): names lowercase, a `readme.txt` in a tape made over MTP, new handles, and real sizes again. It still refuses DeleteObject on a folder with files in it, so on the simulator level 3 falls back to deleting the files first. The app's `-SimulatedOP1` mode can't reconnect, so the flow in the app is only checked on hardware.
+  - 254 tests pass on the Mac and the iOS simulator (161 FieldTapeKit, 88 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS.
+
+- **The first level 3 run on the OP-1 found that the OP-1 cuts tape names to 12 characters** (iPad Pro, 2026-11-15, [level 2](../firmware/1.7.3/runs/fieldcheck-2026-11-15T042019Z.md) and [level 3](../firmware/1.7.3/runs/fieldcheck-2026-11-15T042129Z.md) reports). Level 2 passed. After the reconnect, `fieldcheck #1-2` was `fieldcheck #`, so level 3 found no scratch tape and ran nothing. Decided by the owner, and recorded in ADR 0002's and ADR 0003's change logs:
+  - **FieldTapeKit limits new tape names to 12,** from the firmware profile's new `maximumTapeNameLength`. The simulator cuts tape names to 12 on a reconnect.
+  - **The scratch tape is `FIELDCK #1-2`,** and level 2 also makes `FIELDCK #2-13`, sent raw. Level 3 checks the first is kept and the second is cut to `fieldck #2-1`, then deletes both. Level 2 now needs two free slots.
+  - **Level 3 keeps waiting when it's refused,** unless the scratch tape is gone, and that refusal lists what `tapes/` holds.
+  - 256 tests pass on the Mac and the iOS simulator (162 FieldTapeKit, 89 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS.
+
 ## Next steps
 
-1. Step 12: level 3, after a reconnect.
+1. Step 12b: baselines from several reports, covering all three levels.
+2. Step 13: reading tapes, with `TapeName` limited to 12 characters.
 2. `album.write-exact` on hardware, whenever an album side is empty.
 
 ## The OP-1 right now
 
-- Firmware 1.7.3, with 3 of the 8 tape slots used (2026-11-13), after the owner removed the rest on the OP-1. FieldCheck's scratch tape `fieldcheck #1-2` needs one free slot.
+- Firmware 1.7.3, with 3 of the 8 tape slots used (2026-11-13), after the owner removed the rest on the OP-1. FieldCheck's level 2 needs two free slots. The owner deleted `tapes/fieldcheck #`, left from the first level 3 run, on the OP-1, and level 3 then deleted everything FieldCheck made.
 - Which 3 tapes are left isn't recorded, so don't assume the probe's blank tape `tapes/2026-312#01` is still there.
 - Paired test devices: an iPad Pro 11-inch (M4), iPadOS 27.2, and an iPhone 17 Pro, iOS 27.0.1. Their IDs and the commands for pulling logs are in PROBE-NOTES.md.
 - Paused: switching into MTP mode over MIDI. Its code was removed. The bytes and the Mac tools are kept in `research/`.

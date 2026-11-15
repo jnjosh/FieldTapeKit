@@ -1,0 +1,32 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   1.79] Watching for an OP-1 in MTP mode
+[   5.16] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[   5.17] Storage: 6429185024 bytes, 6285685760 free
+[  16.64] Level 2: running, copies go in level2-2026-11-15T043147Z
+[  26.03] Level 3 is waiting: leave MTP mode on the OP-1, then enter it again. You can play the scratch tape on the OP-1 in between.
+[  26.10] Level 2: names.maximum pass: The OP-1 took FIELDCK #1-2, 12 characters, as fieldck #1-2, and FIELDCK #2-13, 13 characters, as fieldck #2-13. What it keeps after a reconnect is level 3.
+[  26.10] Level 2: write.folder pass: SendObjectInfo alone made the tape, a folder (0x3001, association type 1) with 0 items in it.
+[  26.10] Level 2: write.exact pass: 5 files, 2,822,826 bytes, each read back byte for byte, again after the write's own check.
+[  26.10] Level 2: write.refused-name pass: track_5.wav was refused with 0x2002, before any data was sent.
+[  26.10] Level 2: rebuild.tape-json pass: After the tracks were written, tape.json read back different from the one written before them.
+[  26.10] Level 2: rebuild.stale-size pass: The rebuilt tape.json is still listed and read at the 250 bytes written. Then track_1.wav was replaced, keeping a copy, and the generated tape.json replaced the stale one, last. Both read back exactly.
+[  26.10] Level 2: tape.track-limit not run: The long check wasn't asked for.
+[  26.10] Level 2: album.write-exact not run: Both album sides have audio, so the album wasn't touched.
+[  26.10] Level 2: write.preset-converted pass: Both came back as AIFC under the same name, with the samples sent; of 25 s, drum/user/ kept 20.000 s, synth/user/ kept 6.000 s.
+[  26.10] Level 2: write.speed pass: Sent 2.8 MB in 4 writes in 0.7 s, 4.1 MB/s, timed as each write less a read of the same file. On 1.7.3 the probe saw about 7 MB/s.
+[  26.10] Level 2: device.storage pass: Free space fell 10,237,952 bytes for 10,237,744 written, and after the presets were deleted it was 5,646,336 below the start, for the tapes' 5,645,976.
+[  26.10] Level 2: 9 pass, 0 fail, 2 not run
+[  26.10] Saved fieldcheck-2026-11-15T043147Z.json and fieldcheck-2026-11-15T043147Z.md
+[  28.91] Disconnected
+[  32.25] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  32.25] Storage: 6429185024 bytes, 6280039424 free
+[  32.25] Level 3 is waiting, and can run now
+[  36.43] Level 3: running, after level 2 at 2026-11-15T04:31:47Z
+[  37.36] Level 3: reconnect.handles pass: 6 of the scratch tape's 6 objects have new handles since level 2.
+[  37.36] Level 3: names.maximum pass: After the reconnect, FIELDCK #1-2, 12 characters, is still listed as fieldck #1-2, and FIELDCK #2-13, 13 characters, was cut to fieldck #2-1.
+[  37.36] Level 3: reconnect.renamed pass: The tape is listed lowercase, as fieldck #1-2, and the OP-1 added a 104-byte readme.txt.
+[  37.36] Level 3: reconnect.kept pass: After the reconnect, all 4 tracks read back byte for byte, and tape.json is unchanged.
+[  37.36] Level 3: delete.folder-with-files pass: One DeleteObject on the folder deleted it and its 6 files.
+[  37.36] Level 3: delete.files-then-folder pass: Deleted fieldck #2-1's 6 files, each tape's files and then its folder, and it's gone.
+[  37.36] Level 3: 6 pass, 0 fail, 0 not run
+[  37.36] Saved fieldcheck-2026-11-15T043206Z.json and fieldcheck-2026-11-15T043206Z.md

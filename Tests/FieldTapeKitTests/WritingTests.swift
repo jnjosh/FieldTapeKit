@@ -223,14 +223,14 @@ import Testing
 
     @Test func makesATapeFolderLowercase() async throws {
         let (device, simulator) = await Self.device()
-        // FieldCheck's scratch tape: 15 characters, using every kind the OP-1 allows.
-        let item = try await device.createDirectory(at: "tapes/FIELDCHECK #1-2")
-        #expect(item.path == "tapes/fieldcheck #1-2")
+        // FieldCheck's scratch tape: 12 characters, the most the OP-1 keeps, using every kind it allows.
+        let item = try await device.createDirectory(at: "tapes/FIELDCK #1-2")
+        #expect(item.path == "tapes/fieldck #1-2")
         #expect(item.isDirectory)
-        #expect(await simulator.stored("fieldcheck #1-2", in: "tapes") != nil)
+        #expect(await simulator.stored("fieldck #1-2", in: "tapes") != nil)
     }
 
-    @Test(arguments: [("tapes/probe_1", "it uses “_”"), ("tapes/fieldcheck #1-23", "it's longer than 15 characters"),
+    @Test(arguments: [("tapes/probe_1", "it uses “_”"), ("tapes/fieldck #1-23", "it's longer than 12 characters"),
                       ("tapes/   ", "it's empty"), ("tapes/é", "it uses “é”")])
     func refusesANameTheOP1CantUse(path: String, reason: String) async throws {
         let (device, _) = await Self.device()
