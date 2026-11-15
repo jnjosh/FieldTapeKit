@@ -18,7 +18,7 @@ package enum PTPOperation: UInt16, Sendable, CaseIterable {
 package enum PTPResponseCode {
     package static let ok: UInt16 = 0x2001
     /// What the OP-1 answers when a folder doesn't allow a name.
-    static let generalError: UInt16 = 0x2002
+    package static let generalError: UInt16 = 0x2002
     static let storeFull: UInt16 = 0x200C
 }
 
@@ -36,8 +36,8 @@ package enum PTPObjectFormat {
     package static let wav: UInt16 = 0x3008
 }
 
-enum PTPAssociationType {
-    static let genericFolder: UInt16 = 0x0001
+package enum PTPAssociationType {
+    package static let genericFolder: UInt16 = 0x0001
 }
 
 enum PTPError: Error, Equatable, CustomStringConvertible {

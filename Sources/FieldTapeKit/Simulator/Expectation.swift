@@ -97,7 +97,7 @@ package struct Expectation: Sendable, Hashable, Identifiable {
                     usedBy: "Folder rules"),
         Expectation("write.preset-converted",
                     "Audio written to drum/user/ or synth/user/ comes back as AIFC under the same name, in the same "
-                        + "format, with the same samples as the start of what was sent (cut to 20 s in drum/user/).",
+                        + "format, with the same samples as the start of what was sent (cut to 20 s in drum/user/ and 6 s in synth/user/). The format code stays the one it was sent with.",
                     usedBy: "Preset writes: the read-back checks the audio"),
         Expectation("rebuild.tape-json",
                     "After a track write, the OP-1 rebuilds tape.json (one clip per track).",

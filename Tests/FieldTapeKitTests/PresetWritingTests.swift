@@ -67,10 +67,12 @@ import Testing
         #expect(item.size == stored.count)
     }
 
-    @Test func synthUserTakesPresetsToo() async throws {
+    /// FieldCheck level 2 found the cap on the OP-1 (2026-11-15).
+    @Test func synthUserKeepsSixSeconds() async throws {
         let (device, _) = Self.device()
-        let item = try await device.write(Self.wav(frames: 21 * 44_100), to: "synth/user/pad.wav")
-        #expect(try PCMAudio(try await device.contents(of: item.path)).frames == 21 * 44_100)
+        let item = try await device.write(Self.wav(frames: 7 * 44_100), to: "synth/user/pad.wav")
+        #expect(try PCMAudio(try await device.contents(of: item.path)).frames == 6 * 44_100)
+        #expect(item.format == .wav)
     }
 
     /// The OP-1's own presets are 22,050 Hz mono AIFC, like applefly.aif, and copying one back keeps its samples.

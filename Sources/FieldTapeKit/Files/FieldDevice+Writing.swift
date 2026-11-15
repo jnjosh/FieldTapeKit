@@ -44,7 +44,7 @@ extension FieldDevice {
     /// the OP-1 lists it.
     ///
     /// In `synth/user/` and `drum/user/` the OP-1 converts what it receives: it stores AIFC under the name it was
-    /// sent, `.wav` included, and may shorten it (to 20 seconds in `drum/user/`). The item returned is the file as
+    /// sent, `.wav` included, and may shorten it (to 20 seconds in `drum/user/` and 6 in `synth/user/`). The item returned is the file as
     /// stored, and the read-back checks its audio instead of its bytes: the same format, and the same samples as
     /// the start of what was sent. A preset must be 16-bit PCM, at 44.1 kHz mono or stereo or 22,050 Hz mono.
     ///

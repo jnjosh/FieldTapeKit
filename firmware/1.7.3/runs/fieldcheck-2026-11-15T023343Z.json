@@ -1,0 +1,162 @@
+{
+  "device" : {
+    "firmware" : "1.7.3",
+    "isFirmwareTested" : true,
+    "model" : "OP-1",
+    "serialNumber" : "L1PXE14W"
+  },
+  "durationMilliseconds" : 8156,
+  "finished" : "2026-11-15T02:33:52Z",
+  "format" : 1,
+  "host" : {
+    "app" : "1.0",
+    "model" : "iPad",
+    "system" : "iPadOS 27.2.1"
+  },
+  "level" : 2,
+  "results" : [
+    {
+      "expectation" : "names.maximum",
+      "observed" : {
+        "length" : 15,
+        "listedAs" : "fieldcheck #1-2",
+        "name" : "FIELDCHECK #1-2"
+      },
+      "outcome" : "pass",
+      "summary" : "The OP-1 took FIELDCHECK #1-2, 15 characters, as fieldcheck #1-2. Whether it's kept after a reconnect is level 3.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.folder",
+      "observed" : {
+        "associationType" : 1,
+        "contents" : 0,
+        "format" : "0x3001"
+      },
+      "outcome" : "pass",
+      "summary" : "SendObjectInfo alone made the tape, a folder (0x3001, association type 1) with 0 items in it.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.exact",
+      "observed" : {
+        "files" : [
+          {
+            "name" : "tape.json",
+            "sha256" : "4c460fb8882c4c59f69ea553108d396dc86d6226027ab9a6543f70ff9e021518",
+            "size" : 250
+          },
+          {
+            "name" : "track_1.wav",
+            "sha256" : "0b22dc9e0086ab3c87e3767fb8a025da508056fa61d64b4e1ec829aef5513f49",
+            "size" : 705644
+          },
+          {
+            "name" : "track_2.wav",
+            "sha256" : "df9a6d64f8cf0699b23df2adf68fcf33b74dae9cbbb0e50811befca87fd7ceb8",
+            "size" : 705644
+          },
+          {
+            "name" : "track_3.wav",
+            "sha256" : "f1381b66af6efed67efff5269c395b2084fbcda18a64c8a33cffb39d3844e89b",
+            "size" : 705644
+          },
+          {
+            "name" : "track_4.wav",
+            "sha256" : "bcc2373f584dc0ad41533d7dab84c145d91645b6e46903f73ff7a6d37194656d",
+            "size" : 705644
+          }
+        ]
+      },
+      "outcome" : "pass",
+      "summary" : "5 files, 2,822,826 bytes, each read back byte for byte, again after the write's own check.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.refused-name",
+      "observed" : {
+        "responseCode" : "0x2002"
+      },
+      "outcome" : "pass",
+      "summary" : "track_5.wav was refused with 0x2002, before any data was sent.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "rebuild.tape-json",
+      "observed" : {
+        "changed" : true
+      },
+      "outcome" : "pass",
+      "summary" : "After the tracks were written, tape.json read back different from the one written before them.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "rebuild.stale-size",
+      "observed" : {
+        "listed" : 250,
+        "read" : 250,
+        "written" : 250
+      },
+      "outcome" : "pass",
+      "summary" : "The rebuilt tape.json is still listed and read at the 250 bytes written. Then track_1.wav was replaced, keeping a copy, and the generated tape.json replaced the stale one, last. Both read back exactly.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.preset-converted",
+      "observed" : {
+        "sentFrames" : 1102500,
+        "stored" : [
+          {
+            "container" : "aifc",
+            "frames" : 882000,
+            "path" : "drum/user/fieldcheck.wav",
+            "reportedFormat" : "wav",
+            "size" : 3532220
+          },
+          {
+            "container" : "aifc",
+            "frames" : 264600,
+            "path" : "synth/user/fieldcheck.wav",
+            "reportedFormat" : "wav",
+            "size" : 1059548
+          }
+        ]
+      },
+      "outcome" : "pass",
+      "summary" : "Both came back as AIFC under the same name, with the samples sent; of 25 s, drum/user/ kept 20.000 s, synth/user/ kept 6.000 s.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "device.storage",
+      "observed" : {
+        "afterCleanup" : 6282862592,
+        "afterWrites" : 6278270976,
+        "before" : 6285685760,
+        "presetBytes" : 4591768,
+        "tapeBytes" : 2823150
+      },
+      "outcome" : "pass",
+      "summary" : "Free space fell 7,414,784 bytes for 7,414,918 written, and after the presets were deleted it was 2,823,168 below the start, for the scratch tape's 2,823,150.",
+      "varies" : [
+        "before",
+        "afterWrites",
+        "afterCleanup"
+      ]
+    }
+  ],
+  "started" : "2026-11-15T02:33:43Z"
+}

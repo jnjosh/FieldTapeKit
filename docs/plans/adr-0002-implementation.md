@@ -238,7 +238,7 @@ Decided by the owner (2026-11-14), and recorded in ADR 0002's change log: the co
 
 **Adds:**
 - The scratch tape `fieldcheck #1-2`, with generated tones and a generated `tape.json`.
-- `drum/user/fieldcheck.wav` and `synth/user/fieldcheck.wav`. Nothing has been written to `synth/user/` yet, so its cap, if any, is unknown, and so is the format code the OP-1 reports for a converted file.
+- `drum/user/fieldcheck.wav` and `synth/user/fieldcheck.wav`. The first run found that `synth/user/` keeps 6 seconds, and that a converted file keeps the format code it was sent with (2026-11-15).
 - Free-space readings before and after.
 - The album checks, on an empty side only.
 - The long check, off unless asked for.
@@ -251,6 +251,10 @@ Decided by the owner (2026-11-14), and recorded in ADR 0002's change log: the co
 **On the OP-1 (scratch writes):** one tape slot must be free. Run level 2.
 
 **Relies on:** `names.maximum`, `device.storage` (free space).
+
+**Split in two (decided 2026-11-14), and recorded in ADR 0003's change log:**
+- **11a:** the plan and its confirmation, the free-slot and leftover refusals, the scratch tape, the refused name, the rebuild and stale size, presets in both folders, replacing and deleting through the public API, free space, stopping at the first failure, and the app's button. Until step 12, a **Delete FieldCheck's content** button takes the scratch tape off, with its files first and then its folder (`delete.files-then-folder`).
+- **11b:** the album checks on an empty side, the long check, and write speed.
 
 ### 12. FieldCheck level 3 (ADR 0003)
 

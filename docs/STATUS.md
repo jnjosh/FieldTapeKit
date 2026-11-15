@@ -155,9 +155,22 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - `ExistingFile` is now a struct with static members, because Swift can't match two enum cases both named `replace`. Callers write the same code.
   - 232 tests pass on the Mac and the iOS simulator (160 FieldTapeKit, 67 FieldCheckKit, 5 conformance tests).
 
+- **Step 11 is split into 11a and 11b** (decided 2026-11-14, recorded in the plan and ADR 0003's change log).
+- **Step 11a is done, and passed on the OP-1** (iPad Pro, 2026-11-15, report in [firmware/1.7.3/runs](../firmware/1.7.3/runs/fieldcheck-2026-11-15T023343Z.md)). All 8 checks passed in 8.2 s, so FieldTapeKit's writes, replaces and deletes work on hardware. Two things were new, now in the simulator and PROBE-NOTES.md: `synth/user/` keeps only 6 seconds of a preset, where `drum/user/` keeps 20, and a converted preset is still listed with the WAV format code it was sent with. The copies the run kept match: the replaced track has the first tone's SHA-256. A second run ([report](../firmware/1.7.3/runs/fieldcheck-2026-11-15T035517Z.md)) passed the same way, with the same figures, and **Delete FieldCheck's content…** then passed `delete.files-then-folder`: the scratch tape's 5 files were deleted first, then its folder, and the space came back exactly. A converted preset differs between runs only by an `mtime` the OP-1 writes into its metadata.
+  - `LevelTwo` in FieldCheckKit has 8 checks: `names.maximum`, `write.folder`, `write.exact`, `write.refused-name`, `rebuild.tape-json`, `rebuild.stale-size`, `write.preset-converted` and `device.storage`. They're built on FieldTapeKit's public file layer, so they check steps 8 to 10 on hardware. They stop at the first failure.
+  - **What it does to the OP-1:**
+    - It makes `tapes/fieldcheck #1-2` with a new tape's `tape.json`, then four 2-second tones, which make the OP-1 rebuild `tape.json`.
+    - It tries `track_5.wav`, which the OP-1 should refuse.
+    - It replaces `track_1.wav`, keeping a copy, then replaces `tape.json` with a generated one, last.
+    - It writes 25-second presets to `drum/user/` and `synth/user/`, then deletes them.
+    - The scratch tape stays on the OP-1.
+  - **In FieldCheck:** **Run level 2 (scratch writes)…** shows the plan and asks before writing. It refuses with no free slot, or with FieldCheck's content left from an earlier run. **Delete FieldCheck's content…** deletes only the scratch tape and the presets, files first and then the folder, as `delete.files-then-folder`, until level 3. Copies go in `level2-<time>` in Documents.
+  - **What the simulator showed while building it:** a rebuild shorter than the old `tape.json` lists at the shorter size there. That's a guess, since the probe only saw a longer one, so the run starts from a blank `tape.json` to reproduce the observed case.
+  - 240 tests pass on the Mac and the iOS simulator (160 FieldTapeKit, 75 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS devices, and in the iOS simulator with `-SimulatedOP1 YES` a level 2 run passed all 8 checks.
+
 ## Next steps
 
-1. Step 11: FieldCheck level 2, the first step that writes to the OP-1. It checks steps 8 to 10 on hardware, and needs one free tape slot.
+1. Step 11b: the album checks on an empty side, the long check, and write speed.
 
 ## The OP-1 right now
 

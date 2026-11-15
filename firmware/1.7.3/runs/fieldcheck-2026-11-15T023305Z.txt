@@ -1,0 +1,15 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.55] Watching for an OP-1 in MTP mode
+[   8.35] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[   8.35] Storage: 6429185024 bytes, 6285685760 free
+[  38.69] Level 2: running, copies go in level2-2026-11-15T023343Z
+[  46.84] Level 2: names.maximum pass: The OP-1 took FIELDCHECK #1-2, 15 characters, as fieldcheck #1-2. Whether it's kept after a reconnect is level 3.
+[  46.84] Level 2: write.folder pass: SendObjectInfo alone made the tape, a folder (0x3001, association type 1) with 0 items in it.
+[  46.84] Level 2: write.exact pass: 5 files, 2,822,826 bytes, each read back byte for byte, again after the write's own check.
+[  46.84] Level 2: write.refused-name pass: track_5.wav was refused with 0x2002, before any data was sent.
+[  46.84] Level 2: rebuild.tape-json pass: After the tracks were written, tape.json read back different from the one written before them.
+[  46.84] Level 2: rebuild.stale-size pass: The rebuilt tape.json is still listed and read at the 250 bytes written. Then track_1.wav was replaced, keeping a copy, and the generated tape.json replaced the stale one, last. Both read back exactly.
+[  46.84] Level 2: write.preset-converted pass: Both came back as AIFC under the same name, with the samples sent; of 25 s, drum/user/ kept 20.000 s, synth/user/ kept 6.000 s.
+[  46.84] Level 2: device.storage pass: Free space fell 7,414,784 bytes for 7,414,918 written, and after the presets were deleted it was 2,823,168 below the start, for the scratch tape's 2,823,150.
+[  46.84] Level 2: 8 pass, 0 fail, 0 not run
+[  46.84] Saved fieldcheck-2026-11-15T023343Z.json and fieldcheck-2026-11-15T023343Z.md

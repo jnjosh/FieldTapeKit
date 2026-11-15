@@ -57,7 +57,7 @@ package struct PTPObjectInfo: Sendable, Equatable {
     }
 
     /// The dataset SendObjectInfo sends ahead of a new file or folder.
-    static func dataset(storageID: UInt32, format: UInt16, size: UInt32, parent: UInt32,
+    package static func dataset(storageID: UInt32, format: UInt16, size: UInt32, parent: UInt32,
                         filename: String, associationType: UInt16 = 0) -> Data {
         var data = Data()
         data.appendLittleEndian(storageID)

@@ -82,13 +82,13 @@ struct Check: Sendable {
 
 /// Runs checks one after another, in order.
 ///
-/// A check that throws fails, with the error as its summary, and the run goes on: every level 1 check only
-/// reads. Once the OP-1 disconnects, or the run is cancelled, the checks left are reported as not run, so a
+/// A check that throws fails, with the error as its summary, and the run goes on, since every level 1 check only
+/// reads. Level 2 writes, so it stops at its first failure, and the checks after it are reported as not run. Once the OP-1 disconnects, or the run is cancelled, the checks left are reported as not run, so a
 /// report always has a result for every check it was given.
 enum CheckRunner {
     static let cancelled = "The run was cancelled."
 
-    static func run(_ checks: [Check]) async -> [CheckResult] {
+    static func run(_ checks: [Check], stopAtFirstFailure: Bool = false) async -> [CheckResult] {
         var results: [CheckResult] = []
         var stopped: String?
         for check in checks {
@@ -115,6 +115,9 @@ enum CheckRunner {
             }
             results.append(CheckResult(expectation: check.expectation, outcome: finding.outcome,
                                        summary: finding.summary, observed: finding.observed, varies: finding.varies))
+            if stopAtFirstFailure, stopped == nil, finding.outcome == .fail {
+                stopped = "Not run: \(check.expectation) failed first, so the run stopped. What it made is left for cleanup."
+            }
         }
         return results
     }

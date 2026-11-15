@@ -42,20 +42,20 @@ extension FieldDevice {
     // MARK: Finding paths
 
     /// An object found by path. Handles are private: they change after a reconnect.
-    struct Located {
+    package struct Located: Sendable {
         /// `PTPContainer.rootParent` for the root.
-        let handle: UInt32
+        package let handle: UInt32
         /// As the OP-1 spells it.
-        let path: FilePath
+        package let path: FilePath
         /// Nil for the root.
-        let info: PTPObjectInfo?
+        package let info: PTPObjectInfo?
 
-        var isDirectory: Bool { info?.isFolder ?? true }
+        package var isDirectory: Bool { info?.isFolder ?? true }
     }
 
     /// Walks `path` from the root, one folder listing at a time, with fresh object info for each. Nil if any
     /// part of it is missing.
-    func locate(_ path: FilePath) async throws -> Located? {
+    package func locate(_ path: FilePath) async throws -> Located? {
         var current = Located(handle: PTPContainer.rootParent, path: FilePath(), info: nil)
         for component in try Self.components(of: path) {
             guard current.isDirectory else { throw FieldError(.notADirectory, path: current.path) }

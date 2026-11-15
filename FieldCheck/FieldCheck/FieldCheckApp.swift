@@ -1,6 +1,8 @@
 // FieldCheck: checks a connected OP-1 against what FieldTapeKit expects (ADR 0003), in two tabs.
 // Validate shows connection events and device info, runs level 1, and saves each report and its log to Documents.
-// A run with no failures can be saved as its firmware's baseline, to copy into the repository's firmware/ folder.
+// A level 1 run with no failures can be saved as its firmware's baseline, to copy into the repository's firmware/
+// folder. Level 2 writes only FieldCheck's own scratch content, after a person confirms its plan, and FieldCheck can
+// delete what it leaves.
 // It also runs FieldTapeKit's conformance suite, the checks the simulator passes too, and logs the results.
 // Explore (ExploreView.swift) browses the OP-1 through FieldTapeKit's public API, as an app would. It only reads.
 
@@ -66,6 +68,56 @@ final class ConnectionLog {
         } catch {
             record("Couldn't save the report: \(error.localizedDescription)")
         }
+    }
+
+    /// Level 2 writes, so it starts from a plan that a person confirms (ADR 0003, section 3). This only reads.
+    func planLevelTwo(on device: FieldDevice) async -> LevelTwo.Plan {
+        let plan = await LevelTwo.plan(for: device)
+        if let refusal = plan.refusal { record("Level 2: can't run: \(refusal)") }
+        return plan
+    }
+
+    /// Runs a confirmed level 2 plan. Copies it keeps, of the replaced track and the drum preset, go in a new
+    /// `level2-<time>` folder in Documents.
+    func runLevelTwo(on device: FieldDevice, plan: LevelTwo.Plan) async {
+        guard running == nil else { return }
+        running = device.id
+        defer { running = nil }
+        let workspace = URL.documentsDirectory.appending(path: "level2-\(Self.stamp())")
+        do {
+            try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: false)
+        } catch {
+            record("Level 2: couldn't make \(workspace.lastPathComponent): \(error.localizedDescription)")
+            return
+        }
+        record("Level 2: running, copies go in \(workspace.lastPathComponent)")
+        let report = await LevelTwo.run(on: device, plan: plan, workspace: workspace, host: host)
+        reports[device.id] = report
+        for result in report.results {
+            record("Level 2: \(result.expectation) \(result.outcome.rawValue): \(result.summary)")
+        }
+        record("Level 2: \(report.count(.pass)) pass, \(report.count(.fail)) fail, \(report.count(.notRun)) not run")
+        do {
+            let saved = try report.save(in: .documentsDirectory)
+            record("Saved \(saved.json.lastPathComponent) and \(saved.markdown.lastPathComponent)")
+        } catch {
+            record("Couldn't save the report: \(error.localizedDescription)")
+        }
+    }
+
+    /// Deletes FieldCheck's own content, after a person confirms: the scratch tape and any preset left behind.
+    func deleteLeftovers(on device: FieldDevice) async {
+        guard running == nil else { return }
+        running = device.id
+        defer { running = nil }
+        record("Deleting FieldCheck's content")
+        let result = await LevelTwo.deleteLeftovers(on: device)
+        record("\(result.expectation) \(result.outcome.rawValue): \(result.summary)")
+    }
+
+    private static func stamp() -> String {
+        Date.now.formatted(.iso8601.year().month().day().timeZone(separator: .omitted)
+            .time(includingFractionalSeconds: false).timeSeparator(.omitted))
     }
 
     /// The conformance suite only reads the OP-1, so it needs no confirmation either. It copies a tape track and an
@@ -179,6 +231,9 @@ struct RootView: View {
 
 struct ValidateView: View {
     let log: ConnectionLog
+    /// A level 2 plan waiting for the person to confirm, and the device it's for.
+    @State private var plan: (device: FieldDevice, plan: LevelTwo.Plan)?
+    @State private var cleanup: FieldDevice?
 
     var body: some View {
         NavigationStack {
@@ -198,20 +253,30 @@ struct ValidateView: View {
                             Task { await log.runConformance(on: device) }
                         }
                         .disabled(log.running != nil)
+                        Button("Run level 2 (scratch writes)…") {
+                            Task { plan = (device, await log.planLevelTwo(on: device)) }
+                        }
+                        .disabled(log.running != nil)
+                        Button("Delete FieldCheck's content…", role: .destructive) { cleanup = device }
+                            .disabled(log.running != nil)
                     }
                 }
                 ForEach(log.devices) { device in
                     if let report = log.reports[device.id] {
                         Section {
                             ForEach(report.results, id: \.expectation) { ResultRow(result: $0) }
-                            Button("Save as baseline for \(report.device.firmware)") { log.saveBaseline(report) }
-                                .disabled(report.count(.fail) > 0)
+                            if report.level == 1 {
+                                Button("Save as baseline for \(report.device.firmware)") { log.saveBaseline(report) }
+                                    .disabled(report.count(.fail) > 0)
+                            }
                         } header: {
-                            Text("Level 1: \(report.count(.pass)) pass, \(report.count(.fail)) fail, "
+                            Text("Level \(report.level): \(report.count(.pass)) pass, \(report.count(.fail)) fail, "
                                 + "\(report.count(.notRun)) not run")
                         } footer: {
-                            if report.count(.fail) > 0 {
+                            if report.level == 1, report.count(.fail) > 0 {
                                 Text("A run with failures can't be a baseline.")
+                            } else if report.level == 2 {
+                                Text("Baselines cover level 1 for now.")
                             }
                         }
                     }
@@ -232,6 +297,30 @@ struct ValidateView: View {
                 }
             }
             .navigationTitle("Validate")
+            .confirmationDialog("Level 2", isPresented: Binding(get: { plan != nil }, set: { if !$0 { plan = nil } }),
+                                titleVisibility: .visible, presenting: plan) { pending in
+                if pending.plan.refusal == nil {
+                    Button("Write to the OP-1") {
+                        Task { await log.runLevelTwo(on: pending.device, plan: pending.plan) }
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: { pending in
+                if let refusal = pending.plan.refusal {
+                    Text(refusal)
+                } else {
+                    Text(pending.plan.steps.map { "• \($0)" }.joined(separator: "\n"))
+                }
+            }
+            .confirmationDialog("Delete FieldCheck's content?", isPresented: Binding(get: { cleanup != nil },
+                                                                                      set: { if !$0 { cleanup = nil } }),
+                                titleVisibility: .visible, presenting: cleanup) { device in
+                Button("Delete", role: .destructive) { Task { await log.deleteLeftovers(on: device) } }
+                Button("Cancel", role: .cancel) {}
+            } message: { _ in
+                Text("Deletes \(LevelTwo.ownContent.map(\.string).joined(separator: ", ")) if they're there: "
+                     + "only what level 2 makes. Each file, then the tape's folder.")
+            }
         }
     }
 }

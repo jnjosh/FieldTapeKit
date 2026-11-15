@@ -55,7 +55,7 @@ The first list, from the probe's findings:
 | `write.folder` | A tape folder can be made with SendObjectInfo alone (format 0x3001, association type 1). | `createTape`, `restoreTape` |
 | `write.exact` | Tracks and `tape.json` written to a tape read back byte for byte. | Read-back verification |
 | `write.refused-name` | A name a folder doesn't allow (`track_5.wav`) is refused with 0x2002. | Folder rules |
-| `write.preset-converted` | Audio written to `drum/user/` or `synth/user/` comes back as AIFC under the same name, in the same format, with the same samples as the start of what was sent (cut to 20 s in `drum/user/`). | Preset writes: the read-back checks the audio |
+| `write.preset-converted` | Audio written to `drum/user/` or `synth/user/` comes back as AIFC under the same name, in the same format, with the same samples as the start of what was sent (cut to 20 s in `drum/user/` and 6 s in `synth/user/`). The format code stays the one it was sent with. | Preset writes: the read-back checks the audio |
 | `rebuild.tape-json` | After a track write, the OP-1 rebuilds `tape.json` (one clip per track). | Restore order: tracks first, `tape.json` last |
 | `rebuild.stale-size` | Within the session, the rebuilt `tape.json` still lists, and reads, at its old size. | Fresh info before every read |
 | `delete.files-then-folder` | Deleting a tape's files, then its folder, removes it. | `deleteTape`, `moveTape` |
@@ -204,5 +204,18 @@ FieldCheck measures only the firmware installed, so the old-firmware rows come f
 - **2026-11-08:** Accepted by the owner.
 - **2026-11-09:** Corrected the number of probe tests that move into FieldTapeKit from 21 to 16, as the implementation plan records.
 - **2026-11-14:** Added `read.cost`, decided by the owner. Level 1 found that 1 MiB GetPartialObject chunks read in order get slower with the offset (PROBE-NOTES.md, 2026-11-13), and how FieldTapeKit reads whole files will depend on why. The check reads the same chunks in reverse, then all of them in one GetPartialObject, then the whole file in one GetObject, and reports whether the time grows with the offset or with the number of reads. It's a level 1 check, so every firmware update re-checks it, and the 1.7.3 baseline is saved again with it. On 1.7.3 it found the offset, and ADR 0002 now reads whole files with one GetObject. `read.partial`'s "used by" changed with it, since nothing streams in chunks any more.
+- **2026-11-14:** Decided by the owner while building step 11a of the plan, level 2's first half:
+  - **Step 11 is split.** 11a is the scratch tape, the refused name, the rebuild, presets, replacing and deleting, and free space. 11b is the album checks, the long check and write speed. Both album sides on the owner's OP-1 have audio, so 11b's album checks couldn't run yet anyway.
+  - **The rebuild is checked within the session,** since a reconnect clears stale sizes. The scratch tape starts with a new tape's `tape.json`, the one the probe read from a blank tape. The tracks written after it make the OP-1 rebuild it longer, which is the case the probe saw read back truncated at its old size (`rebuild.tape-json`, `rebuild.stale-size`). Then `track_1.wav` is replaced with `.replace(keepingCopyAt:)`, and `tape.json` with the generated one through `.replace(confirmed:)`, last. So both kinds of replace run on hardware, and the tape ends as generated for level 3's `reconnect.kept`.
+  - **Until level 3 exists,** FieldCheck has a **Delete FieldCheck's content** button. It deletes only `tapes/fieldcheck #1-2` and the two presets, files first and then the folder, through `prepareToRemove` and `removeItem`, and reports it as `delete.files-then-folder`. Level 3 in step 12 replaces it with the `delete.folder-with-files` check.
+  - Also settled while building it:
+    - Level 2 stops at its first failure of any kind, not only a failed write, and leaves what it made.
+    - It refuses to start, changing nothing, if no tape slot is free or FieldCheck's content from an earlier run is on the OP-1.
+    - All four tracks are tones, because `tape.files` and `tape.json-units` expect every track to be there and to match its clips.
+    - `write.refused-name` is sent raw, because FieldTapeKit refuses `track_5.wav` before sending.
+    - `device.storage` records free space before, after the writes and after the presets are deleted, without judging how close it comes. Judging waits for the comparison in step 22.
+    - Copies of the replaced track and the drum preset go in a `level2-<time>` folder in Documents.
+    - Baselines still cover level 1 only.
+- **2026-11-15:** The first level 2 run on the OP-1 passed. `write.preset-converted` now states the cap it found in `synth/user/`, 6 seconds, and that a converted file keeps the format code it was sent with.
 - **2026-11-14:** `write.preset-converted` now covers `synth/user/` as well as `drum/user/`, and the samples as well as the format, because step 9b's read-back relies on both (ADR 0002's change log). Level 2 writes to `synth/user/` too, since nothing has been written there yet.
 - **2026-11-14:** Decided by the owner: FieldCheck has two tabs. **Validate** holds the checks, baselines and conformance suite. **Explore** is a low-fidelity browser of the OP-1 built only on FieldTapeKit's public API, so FieldTapeKit gets used the way an app uses it, and a change can be tried by hand. Explore is **read-only**: it lists, shows details and copies files to the device, and section 3's limit on writes is unchanged. Letting it write would need its own decision.

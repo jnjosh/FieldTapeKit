@@ -337,18 +337,16 @@ actor SimulatedMTPDevice: MTPTransport {
     }
 
     /// What `synth/user/` and `drum/user/` store for audio they receive: AIFC with `sowt`, the same samples, cut to
-    /// 20 seconds in `drum/user/` (`write.preset-converted`), with an `op-1` metadata chunk naming the preset after
-    /// the file. Anything that isn't audio is kept as it is, since what the OP-1 does then isn't known. Nor is
-    /// the format code it reports afterwards, so the one it was sent with is kept.
+    /// 20 seconds in `drum/user/` and 6 in `synth/user/` (`write.preset-converted`, FieldCheck level 2, 2026-11-15),
+    /// with an `op-1` metadata chunk naming the preset after the file. It keeps the format code it was sent with, as
+    /// the OP-1 does. Anything that isn't audio is kept as it is, since what the OP-1 does then isn't known.
     private func convertPreset(_ data: Data, named name: String, in parent: UInt32) -> Data {
         guard let folder = objects[parent], folder.name.lowercased() == "user",
               let kind = objects[folder.parent], kind.parent == Self.root,
               ["synth", "drum"].contains(kind.name.lowercased()),
               let audio = try? PCMAudio(data) else { return data }
-        var samples = audio.samples
-        if kind.name.lowercased() == "drum" {
-            samples = samples.prefix(20 * audio.format.sampleRate * audio.format.frameBytes)
-        }
+        let seconds = kind.name.lowercased() == "drum" ? 20 : 6
+        let samples = audio.samples.prefix(seconds * audio.format.sampleRate * audio.format.frameBytes)
         let preset = (name as NSString).deletingPathExtension
         let metadata = (try? JSONSerialization.data(withJSONObject: ["\(kind.name.lowercased())_version": 2, "name": preset],
                                                     options: [.sortedKeys])) ?? Data()

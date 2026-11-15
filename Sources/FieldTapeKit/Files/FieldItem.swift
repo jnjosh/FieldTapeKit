@@ -32,8 +32,9 @@ public struct FieldItem: Sendable, Hashable, Identifiable {
     }
 }
 
-/// What kind of file an item is, from the format code the OP-1 reports for it rather than its name: a preset
-/// written to `drum/user/` keeps its `.wav` name after the OP-1 converts it.
+/// What kind of file an item is, from the format code the OP-1 reports for it rather than its name. A preset in
+/// `synth/user/` or `drum/user/` may not be what this says: a WAV sent there is stored as AIFC, keeping its `.wav`
+/// name and its WAV format code (`write.preset-converted`).
 public enum FieldFormat: Sendable, Hashable {
     case folder
     case wav
