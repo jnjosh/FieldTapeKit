@@ -11,17 +11,22 @@ import Testing
         return url
     }
 
-    static func device(_ faults: [SimulatedMTPDevice.Fault] = [], tapes: Int = 0) -> (FieldDevice, SimulatedMTPDevice) {
-        let added: [PendingNode] = [.folder("tapes", (0..<tapes).map { .folder("2026-300#0\($0)", []) })]
+    static func device(_ faults: [SimulatedMTPDevice.Fault] = [], tapes: Int = 0,
+                       album: [PendingNode] = []) -> (FieldDevice, SimulatedMTPDevice) {
+        let added: [PendingNode] = [.folder("tapes", (0..<tapes).map { .folder("2026-300#0\($0)", []) }), .folder("mixdown", album)]
         let layout = SimulatedNode.merge(added, into: SimulatedNode.layout173, path: [])
         let simulator = SimulatedMTPDevice(faults: faults, contents: layout)
         return (FieldDevice.simulated(simulator), simulator)
     }
 
-    static func run(_ device: FieldDevice, in workspace: URL) async -> CheckReport {
+    static func run(_ device: FieldDevice, longCheck: Bool = false, in workspace: URL) async -> CheckReport {
         let plan = await LevelTwo.plan(for: device)
-        return await LevelTwo.run(on: device, plan: plan, workspace: workspace, host: LevelOneTests.host)
+        return await LevelTwo.run(on: device, plan: plan, longCheck: longCheck, workspace: workspace, host: LevelOneTests.host)
     }
+
+    static let expectations = ["names.maximum", "write.folder", "write.exact", "write.refused-name", "rebuild.tape-json",
+                               "rebuild.stale-size", "tape.track-limit", "album.write-exact", "write.preset-converted",
+                               "write.speed", "device.storage"]
 
     // MARK: A whole run
 
@@ -32,10 +37,11 @@ import Testing
 
         let report = await Self.run(device, in: workspace)
         #expect(report.level == 2)
-        #expect(report.results.map(\.expectation) == ["names.maximum", "write.folder", "write.exact", "write.refused-name",
-                                                      "rebuild.tape-json", "rebuild.stale-size", "write.preset-converted",
-                                                      "device.storage"])
-        for result in report.results { #expect(result.outcome == .pass, "\(result.expectation): \(result.summary)") }
+        #expect(report.results.map(\.expectation) == Self.expectations)
+        for result in report.results where result.expectation != "tape.track-limit" {
+            #expect(result.outcome == .pass, "\(result.expectation): \(result.summary)")
+        }
+        #expect(report.results[6].outcome == .notRun && report.results[6].summary == "The long check wasn't asked for.")
 
         // The scratch tape ends as generated, with tape.json written last.
         let names = try await device.contentsOfDirectory(at: LevelTwo.scratchTape).map(\.name)
@@ -45,8 +51,66 @@ import Testing
         for path in LevelTwo.presets { #expect(try await !device.fileExists(at: path)) }
         #expect(FileManager.default.fileExists(atPath: workspace.appending(path: "drum-user-fieldcheck.wav").path))
         #expect(try Data(contentsOf: workspace.appending(path: "track_1.wav")) == LevelTwo.Content.tracks[0].1)
-        // Only what level 2 makes was deleted: the replaced track, the stale tape.json, and the presets.
-        #expect(await simulator.deleted == ["track_1.wav", "tape.json", "fieldcheck.wav", "fieldcheck.wav"])
+        // The empty side was written, then put back as it was, with a copy kept.
+        let empty = WAVHeader.bytes(format: FirmwareProfile.v1_7_3.sideFormat, dataBytes: 0)
+        #expect(try await device.contents(of: "mixdown/side_a.wav") == empty)
+        #expect(try Data(contentsOf: workspace.appending(path: "mixdown-side_a.wav")) == empty)
+        // Only what level 2 makes was deleted: the replaced track, the stale tape.json, the empty side and then the
+        // tone written to it, and the presets.
+        #expect(await simulator.deleted == ["track_1.wav", "tape.json", "side_a.wav", "side_a.wav", "fieldcheck.wav",
+                                            "fieldcheck.wav"])
+    }
+
+    @Test func theLongCheckWritesAFullTrackThenPutsTheTapeBack() async throws {
+        let (device, simulator) = Self.device()
+        let workspace = try Self.workspace()
+        defer { try? FileManager.default.removeItem(at: workspace) }
+
+        let report = await Self.run(device, longCheck: true, in: workspace)
+        for result in report.results { #expect(result.outcome == .pass, "\(result.expectation): \(result.summary)") }
+        let limit = try #require(report.results.first { $0.expectation == "tape.track-limit" })
+        #expect(limit.summary.hasPrefix("A full 6-minute track of 127,008,044 bytes was written in "))
+        guard case .record(let observed) = limit.observed else { Issue.record("No observations"); return }
+        #expect(observed["bytes"] == 127_008_044 && observed["readBytes"] == 127_008_044)
+        #expect(observed["footprintPeak"] != nil)
+
+        // The scratch tape ends as it does without the long check.
+        #expect(try await device.contents(of: LevelTwo.scratchTape.appending("track_2.wav")) == LevelTwo.Content.tracks[1].1)
+        #expect(try await device.contents(of: LevelTwo.scratchTape.appending("tape.json")) == LevelTwo.Content.tapeJSON)
+        #expect(await simulator.deleted.prefix(5) == ["track_1.wav", "tape.json", "track_2.wav", "track_2.wav", "tape.json"])
+
+        let speed = try #require(report.results.first { $0.expectation == "write.speed" })
+        #expect(speed.summary.contains("track_2.wav (6 minutes) alone: "))
+    }
+
+    @Test func theLongTrackIsTheLongestATapeAllows() throws {
+        let long = LevelTwo.Content.longTrack()
+        #expect(long.count == 127_008_044)
+        try WriteRules(profile: .v1_7_3).checkFile(["tapes", "x", "track_2.wav"], data: long, path: "tapes/x/track_2.wav")
+        let longer = LevelTwo.Content.longTrack(frames: FirmwareProfile.v1_7_3.maximumTapeFrames + 1)
+        #expect(throws: FieldError.self) {
+            try WriteRules(profile: .v1_7_3).checkFile(["tapes", "x", "track_2.wav"], data: longer, path: "tapes/x/track_2.wav")
+        }
+    }
+
+    @Test func theAlbumIsLeftAloneWhenBothSidesHaveAudio() async throws {
+        let (device, simulator) = Self.device(album: [.file("side_a.wav", .silence(seconds: 3)), .file("side_b.wav", .silence(seconds: 1))])
+        let workspace = try Self.workspace()
+        defer { try? FileManager.default.removeItem(at: workspace) }
+        let plan = await LevelTwo.plan(for: device)
+        #expect(plan.emptySide == nil)
+        #expect(plan.steps.contains("Both album sides have audio, so the album isn't touched."))
+
+        let report = await Self.run(device, in: workspace)
+        let album = try #require(report.results.first { $0.expectation == "album.write-exact" })
+        #expect(album.outcome == .notRun && album.summary == "Both album sides have audio, so the album wasn't touched.")
+        #expect(report.results.last?.outcome == .pass)
+        #expect(await !simulator.deleted.contains { $0.hasPrefix("side_") })
+    }
+
+    @Test func anEmptySideBIsUsedWhenSideAHasAudio() async throws {
+        let (device, _) = Self.device(album: [.file("side_a.wav", .silence(seconds: 3))])
+        #expect(await LevelTwo.plan(for: device).emptySide == "mixdown/side_b.wav")
     }
 
     @Test func summaries() async throws {
@@ -125,7 +189,7 @@ import Testing
         defer { try? FileManager.default.removeItem(at: workspace) }
         let report = await Self.run(device, in: workspace)
         let outcomes = report.results.map(\.outcome)
-        #expect(outcomes == [.pass, .pass, .fail, .notRun, .notRun, .notRun, .notRun, .notRun])
+        #expect(outcomes == [.pass, .pass, .fail] + Array(repeating: .notRun, count: 8))
         #expect(report.results[2].summary.contains("track_2.wav"))
         #expect(report.results[3].summary == "Not run: write.exact failed first, so the run stopped. What it made is left for cleanup.")
         #expect(try await device.fileExists(at: LevelTwo.scratchTape))
@@ -145,5 +209,28 @@ import Testing
         #expect(finding.summary == "Free space fell 600 bytes for 600 written, and after the presets were deleted it was 300 "
                 + "below the start, for the scratch tape's 300.")
         #expect(finding.varies == ["before", "afterWrites", "afterCleanup"])
+
+        let empty = Data(count: 44)
+        #expect(LevelTwo.albumExact(side: "mixdown/side_a.wav", read: Data("x".utf8), empty: empty, restored: nil).outcome == .fail)
+        #expect(LevelTwo.albumExact(side: "mixdown/side_a.wav", read: LevelTwo.Content.side, empty: empty,
+                                    restored: Data(count: 45)).outcome == .fail)
+        #expect(LevelTwo.albumExact(side: "mixdown/side_a.wav", read: LevelTwo.Content.side, empty: empty,
+                                    restored: empty).outcome == .pass)
+    }
+
+    @Test func writeSpeedIsTheWriteLessItsRead() {
+        let writes = [LevelTwo.TimedWrite(name: "track_1.wav", bytes: 700_000, write: .milliseconds(300), read: .milliseconds(100)),
+                      LevelTwo.TimedWrite(name: "track_2.wav", bytes: 1_400_000, write: .milliseconds(500), read: .milliseconds(300)),
+                      LevelTwo.TimedWrite(name: "tiny", bytes: 10, write: .milliseconds(5), read: .milliseconds(9))]
+        #expect(writes[2].send == .zero)
+        let finding = LevelTwo.writeSpeed(writes)
+        #expect(finding.outcome == .pass)
+        #expect(finding.summary == "Sent 2.1 MB in 3 writes in 0.4 s, 5.2 MB/s, timed as each write less a read of the same "
+                + "file. On 1.7.3 the probe saw about 7 MB/s.")
+        guard case .record(let observed) = finding.observed else { Issue.record("No observations"); return }
+        #expect(observed["kilobytesPerSecond"] == 5_250)
+        let long = LevelTwo.writeSpeed([writes[0], LevelTwo.TimedWrite(name: "long", bytes: 127_000_000, write: .seconds(24),
+                                                                       read: .seconds(6))])
+        #expect(long.summary.contains(" long alone: 7.1 MB/s."))
     }
 }

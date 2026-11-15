@@ -256,6 +256,8 @@ Decided by the owner (2026-11-14), and recorded in ADR 0002's change log: the co
 - **11a:** the plan and its confirmation, the free-slot and leftover refusals, the scratch tape, the refused name, the rebuild and stale size, presets in both folders, replacing and deleting through the public API, free space, stopping at the first failure, and the app's button. Until step 12, a **Delete FieldCheck's content** button takes the scratch tape off, with its files first and then its folder (`delete.files-then-folder`).
 - **11b:** the album checks on an empty side, the long check, and write speed.
 
+Decided by the owner for 11b (2026-11-15), and recorded in ADR 0003's change log: only `album.write-exact`, with the empty side copied and put back; the long check replaces `track_2.wav` and then restores it; and write speed is the new `write.speed`, timed as each write less a read of the same file.
+
 ### 12. FieldCheck level 3 (ADR 0003)
 
 **Adds:**
@@ -420,4 +422,4 @@ Decided by the owner (2026-11-14), and recorded in ADR 0002's change log: the co
 - **Steps 8 to 10 are checked on hardware only in step 11.** Until then they're simulator-tested.
 - **Album writes** may never get a hardware check if both sides keep their audio.
 - **`Subprogress`** is new API. If its shape makes progress awkward, steps 7 and 15 are where that shows first. Progress is now per file, since each file is one GetObject.
-- **A full 127 MB GetObject hasn't been tried.** It worked on a 22 MB track at 18.8 MB/s. Step 11's long check is its first test, and until then copying a full track off is untested on hardware.
+- **A full 127 MB transfer worked (2026-11-15).** Step 11's long check sent a full 6-minute track at 7.5 MB/s and read it back whole in one GetObject at 20.7 MB/s. The app's memory rose about 250 MB, two copies of the track, because a write holds the file sent and the one read back. An app writing several tracks at once would multiply that.

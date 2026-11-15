@@ -31,6 +31,36 @@ extension LevelTwo {
             return WAVHeader.bytes(format: format, dataBytes: samples.count) + samples
         }()
 
+        /// 2 seconds of a tone in the album side format, written only to a side that's empty (`album.write-exact`).
+        static let side: Data = {
+            let format = profile.sideFormat
+            var samples = Data(capacity: trackFrames * format.frameBytes)
+            for frame in 0..<trackFrames {
+                let value = Int16(sin(2 * .pi * 392 * Double(frame) / 44_100) * 0.25 * Double(Int16.max))
+                samples.appendLittleEndianSample(value)
+                samples.appendLittleEndianSample(value)
+            }
+            return WAVHeader.bytes(format: format, dataBytes: samples.count) + samples
+        }()
+
+        /// A full 6-minute track, the longest the OP-1 allows, for the long check (`tape.track-limit`): 127,008,044
+        /// bytes. Made when asked for, not kept, since it's large. The tone is 441 Hz, so one period is exactly 100
+        /// frames, repeated.
+        static func longTrack(frames: Int = profile.maximumTapeFrames) -> Data {
+            let period = 100
+            var block = Data(capacity: period * profile.trackFormat.frameBytes)
+            for frame in 0..<period {
+                let value = Int32(sin(2 * .pi * Double(frame) / Double(period)) * 0.25 * Double(Int32.max))
+                block.appendLittleEndianSample(value)
+                block.appendLittleEndianSample(value)
+            }
+            let bytes = frames * profile.trackFormat.frameBytes
+            var samples = Data(capacity: bytes)
+            while samples.count + block.count <= bytes { samples.append(block) }
+            samples.append(block.prefix(bytes - samples.count))
+            return WAVHeader.bytes(format: profile.trackFormat, dataBytes: samples.count) + samples
+        }
+
         /// The `tape.json` the OP-1 gives a new tape, as on the blank tape the probe read (2026-11-08). The tracks
         /// written after it make the OP-1 rebuild it longer, which is the case the probe saw read back truncated.
         static let blankTapeJSON = Data(#"""

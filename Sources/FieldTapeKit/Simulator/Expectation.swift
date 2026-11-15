@@ -80,7 +80,11 @@ package struct Expectation: Sendable, Hashable, Identifiable {
                     "GetPartialObject works at any offset with chunks up to 1 MiB.",
                     usedBy: "contents(of:range:), WAV header reads"),
         Expectation("read.speed",
-                    "Reads at about 20 MB/s, writes at about 7 MB/s. A big drop is reported, not failed.",
+                    "Reads at about 20 MB/s. A big drop is reported, not failed.",
+                    usedBy: "Timeouts, progress estimates"),
+        Expectation("write.speed",
+                    "Writes at about 7 MB/s, timed apart from the read-back. A big drop is reported, not failed. "
+                        + "Split from read.speed on 2026-11-15, since only level 2 writes.",
                     usedBy: "Timeouts, progress estimates"),
         Expectation("read.cost",
                     "What a GetPartialObject's time grows with: its offset, or the number of reads before it. On 1.7.3 "

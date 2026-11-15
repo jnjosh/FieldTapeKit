@@ -168,9 +168,16 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **What the simulator showed while building it:** a rebuild shorter than the old `tape.json` lists at the shorter size there. That's a guess, since the probe only saw a longer one, so the run starts from a blank `tape.json` to reproduce the observed case.
   - 240 tests pass on the Mac and the iOS simulator (160 FieldTapeKit, 75 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS devices, and in the iOS simulator with `-SimulatedOP1 YES` a level 2 run passed all 8 checks.
 
+- **Step 11b is done, and passed on the OP-1 with the long check** (iPad Pro, 2026-11-15, [report](../firmware/1.7.3/runs/fieldcheck-2026-11-15T040647Z.md)). 10 checks passed and the album check didn't run, in 37.8 s. A full 6-minute track was sent at 7.5 MB/s and read back whole at 20.7 MB/s, the first full-size transfer either way. FieldCheck peaked at 543 MB, about two copies of the track above where it started. All 5 audio writes together ran at 7.3 MB/s. Cleanup passed `delete.files-then-folder` again. `album.write-exact` is still unchecked on hardware, since both sides have audio. Decided 2026-11-15, and recorded in the plan and ADR 0003's change log. Level 2 now has 11 checks:
+  - **`tape.track-limit`,** the long check, only when asked for with **Write, with the long check**. It replaces `track_2.wav` with a full 6-minute track of 127,008,044 bytes, reads it back, then puts the 2-second tone and `tape.json` back, last. It reports FieldCheck's memory before and at its peak. It's the first full 127 MB transfer on hardware.
+  - **`album.write-exact`,** on the first empty side only: copy it, write a 2-second tone, read it back, then put the empty side back. Both sides of this OP-1 have audio, so it will show "not run" here.
+  - **`write.speed`,** a new expectation split from `read.speed`: each audio write, timed less a read of the same file. Reported, never failed.
+  - 245 tests pass on the Mac and the iOS simulator (160 FieldTapeKit, 80 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS.
+
 ## Next steps
 
-1. Step 11b: the album checks on an empty side, the long check, and write speed.
+1. Step 12: level 3, after a reconnect.
+2. `album.write-exact` on hardware, whenever an album side is empty.
 
 ## The OP-1 right now
 

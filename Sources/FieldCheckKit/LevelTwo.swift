@@ -7,19 +7,23 @@ import System
 ///
 /// It makes the scratch tape `fieldcheck #1-2` with a new tape's `tape.json`, then generated tones, which make the
 /// OP-1 rebuild `tape.json` with its old size still listed, as the probe saw. It tries a name a tape doesn't allow,
-/// replaces a track keeping a copy, and replaces `tape.json` with a generated one, last. It writes a preset to `drum/user/` and `synth/user/`, then deletes both. Free space is read before,
-/// after the writes, and after the presets are deleted. The scratch tape stays for level 3, or for
-/// `deleteLeftovers(on:)`.
+/// replaces a track keeping a copy, and replaces `tape.json` with a generated one, last. When asked, the long check
+/// replaces a track with a full 6-minute one and puts it back. On an empty album side it writes a tone and puts the
+/// empty side back. It writes a preset to `drum/user/` and `synth/user/`, then deletes both. Writes are timed for
+/// `write.speed`, and free space is read before, after the writes, and after the presets are deleted. The scratch
+/// tape stays for level 3, or for `deleteLeftovers(on:)`.
 ///
 /// Everything goes through FieldTapeKit's public file layer, so a run checks steps 8 to 10 of the plan on hardware,
 /// apart from the refused name, which is sent raw because FieldTapeKit refuses it before sending. It stops at the
-/// first failure and leaves what it made for cleanup. The album checks and the long check come in step 11b.
+/// first failure and leaves what it made for cleanup.
 public enum LevelTwo {
     /// Stored lowercase. 15 characters, FieldTapeKit's maximum, using every kind it allows (`names.maximum`).
     public static let scratchTape: FilePath = "tapes/fieldcheck #1-2"
     static let scratchName = "FIELDCHECK #1-2"
     /// Written and deleted within the run.
     public static let presets: [FilePath] = ["drum/user/fieldcheck.wav", "synth/user/fieldcheck.wav"]
+    /// The album sides, in the order an empty one is picked.
+    static let sides: [FilePath] = ["mixdown/side_a.wav", "mixdown/side_b.wav"]
     /// What level 2 makes, which it may delete as leftovers.
     public static var ownContent: [FilePath] { [scratchTape] + presets }
 
@@ -32,16 +36,29 @@ public enum LevelTwo {
         public let refusal: String?
         /// FieldCheck's own content left on the OP-1 by an earlier run, which `deleteLeftovers(on:)` deletes.
         public let leftovers: [FilePath]
+        /// The album side the album check writes to, the first that's empty, or nil if both have audio.
+        public let emptySide: FilePath?
     }
 
     /// Looks at the OP-1 and says what a run would do, or why it can't: no free tape slot, or FieldCheck's content
     /// left from an earlier run. It only reads.
     public static func plan(for device: FieldDevice) async -> Plan {
+        var emptySide: FilePath?
+        for side in sides where emptySide == nil {
+            if let item = try? await device.item(at: side), item.size == WAVHeader.size { emptySide = item.path }
+        }
+        let album = if let emptySide {
+            "\(emptySide) is empty: copy it to this run's folder, write a 2-second tone to it, then put the empty side back."
+        } else {
+            "Both album sides have audio, so the album isn't touched."
+        }
         let steps = [
             "Make the tape \(scratchTape.lastComponent!.string) in a free slot (\(scratchName), 15 characters).",
             "Write a new tape's tape.json, then track_1.wav to track_4.wav, 2-second tones of \(Content.trackBytes.formatted()) bytes each.",
             "Try track_5.wav in it, which the OP-1 should refuse. If it's taken, it's deleted.",
             "Read the tape.json the OP-1 rebuilds, then replace track_1.wav with another tone, keeping a copy in this run's folder, and replace tape.json with a generated one, last.",
+            "Only with the long check: replace track_2.wav with a 6-minute tone of 127 MB, read it back, then put the 2-second one back and tape.json again, last. It adds about half a minute.",
+            album,
             "Write \(presets.map(\.string).joined(separator: " and ")), 25-second tones, then delete them, keeping a copy of the drum one in this run's folder.",
             "Leave the scratch tape on the OP-1, for level 3 or Delete FieldCheck's content.",
         ]
@@ -58,25 +75,26 @@ public enum LevelTwo {
             } else {
                 nil
             }
-            return Plan(deviceID: device.id, steps: steps, refusal: refusal, leftovers: leftovers)
+            return Plan(deviceID: device.id, steps: steps, refusal: refusal, leftovers: leftovers, emptySide: emptySide)
         } catch {
             return Plan(deviceID: device.id, steps: steps,
-                        refusal: "Couldn't look at the OP-1: \(error.localizedDescription)", leftovers: [])
+                        refusal: "Couldn't look at the OP-1: \(error.localizedDescription)", leftovers: [], emptySide: nil)
         }
     }
 
-    /// Runs level 2 as `plan` describes. `workspace` is a folder of this device's that the drum preset's copy goes
-    /// in. A plan that refused, or that's for another connection, runs nothing.
-    public static func run(on device: FieldDevice, plan: Plan, workspace: URL, host: CheckReport.Host) async -> CheckReport {
+    /// Runs level 2 as `plan` describes. `workspace` is a folder of this device's that the copies go in. The long
+    /// check runs only when `longCheck` is true. A plan that refused, or that's for another connection, runs
+    /// nothing.
+    public static func run(on device: FieldDevice, plan: Plan, longCheck: Bool = false, workspace: URL,
+                           host: CheckReport.Host) async -> CheckReport {
         let started = Date.now
         let results: [CheckResult]
+        let checks = checks(for: device, plan: plan, longCheck: longCheck, workspace: workspace)
         if plan.deviceID != device.id || plan.refusal != nil {
             let reason = plan.refusal ?? "The plan was made on another connection."
-            results = checks(for: device, workspace: workspace).map {
-                CheckResult(expectation: $0.expectation, outcome: .notRun, summary: reason)
-            }
+            results = checks.map { CheckResult(expectation: $0.expectation, outcome: .notRun, summary: reason) }
         } else {
-            results = await CheckRunner.run(checks(for: device, workspace: workspace), stopAtFirstFailure: true)
+            results = await CheckRunner.run(checks, stopAtFirstFailure: true)
         }
         return CheckReport(level: 2, started: started, finished: .now, device: CheckReport.Device(device.info),
                            host: host, results: results)
@@ -126,19 +144,48 @@ public enum LevelTwo {
         var presetBytes = 0
         /// The `tape.json` that was written, and what was read after the replaced track.
         var rebuilt: (written: Data, listed: Int, read: Data)?
+        /// Timed writes of audio, for `write.speed`.
+        var writes: [TimedWrite] = []
 
         func set(freeBefore value: Int) { freeBefore = value }
         func set(freeAfterWrites value: Int) { freeAfterWrites = value }
         func add(tapeBytes count: Int) { tapeBytes += count }
         func add(presetBytes count: Int) { presetBytes += count }
         func set(rebuilt value: (written: Data, listed: Int, read: Data)) { rebuilt = value }
+        func add(_ write: TimedWrite) { writes.append(write) }
     }
 
-    static func checks(for device: FieldDevice, workspace: URL) -> [Check] {
+    /// One write, timed with its own read-back, and a read of the same file timed after it. The send is the
+    /// difference, since FieldTapeKit's write reads the file back before it returns.
+    struct TimedWrite: Sendable, Hashable {
+        let name: String
+        let bytes: Int
+        let write: Duration
+        let read: Duration
+        var send: Duration { max(write - read, .zero) }
+    }
+
+    /// Writes `data` and reads it back, each timed, and records the write for `write.speed`.
+    @Sendable static func timedWrite(_ data: Data, to path: FilePath, options: UploadOptions = .init(), as name: String? = nil,
+                                     on device: FieldDevice, run: Run) async throws -> (item: FieldItem, read: Data) {
+        let clock = ContinuousClock()
+        let start = clock.now
+        let item = try await device.write(data, to: path, options: options)
+        let written = clock.now
+        let read = try await device.contents(of: item.path, maximumSize: max(data.count, 1 << 20))
+        await run.add(TimedWrite(name: name ?? item.name, bytes: data.count, write: written - start, read: clock.now - written))
+        return (item, read)
+    }
+
+    static func checks(for device: FieldDevice, plan: Plan, longCheck: Bool, workspace: URL) -> [Check] {
         let run = Run()
         let tape = scratchTape
         @Sendable func free() async throws -> Int {
             Int(clamping: try await device.session.storageInfo(device.storageID).freeSpaceInBytes)
+        }
+        @Sendable func write(_ data: Data, to path: FilePath, options: UploadOptions = .init(),
+                             as name: String? = nil) async throws -> (item: FieldItem, read: Data) {
+            try await timedWrite(data, to: path, options: options, as: name, on: device, run: run)
         }
         return [
             Check("names.maximum") {
@@ -156,9 +203,11 @@ public enum LevelTwo {
             Check("write.exact") {
                 // A new tape's tape.json first, then the tracks, which make the OP-1 rebuild it (`rebuild.tape-json`).
                 var written: [(name: String, data: Data, read: Data)] = []
-                for (name, data) in [("tape.json", Content.blankTapeJSON)] + Content.tracks {
-                    let item = try await device.write(data, to: tape.appending(name))
-                    written.append((item.name, data, try await device.contents(of: item.path)))
+                let json = try await device.write(Content.blankTapeJSON, to: tape.appending("tape.json"))
+                written.append((json.name, Content.blankTapeJSON, try await device.contents(of: json.path)))
+                for (name, data) in Content.tracks {
+                    let (item, read) = try await write(data, to: tape.appending(name))
+                    written.append((item.name, data, read))
                 }
                 return exact(written)
             },
@@ -201,6 +250,38 @@ public enum LevelTwo {
                 return .pass(finding.summary + " Then track_1.wav was replaced, keeping a copy, and the generated "
                              + "tape.json replaced the stale one, last. Both read back exactly.", observed: finding.observed)
             },
+            Check("tape.track-limit") {
+                guard longCheck else { return .notRun("The long check wasn't asked for.") }
+                let track = tape.appending("track_2.wav")
+                let long = Content.longTrack()
+                let before = MemoryUse.now()
+                let (_, read) = try await write(long, to: track, options: UploadOptions(existing: .replace(confirmed: try await device.prepareToRemove(at: track))),
+                                                as: "track_2.wav (6 minutes)")
+                let finding = trackLimit(sent: long, read: read, timed: await run.writes.last!, memoryBefore: before, memoryAfter: MemoryUse.now())
+                guard finding.outcome == .pass else { return finding }
+                // Put the 2-second tone back, then tape.json last, so the tape ends as it does without the long check.
+                _ = try await device.write(Content.tracks[1].1, to: track,
+                                           options: UploadOptions(existing: .replace(confirmed: try await device.prepareToRemove(at: track))))
+                let json = tape.appending("tape.json")
+                _ = try await device.write(Content.tapeJSON, to: json,
+                                           options: UploadOptions(existing: .replace(confirmed: try await device.prepareToRemove(at: json))))
+                return finding
+            },
+            Check("album.write-exact") {
+                guard let side = plan.emptySide else { return .notRun("Both album sides have audio, so the album wasn't touched.") }
+                // Read fresh: the side must still be empty, and in a form FieldTapeKit can write back.
+                let empty = try await device.contents(of: side)
+                guard empty.count == WAVHeader.size, let header = try? WAVHeader(empty), header.format == device.profile.sideFormat,
+                      header.problems(fileSize: empty.count).isEmpty else {
+                    return .notRun("\(side) isn't an empty side any more, so the album wasn't touched.")
+                }
+                let copy = workspace.appending(path: "mixdown-\(side.lastComponent!.string)")
+                let (_, read) = try await write(Content.side, to: side, options: UploadOptions(existing: .replace(keepingCopyAt: copy)))
+                guard read == Content.side else { return albumExact(side: side, read: read, empty: empty, restored: nil) }
+                _ = try await device.write(empty, to: side,
+                                           options: UploadOptions(existing: .replace(confirmed: try await device.prepareToRemove(at: side))))
+                return albumExact(side: side, read: read, empty: empty, restored: try await device.contents(of: side))
+            },
             Check("write.preset-converted") {
                 var stored: [(path: FilePath, audio: PCMAudio, format: FieldFormat, size: Int)] = []
                 for path in presets {
@@ -217,6 +298,11 @@ public enum LevelTwo {
                     return .fail("\(path) is still listed after it was deleted.", observed: finding.observed)
                 }
                 return finding
+            },
+            Check("write.speed") {
+                let writes = await run.writes
+                guard !writes.isEmpty else { return .notRun("Nothing was written.") }
+                return writeSpeed(writes)
             },
             Check("device.storage") {
                 guard let before = await run.freeBefore, let afterWrites = await run.freeAfterWrites else {
@@ -293,6 +379,91 @@ public enum LevelTwo {
                          observed: observed)
         }
         return .pass("The rebuilt tape.json is still listed and read at the \(written) bytes written.", observed: observed)
+    }
+
+    static func trackLimit(sent: Data, read: Data, timed: TimedWrite, memoryBefore: MemoryUse?, memoryAfter: MemoryUse?) -> Finding {
+        var observed: [String: CheckValue] = [
+            "bytes": .int(sent.count), "readBytes": .int(read.count),
+            "sha256": .string(SHA256.hash(data: sent).map { String(format: "%02x", $0) }.joined()),
+            "writeMilliseconds": .int(milliseconds(timed.write)), "readMilliseconds": .int(milliseconds(timed.read)),
+        ]
+        var varies = ["writeMilliseconds", "readMilliseconds"]
+        if let memoryBefore, let memoryAfter {
+            observed["footprintBefore"] = .int(memoryBefore.footprint)
+            observed["footprintPeak"] = .int(memoryAfter.peak)
+            varies += ["footprintBefore", "footprintPeak"]
+        }
+        guard read == sent else {
+            return .fail("The 6-minute track read back as \(read.count.formatted()) bytes that don't match the "
+                         + "\(sent.count.formatted()) written.", observed: .record(observed), varies: varies)
+        }
+        let memory = if let memoryBefore, let memoryAfter {
+            " FieldCheck's memory went from \(megabytes(memoryBefore.footprint)) MB before it to a peak of \(megabytes(memoryAfter.peak)) MB."
+        } else {
+            ""
+        }
+        return .pass("A full 6-minute track of \(sent.count.formatted()) bytes was written in \(seconds(timed.write)) s, with the "
+                     + "write's own read-back, and read back byte for byte in \(seconds(timed.read)) s.\(memory) Then the "
+                     + "2-second track and tape.json were put back.", observed: .record(observed), varies: varies)
+    }
+
+    static func albumExact(side: FilePath, read: Data, empty: Data, restored: Data?) -> Finding {
+        var fields: [String: CheckValue] = ["side": .string(side.string), "bytes": .int(Content.side.count),
+                                            "readBytes": .int(read.count), "emptyBytes": .int(empty.count)]
+        if let restored { fields["restoredBytes"] = .int(restored.count) }
+        let observed = CheckValue.record(fields)
+        guard read == Content.side else {
+            return .fail("\(side) read back as \(read.count.formatted()) bytes that don't match the \(Content.side.count.formatted()) "
+                         + "written. The tone is left on it, and the empty side's copy is in this run's folder.", observed: observed)
+        }
+        guard let restored, restored == empty else {
+            return .fail("\(side) read back exactly, but the empty side didn't come back as it was. Its copy is in this run's folder.",
+                         observed: observed)
+        }
+        return .pass("\(side) was empty. A 2-second side of \(Content.side.count.formatted()) bytes was written and read back "
+                     + "byte for byte, then the \(empty.count)-byte empty side was put back, and it reads back the same.",
+                     observed: observed)
+    }
+
+    static func writeSpeed(_ writes: [TimedWrite]) -> Finding {
+        let bytes = writes.reduce(0) { $0 + $1.bytes }
+        let send = writes.reduce(Duration.zero) { $0 + $1.send }
+        let entries: [CheckValue] = writes.map { write in
+            ["name": .string(write.name), "bytes": .int(write.bytes), "writeMilliseconds": .int(milliseconds(write.write)),
+             "readMilliseconds": .int(milliseconds(write.read)), "sendMilliseconds": .int(milliseconds(write.send))]
+        }
+        let observed: CheckValue = ["bytes": .int(bytes), "sendMilliseconds": .int(milliseconds(send)),
+                                    "kilobytesPerSecond": .int(kilobytesPerSecond(bytes, send)), "writes": .list(entries)]
+        let largest = writes.max { $0.bytes < $1.bytes }!
+        // The long track is most of what's sent when it runs, and its speed alone is the clearest figure.
+        let detail = writes.count > 1 && largest.bytes * 10 > bytes * 9
+            ? " \(largest.name) alone: \(rate(largest.bytes, largest.send)) MB/s." : ""
+        // How big a drop is reported, against a baseline, is step 22 of the plan.
+        return .pass("Sent \(megabytes(bytes)) MB in \(writes.count) writes in \(seconds(send)) s, \(rate(bytes, send)) MB/s, timed as each "
+                     + "write less a read of the same file.\(detail) On 1.7.3 the probe saw about 7 MB/s.", observed: observed,
+                     varies: ["sendMilliseconds", "kilobytesPerSecond", "writes[].writeMilliseconds", "writes[].readMilliseconds",
+                              "writes[].sendMilliseconds"])
+    }
+
+    static func milliseconds(_ duration: Duration) -> Int {
+        Int(duration.components.seconds * 1_000 + duration.components.attoseconds / 1_000_000_000_000_000)
+    }
+
+    static func seconds(_ duration: Duration) -> String {
+        (Double(milliseconds(duration)) / 1_000).formatted(.number.precision(.fractionLength(1)))
+    }
+
+    static func megabytes(_ bytes: Int) -> String {
+        (Double(bytes) / 1_000_000).formatted(.number.precision(.fractionLength(1)))
+    }
+
+    static func kilobytesPerSecond(_ bytes: Int, _ duration: Duration) -> Int {
+        let ms = milliseconds(duration)
+        return ms > 0 ? bytes / ms : 0
+    }
+
+    static func rate(_ bytes: Int, _ duration: Duration) -> String {
+        (Double(kilobytesPerSecond(bytes, duration)) / 1_000).formatted(.number.precision(.fractionLength(1)))
     }
 
     static func presetsConverted(sent: PCMAudio, stored: [(path: FilePath, audio: PCMAudio, format: FieldFormat, size: Int)]) -> Finding {

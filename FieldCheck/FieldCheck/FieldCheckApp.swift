@@ -77,9 +77,9 @@ final class ConnectionLog {
         return plan
     }
 
-    /// Runs a confirmed level 2 plan. Copies it keeps, of the replaced track and the drum preset, go in a new
-    /// `level2-<time>` folder in Documents.
-    func runLevelTwo(on device: FieldDevice, plan: LevelTwo.Plan) async {
+    /// Runs a confirmed level 2 plan, with the long check if asked for. Copies it keeps, of the replaced track, an
+    /// empty album side and the drum preset, go in a new `level2-<time>` folder in Documents.
+    func runLevelTwo(on device: FieldDevice, plan: LevelTwo.Plan, longCheck: Bool) async {
         guard running == nil else { return }
         running = device.id
         defer { running = nil }
@@ -90,8 +90,8 @@ final class ConnectionLog {
             record("Level 2: couldn't make \(workspace.lastPathComponent): \(error.localizedDescription)")
             return
         }
-        record("Level 2: running, copies go in \(workspace.lastPathComponent)")
-        let report = await LevelTwo.run(on: device, plan: plan, workspace: workspace, host: host)
+        record("Level 2: running\(longCheck ? " with the long check" : ""), copies go in \(workspace.lastPathComponent)")
+        let report = await LevelTwo.run(on: device, plan: plan, longCheck: longCheck, workspace: workspace, host: host)
         reports[device.id] = report
         for result in report.results {
             record("Level 2: \(result.expectation) \(result.outcome.rawValue): \(result.summary)")
@@ -301,7 +301,10 @@ struct ValidateView: View {
                                 titleVisibility: .visible, presenting: plan) { pending in
                 if pending.plan.refusal == nil {
                     Button("Write to the OP-1") {
-                        Task { await log.runLevelTwo(on: pending.device, plan: pending.plan) }
+                        Task { await log.runLevelTwo(on: pending.device, plan: pending.plan, longCheck: false) }
+                    }
+                    Button("Write, with the long check") {
+                        Task { await log.runLevelTwo(on: pending.device, plan: pending.plan, longCheck: true) }
                     }
                 }
                 Button("Cancel", role: .cancel) {}

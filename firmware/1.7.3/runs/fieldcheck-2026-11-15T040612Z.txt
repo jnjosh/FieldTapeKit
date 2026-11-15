@@ -1,0 +1,21 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.54] Watching for an OP-1 in MTP mode
+[  14.35] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  14.35] Storage: 6429185024 bytes, 6285685760 free
+[  34.68] Level 2: running with the long check, copies go in level2-2026-11-15T040647Z
+[  72.51] Level 2: names.maximum pass: The OP-1 took FIELDCHECK #1-2, 15 characters, as fieldcheck #1-2. Whether it's kept after a reconnect is level 3.
+[  72.51] Level 2: write.folder pass: SendObjectInfo alone made the tape, a folder (0x3001, association type 1) with 0 items in it.
+[  72.51] Level 2: write.exact pass: 5 files, 2,822,826 bytes, each read back byte for byte, again after the write's own check.
+[  72.51] Level 2: write.refused-name pass: track_5.wav was refused with 0x2002, before any data was sent.
+[  72.51] Level 2: rebuild.tape-json pass: After the tracks were written, tape.json read back different from the one written before them.
+[  72.51] Level 2: rebuild.stale-size pass: The rebuilt tape.json is still listed and read at the 250 bytes written. Then track_1.wav was replaced, keeping a copy, and the generated tape.json replaced the stale one, last. Both read back exactly.
+[  72.51] Level 2: tape.track-limit pass: A full 6-minute track of 127,008,044 bytes was written in 23.2 s, with the write's own read-back, and read back byte for byte in 6.1 s. FieldCheck's memory went from 292.7 MB before it to a peak of 543.3 MB. Then the 2-second track and tape.json were put back.
+[  72.51] Level 2: album.write-exact not run: Both album sides have audio, so the album wasn't touched.
+[  72.51] Level 2: write.preset-converted pass: Both came back as AIFC under the same name, with the samples sent; of 25 s, drum/user/ kept 20.000 s, synth/user/ kept 6.000 s.
+[  72.51] Level 2: write.speed pass: Sent 129.8 MB in 5 writes in 17.7 s, 7.3 MB/s, timed as each write less a read of the same file. track_2.wav (6 minutes) alone: 7.5 MB/s. On 1.7.3 the probe saw about 7 MB/s.
+[  72.51] Level 2: device.storage pass: Free space fell 7,414,784 bytes for 7,414,918 written, and after the presets were deleted it was 2,823,168 below the start, for the scratch tape's 2,823,150.
+[  72.51] Level 2: 10 pass, 0 fail, 1 not run
+[  72.51] Saved fieldcheck-2026-11-15T040647Z.json and fieldcheck-2026-11-15T040647Z.md
+[  81.89] Deleting FieldCheck's content
+[  81.99] delete.files-then-folder pass: Deleted the scratch tape's 5 files, then its folder, and it's gone.
+[  84.24] Disconnected

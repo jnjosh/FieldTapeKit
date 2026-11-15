@@ -50,7 +50,8 @@ The first list, from the probe's findings:
 | `tape.types` | `tape_type` values are 0–3. | `TapeType` |
 | `tape.track-limit` | A full 6-minute track of 127,008,044 bytes can be written and read back. Runs only when asked (section 2). | `tapeTooLong`, upload memory use |
 | `read.partial` | GetPartialObject works at any offset with chunks up to 1 MiB. | `contents(of:range:)`, WAV header reads |
-| `read.speed` | Reads at about 20 MB/s, writes at about 7 MB/s. A big drop is reported, not failed. | Timeouts, progress estimates |
+| `read.speed` | Reads at about 20 MB/s. A big drop is reported, not failed. | Timeouts, progress estimates |
+| `write.speed` | Writes at about 7 MB/s, timed apart from the read-back. A big drop is reported, not failed. Split from `read.speed` on 2026-11-15. | Timeouts, progress estimates |
 | `read.cost` | What a GetPartialObject's time grows with: its offset, or the number of reads before it. On 1.7.3 it's the offset. Added 2026-11-14. | Whole files read with one GetObject (ADR 0002, 2026-11-14) |
 | `write.folder` | A tape folder can be made with SendObjectInfo alone (format 0x3001, association type 1). | `createTape`, `restoreTape` |
 | `write.exact` | Tracks and `tape.json` written to a tape read back byte for byte. | Read-back verification |
@@ -76,6 +77,7 @@ New expectations are added when FieldTapeKit starts relying on something new. Re
 - **A small generated WAV** at `drum/user/fieldcheck.wav`, deleted afterwards.
 - **Free space** is read before the first write, after the last one, and after cleanup, for `device.storage`.
 - **The long check**, off unless asked for: one full 6-minute track of 127 MB, to check `tape.track-limit` and memory use. It adds about 25 seconds of transfer. A person turns it on for a run; it isn't part of every firmware update.
+- **Write speed:** the audio writes are timed for `write.speed`.
 
 **Level 3: after a reconnect.** Some behaviors only show after leaving MTP mode:
 1. After level 2, FieldCheck asks the person to leave MTP mode on the OP-1. Optionally they can play the scratch tape to hear the tones.
@@ -216,6 +218,10 @@ FieldCheck measures only the firmware installed, so the old-firmware rows come f
     - `device.storage` records free space before, after the writes and after the presets are deleted, without judging how close it comes. Judging waits for the comparison in step 22.
     - Copies of the replaced track and the drum preset go in a `level2-<time>` folder in Documents.
     - Baselines still cover level 1 only.
+- **2026-11-15:** Decided by the owner while building step 11b of the plan, level 2's second half:
+  - **Only `album.write-exact` is built.** On the first empty side, `side_a.wav` then `side_b.wav`, level 2 reads the side, checks it's still the 44-byte empty header, and replaces it with a 2-second 16-bit tone, keeping a copy. It reads the tone back, then puts the empty side back through a confirmation and reads that back too. With audio on both sides, it's "not run", and the plan says so. `album.write-other-format` stays unknown, since FieldTapeKit refuses other formats and nothing relies on what the OP-1 does with them.
+  - **The long check replaces, then restores.** It replaces `track_2.wav` with a full 6-minute track of 127,008,044 bytes, through a confirmation, reads it back whole, then puts the 2-second tone back and `tape.json` again, last. So the scratch tape ends the same with or without it. It reports FieldCheck's memory before it and at its peak. FieldCheck asks for it with a second button in the level 2 confirmation.
+  - **Write speed is its own expectation,** `write.speed`, split from `read.speed`, because only level 2 writes. FieldTapeKit's write reads the file back before it returns, so each audio write is timed, then a read of the same file, and the send is the difference. It's reported, never failed.
 - **2026-11-15:** The first level 2 run on the OP-1 passed. `write.preset-converted` now states the cap it found in `synth/user/`, 6 seconds, and that a converted file keeps the format code it was sent with.
 - **2026-11-14:** `write.preset-converted` now covers `synth/user/` as well as `drum/user/`, and the samples as well as the format, because step 9b's read-back relies on both (ADR 0002's change log). Level 2 writes to `synth/user/` too, since nothing has been written there yet.
 - **2026-11-14:** Decided by the owner: FieldCheck has two tabs. **Validate** holds the checks, baselines and conformance suite. **Explore** is a low-fidelity browser of the OP-1 built only on FieldTapeKit's public API, so FieldTapeKit gets used the way an app uses it, and a change can be tried by hand. Explore is **read-only**: it lists, shows details and copies files to the device, and section 3's limit on writes is unchanged. Letting it write would need its own decision.
