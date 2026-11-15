@@ -231,8 +231,8 @@ public struct TapeDeletion: Sendable, Identifiable {
 }
 
 public struct TapeSlots: Sendable {
-    var used: Int
-    var limit: Int { 8 }
+    var used: Int                      // every folder in tapes/, sound or not
+    var limit: Int                     // 8, from the firmware profile
     var available: Int { limit - used }
 }
 
@@ -244,9 +244,11 @@ public enum TapeCopy: Sendable {
 public struct Tape: Sendable, Identifiable, Hashable {
     var name: TapeName
     var path: FilePath                 // tapes/<name>
-    var type: TapeType
-    var tracks: [TapeTrack]            // always four, blank ones included
-    var manifest: TapeManifest         // parsed tape.json
+    var type: TapeType?                // nil without a readable tape.json
+    var tracks: [TapeTrack]            // four on a sound tape, blank ones included
+    var manifest: TapeManifest?        // parsed tape.json; nil if it's missing or unreadable
+    var problems: [String]             // why it isn't sound; empty for a sound tape
+    var isSound: Bool                  // no problems
     var duration: Duration             // end of the last clip, at most 6 minutes
     var isEmpty: Bool                  // every track blank and no clips
     var recordedTracks: [Int]          // 1–4, the tracks with audio
@@ -291,7 +293,7 @@ let recorded  = try await device.tapes().filter { !$0.isEmpty }
 A filter parameter on `tapes()` wouldn't save any work: there are at most 8 tapes, and listing them reads each small `tape.json` whatever the filter is. What the framework does owe apps is properties worth filtering on, so `Tape` has `type`, `duration`, `isEmpty` and `recordedTracks`, and `TapeType` is `Hashable` for grouping. If apps keep writing the same filter, it can become a convenience later without changing `tapes()`.
 
 **`TapeManifest` is `tape.json` with nothing dropped.**
-- It has typed properties for the fields the probe decoded: clips (`track`, `start` and `end` frames, `id`), loop, tempo, mixer, and tape type.
+- It has typed properties for the fields the probe decoded: clips (`track`, `start` and `end` frames, `id`), loop, tempo in BPM, the mixer's eight numbers as stored (`mixerParameters`, probably four levels and four pans, unconfirmed), and tape type.
 - It keeps the original JSON and writes back every key it doesn't understand. `padding` and unknown keys round-trip untouched, because the probe showed the OP-1 accepts copied values and their meaning is unknown.
 - Editing a manifest is out of scope for now. It's read for display and written back as it was archived.
 
@@ -644,6 +646,14 @@ These are possible later features, deliberately left out for now:
   - **`synth/user/` follows the same rules,** with no cap assumed. Nothing has been written there yet, so level 2 checks it on hardware.
 - **2026-11-15:** FieldCheck's first level 2 run (PROBE-NOTES.md) found that **`synth/user/` keeps 6 seconds**, where `drum/user/` keeps 20, and that **a converted preset keeps the format code it was sent with:** a WAV stored as AIFC is still listed as WAV. Neither changes a decision. A shortened preset was already allowed, and nothing in FieldTapeKit depends on a cap, which only the simulator models. But `FieldFormat` in a preset folder says what was sent, not what's stored, unlike the 2026-11-14 entry's reasoning for reading it from the format code. Its documentation says so now.
   - Also settled while building it: a preset WAV's chunks are walked, so WAVs from other apps with extra chunks are accepted. The read-back would catch the OP-1 handling one differently. A write that reads back wrong now says why in its error.
+- **2026-11-15:** Decided by the owner while building step 13 of the plan, reading tapes:
+  - **Every folder in `tapes/` is listed as a `Tape`,** sound or not, so every used slot shows. A tape with `tape.json` missing or unreadable, a track missing, an unexpected file, or tracks that don't match its clips says why in `problems`. `manifest` and `type` are optional for a tape without a readable `tape.json`. Copying a tape with problems is refused in step 15, but an app can still show it and move it.
+  - **`TapeManifest.mixerParameters` is the eight numbers as stored,** since what they mean is only a guess.
+  - Also settled while building it:
+    - `TapeManifest` keeps `tape.json` as read in `data`, and its typed properties are clips (`track` 1 to 4, from `ch`), loop, tempo in BPM (`tempobpmdecimal` ÷ 10), `mixerParameters` and type. It refuses a file without those keys, saying which.
+    - `tapes()` lists each folder and reads its `tape.json`, but not the tracks' WAV headers: the sizes against the clips are the check. It's sorted by name.
+    - The simulator builder is `SimulatedTape(…)`, not `Tape(…)`, which is the type a listed tape has.
+    - `TapeName`'s rule is shared with `createDirectory(at:)`, so the two can't drift.
 - **2026-11-15:** **New tape names are limited to 12 characters, not 15,** decided by the owner. FieldCheck's first level 3 run found the OP-1 had cut its 15-character scratch tape, `fieldcheck #1-2`, to `fieldcheck #` once it left MTP mode (PROBE-NOTES.md). The OP-1 took the full name over MTP and listed it whole within the session, so nothing showed the cut until the reconnect. A name of 13 or more would make a tape that comes back under another name, which could also collide with a tape already there. The limit moves into the firmware profile as `maximumTapeNameLength`. Names already on the OP-1 or in an archive are still accepted at any length. The 2026-11-08 entry below gave the earlier reasoning.
 - **2026-11-14:** Decided by the owner while building step 10 of the plan, replacing files:
   - **`.replace(keepingCopyAt:)` needs a free URL.** A taken one throws `localFileFailed` before anything changes, so the copy is always exactly where the caller said, and `write` still returns only the `FieldItem`. Unlike `removeItem(at:keepingCopyAt:)`, it never adds a number.

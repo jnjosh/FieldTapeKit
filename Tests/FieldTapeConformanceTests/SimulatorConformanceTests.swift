@@ -10,10 +10,12 @@ import Testing
 
     /// One with a tape, a recorded track, and audio on side A.
     static let populated = FieldDevice.simulated {
+        SimulatedTape("2026-220#02", type: .vintage, seconds: [2])
         Directory("tapes") {
-            Directory("2026-220#02") {
+            // Not sound: its tape.json has no clips for the recorded track.
+            Directory("2026-286#01") {
                 File("tape.json", data: Data(#"{"clips":[]}"#.utf8))
-                File("track_1.wav", seconds: 2)
+                File("track_1.wav", seconds: 1)
                 for track in 2...4 { File("track_\(track).wav", seconds: 0) }
             }
         }
@@ -21,7 +23,7 @@ import Testing
     }
 
     /// Checks that need a tape, or a tape track with audio, skip on the empty OP-1.
-    static let needTapes: Set = ["A tape's tape.json is JSON and its tracks are WAV files",
+    static let needTapes: Set = ["A tape's tape.json is JSON and its tracks are WAV files", "A tape's details agree with its files",
                                  "Copying the largest tape track off matches the OP-1"]
 
     static func workspace() throws -> URL {

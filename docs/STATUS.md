@@ -193,9 +193,17 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **The committed-baseline test** now also checks levels 2 and 3 when they're there: the refused name, the preset caps, the long track's size, the 12-character cut, the folder delete and the tape's files.
   - 260 tests pass on the Mac and the iOS simulator (162 FieldTapeKit, 93 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS.
 
+- **Step 13 is done, and passed on the OP-1** (iPad Pro, 2026-11-15, log `firmware/1.7.3/runs/fieldcheck-2026-11-15T163827Z.txt`). The conformance suite passed 17 of 17. `tapes()` listed all 3 tapes, each sound and Studio: 2026-220#01 (track 4, 62.5 s), 2026-276#01 (all four tracks, 1:00) and 2026-286#01 (tracks 1 and 2, 4.3 s). The lengths match the clips in the `tape.json` files the probe logged on 2026-11-08, and both copies have the same SHA-256s as before. Decided 2026-11-15, recorded in the plan and ADR 0002's change log:
+  - **`TapeName`:** lowercase, compared ignoring case. A new name must be one the OP-1 keeps (letters, digits, `#`, `-`, space, at most 12), and its rule is the one `createDirectory(at:)` uses. A listed name is taken as it is.
+  - **`TapeManifest`:** `tape.json` kept byte for byte in `data`, with clips, loop, tempo in BPM, `mixerParameters` and `TapeType`. All 11 distinct `tape.json` files the probe logged read and keep their bytes.
+  - **`Tape`, `TapeTrack` and `TapeSlots`; `tapes()`, `tape(named:)` and `tapeSlots()`.** Every folder in `tapes/` is a tape. One that isn't sound lists its `problems`, and its manifest is nil without a readable `tape.json`.
+  - **`SimulatedTape(…)`** builds a sound tape for tests and previews, with a `tape.json` like the OP-1's. FieldCheck's `-SimulatedOP1` now uses it, so level 1 passes on the simulated OP-1 (17 pass, `read.cost` not run).
+  - **The conformance suite** checks that `tapes()` lists every folder and `tapeSlots()` counts them, and that each tape's details agree with its files. It records each tape's type, length and tracks.
+  - 277 tests pass on the Mac and the iOS simulator (179 FieldTapeKit, 93 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS.
+
 ## Next steps
 
-1. Step 13: reading tapes, with `TapeName` limited to 12 characters.
+1. Step 14: reel archives.
 2. `album.write-exact` on hardware, whenever an album side is empty.
 
 ## The OP-1 right now

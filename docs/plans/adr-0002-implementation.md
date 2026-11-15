@@ -292,6 +292,8 @@ Decided by the owner for 12b (2026-11-15), and recorded in ADR 0003's change log
 
 **Relies on:** `tape.files`, `tape.json-keys`, `tape.json-units`, `tape.types`.
 
+Decided by the owner for step 13 (2026-11-15), and recorded in ADR 0002's change log: every folder in `tapes/` is a `Tape`, with `problems` and an optional manifest for one that isn't sound, and the mixer is its eight numbers as stored. The builder is `SimulatedTape(…)`, since `Tape` is taken.
+
 ### 14. Reel archives
 
 **Adds (public):**

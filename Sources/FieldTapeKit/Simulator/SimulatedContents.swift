@@ -64,6 +64,45 @@ public struct File: Sendable {
     }
 }
 
+/// A sound tape on a simulated OP-1, in `tapes/`: four tracks of silence, and a `tape.json` as the OP-1 writes one,
+/// with a clip from the start to the end of each recorded track. It's not called `Tape`, which is the tape layer's
+/// type for a tape that's been listed.
+///
+/// ```swift
+/// let device = FieldDevice.simulated {
+///     SimulatedTape("2026-220#02", type: .vintage, seconds: [3, 0, 1.5])
+/// }
+/// ```
+public struct SimulatedTape: Sendable {
+    let node: PendingNode
+
+    /// `seconds` gives each track's length in order, up to four; a track left out, or 0, is blank.
+    public init(_ name: String, type: TapeType = .studio, seconds: [Double] = []) {
+        let format = FirmwareProfile.v1_7_3.trackFormat
+        let frames = (0..<4).map { index in index < seconds.count ? Int((seconds[index] * Double(format.sampleRate)).rounded()) : 0 }
+        var files: [PendingNode] = frames.enumerated().map { index, count in
+            .file("track_\(index + 1).wav", .data(WAVHeader.bytes(format: format, dataBytes: count * format.frameBytes)
+                + Data(count: count * format.frameBytes)))
+        }
+        files.append(.file("tape.json", .data(Self.tapeJSON(type: type, frames: frames))))
+        node = .folder("tapes", [.folder(name, files)])
+    }
+
+    /// With the keys in the order the OP-1 writes them, and `padding` all -1, as on a tape the OP-1 rebuilt.
+    static func tapeJSON(type: TapeType, frames: [Int]) -> Data {
+        var id = 0
+        var clips: [String] = []
+        for (index, count) in frames.enumerated() where count > 0 {
+            clips.append(#"{"ch":\#(index),"id":\#(id),"padding":[-1,-1,-1,-1],"start":0,"stop":\#(count)}"#)
+            id += 1
+        }
+        return Data(("{\"clips\":[" + clips.joined(separator: ",") + "],"
+            + #""loop":false,"loop_in":0,"loop_out":0,"mixer_params":[1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0],"pos":0,"#
+            + #""tape_type":\#(type.rawValue),"tempobpmdecimal":1200,"tempometronomelevel":0.0,"tempometronometype":0,"#
+            + #""temposyncout":1,"temposynctype":0,"track":0,"version":1}"#).utf8)
+    }
+}
+
 @resultBuilder
 public enum SimulatedContentsBuilder {
     public static func buildExpression(_ directory: Directory) -> SimulatedContents {
@@ -72,6 +111,10 @@ public enum SimulatedContentsBuilder {
 
     public static func buildExpression(_ file: File) -> SimulatedContents {
         SimulatedContents([.file(file.name, file.content)])
+    }
+
+    public static func buildExpression(_ tape: SimulatedTape) -> SimulatedContents {
+        SimulatedContents([tape.node])
     }
 
     public static func buildBlock(_ parts: SimulatedContents...) -> SimulatedContents {

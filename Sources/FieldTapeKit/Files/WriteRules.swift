@@ -10,8 +10,6 @@ import System
 struct WriteRules {
     let profile: FirmwareProfile
 
-    /// Characters a new tape's name may use, lowercased (ADR 0002, section 4).
-    static let tapeNameCharacters = Set("abcdefghijklmnopqrstuvwxyz0123456789#- ")
     /// How a write is checked once it's stored.
     enum ReadBack {
         /// Byte for byte, by SHA-256 (`write.exact`).
@@ -80,17 +78,8 @@ struct WriteRules {
         guard names.count == 2, names[0] == "tapes" else {
             throw FieldError(.notAllowed, path: path, reason: "FieldTapeKit makes folders only for tapes")
         }
-        let name = names[1]
-        let unexpected = name.filter { !Self.tapeNameCharacters.contains($0) }
-        if name.trimmingCharacters(in: .whitespaces).isEmpty {
-            throw FieldError(.invalidName, path: path, reason: "it's empty")
-        }
-        if !unexpected.isEmpty {
-            let listed = Array(Set(unexpected)).sorted().map { "“\($0)”" }.joined(separator: ", ")
-            throw FieldError(.invalidName, path: path, reason: "it uses \(listed)")
-        }
-        if name.count > profile.maximumTapeNameLength {
-            throw FieldError(.invalidName, path: path, reason: "it's longer than \(profile.maximumTapeNameLength) characters")
+        if let problem = TapeName.problem(with: names[1], maximumLength: profile.maximumTapeNameLength) {
+            throw FieldError(.invalidName, path: path, reason: problem)
         }
     }
 

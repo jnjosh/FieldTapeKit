@@ -73,8 +73,8 @@ public enum Conformance {
         return results
     }
 
-    /// Every check: listing first, then reading and copying.
-    public static let checks = listingChecks + readingChecks
+    /// Every check: listing first, then tapes, then reading and copying.
+    public static let checks = listingChecks + tapeChecks + readingChecks
 
     struct Failure: Error {
         let message: String

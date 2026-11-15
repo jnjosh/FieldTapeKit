@@ -290,13 +290,7 @@ final class ConnectionLog {
         // app's screens without hardware.
         if UserDefaults.standard.bool(forKey: "SimulatedOP1") {
             let device = FieldDevice.simulated {
-                Directory("tapes") {
-                    Directory("2026-220#02") {
-                        File("tape.json", data: Data(#"{"clips":[],"version":1}"#.utf8))
-                        File("track_1.wav", seconds: 3)
-                        for track in 2...4 { File("track_\(track).wav", seconds: 0) }
-                    }
-                }
+                SimulatedTape("2026-220#02", type: .vintage, seconds: [3])
                 Directory("mixdown") { File("side_a.wav", seconds: 10) }
             }
             devices.append(device)
