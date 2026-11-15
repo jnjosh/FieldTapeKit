@@ -96,8 +96,9 @@ package struct Expectation: Sendable, Hashable, Identifiable {
                     "A name a folder doesn't allow (track_5.wav) is refused with 0x2002.",
                     usedBy: "Folder rules"),
         Expectation("write.preset-converted",
-                    "A WAV written to drum/user/ comes back as AIFC under the same name.",
-                    usedBy: "Preset writes"),
+                    "Audio written to drum/user/ or synth/user/ comes back as AIFC under the same name, in the same "
+                        + "format, with the same samples as the start of what was sent (cut to 20 s in drum/user/).",
+                    usedBy: "Preset writes: the read-back checks the audio"),
         Expectation("rebuild.tape-json",
                     "After a track write, the OP-1 rebuilds tape.json (one clip per track).",
                     usedBy: "Restore order: tracks first, tape.json last"),

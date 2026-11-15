@@ -6,7 +6,7 @@ import System
 /// The rules come from the OP-1's `readme.txt` files and the firmware profile: a tape folder holds `tape.json` and
 /// `track_1`–`4.wav`, `mixdown/` holds `side_a.wav` and `side_b.wav`, and new folders are tapes. Audio must be in
 /// the format the OP-1 writes itself, because what it does with anything else is unknown (`album.write-other-format`).
-/// Preset folders come in step 9b of the plan.
+/// A preset must be audio in a format the OP-1 has been seen to keep sample for sample (`write.preset-converted`).
 struct WriteRules {
     let profile: FirmwareProfile
 
@@ -15,8 +15,22 @@ struct WriteRules {
     /// FieldTapeKit's own limit for a new tape's name, so it stays readable on the OP-1's screen.
     static let tapeNameMaximumLength = 15
 
-    /// Checks a new file. `names` is the path's lowercased names, relative to the root.
-    func checkFile(_ names: [String], data: Data, path: FilePath) throws {
+    /// How a write is checked once it's stored.
+    enum ReadBack {
+        /// Byte for byte, by SHA-256 (`write.exact`).
+        case exact
+        /// As audio: the OP-1 converts a preset, so what it stores must be the start of what was sent, sample for
+        /// sample (`write.preset-converted`).
+        case preset(PCMAudio)
+    }
+
+    /// Checks a new file, and says how to check it once it's stored. `names` is the path's lowercased names,
+    /// relative to the root.
+    @discardableResult
+    func checkFile(_ names: [String], data: Data, path: FilePath) throws -> ReadBack {
+        if names.count == 3, profile.presetFolders.contains(names[0...1].joined(separator: "/")) {
+            return .preset(try checkPreset(names[2], data: data, path: path))
+        }
         switch names.count {
         case 3 where names[0] == "tapes":
             let name = names[2]
@@ -38,11 +52,30 @@ struct WriteRules {
                 throw FieldError(.notAllowed, path: path, reason: "mixdown holds only side_a.wav and side_b.wav")
             }
             _ = try checkWAV(data, format: profile.sideFormat, kind: "an album side", path: path)
-        case 3 where (names[0] == "synth" || names[0] == "drum") && names[1] == "user":
-            throw FieldError(.notAllowed, path: path, reason: "writing presets isn't supported yet")
         default:
-            throw FieldError(.notAllowed, path: path, reason: "FieldTapeKit writes only tape files and album sides")
+            throw FieldError(.notAllowed, path: path, reason: "FieldTapeKit writes only tape files, album sides and presets")
         }
+        return .exact
+    }
+
+    private func checkPreset(_ name: String, data: Data, path: FilePath) throws -> PCMAudio {
+        let base = (name as NSString).deletingPathExtension
+        guard profile.presetExtensions.contains((name as NSString).pathExtension),
+              !base.trimmingCharacters(in: .whitespaces).isEmpty else {
+            throw FieldError(.notAllowed, path: path, reason: "a preset's name ends in .aif, .aiff, .aifc or .wav")
+        }
+        let audio: PCMAudio
+        do {
+            audio = try PCMAudio(data)
+        } catch {
+            throw FieldError(.notAllowed, path: path, reason: "it isn't audio the OP-1 takes as a preset: \(error)")
+        }
+        guard profile.presetFormats.contains(audio.format) else {
+            let formats = profile.presetFormats.map(\.description).joined(separator: "; ")
+            throw FieldError(.notAllowed, path: path, reason: "a preset must be \(formats), not \(audio.format)")
+        }
+        guard audio.frames > 0 else { throw FieldError(.notAllowed, path: path, reason: "it has no audio") }
+        return audio
     }
 
     /// Checks a new folder, which can only be a tape, and its name.

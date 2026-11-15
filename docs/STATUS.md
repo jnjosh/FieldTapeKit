@@ -140,9 +140,17 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - The simulator now accepts SendObjectInfo and SendObject, refuses names a folder doesn't allow with 0x2002, refuses a full store with 0x200C, rebuilds `tape.json` after a track write with the old size still listed, and can corrupt a stored file or refuse a SendObject. How the OP-1 refuses a ninth tape isn't known; the simulator's 0x2002 is a guess, and FieldTapeKit refuses first anyway.
   - 205 tests pass on the Mac and the iOS simulator (133 FieldTapeKit, 67 FieldCheckKit, 5 conformance tests). FieldCheck builds for iOS devices.
 
+- **Step 9b is done, so step 9 is, tested only on the simulator.** Hardware checks it in step 11:
+  - `write` and `copyItem(at: URL, to: FilePath)` now write presets to `synth/user/` and `drum/user/`. The public API is unchanged.
+  - A preset must be 16-bit PCM, at 44.1 kHz mono or stereo, or 22,050 Hz mono, in WAV, AIFF or AIFC, with a name ending `.aif`, `.aiff`, `.aifc` or `.wav`. The OP-1 converts it to AIFC under the same name, so the read-back checks the audio: the same format, not empty, no longer, and the same samples as the start of what was sent. A shortened preset isn't reported (decided 2026-11-14, in ADR 0002's change log).
+  - Inside: `PCMAudio`, a reader for WAV, AIFF and AIFC that walks their chunks. It reads the probe's real files correctly: `applefly.aif` is 22,050 Hz mono, its copy has the same samples, and the converted WAV is exactly 882,000 stereo frames.
+  - The simulator converts what `synth/user/` and `drum/user/` receive to AIFC with `sowt`, cuts `drum/user/` to 20 seconds, and `corruptStored` now changes the last byte, so for a preset it's a sample.
+  - Unknown until step 11: what `synth/user/` does, and the format code the OP-1 reports for a converted file.
+  - 218 tests pass on the Mac and the iOS simulator (146 FieldTapeKit, 67 FieldCheckKit, 5 conformance tests).
+
 ## Next steps
 
-1. Step 9b: writing to preset folders.
+1. Step 10: replacing files.
 
 ## The OP-1 right now
 

@@ -57,8 +57,9 @@ public struct FieldError: Error, Sendable, LocalizedError {
         public static let isADirectory = Code("isADirectory")
         /// The file at `path` is bigger than a read into memory allows.
         public static let tooLarge = Code("tooLarge")
-        /// A copy didn't match what came from the OP-1 when it was read back, so it isn't a verified copy. Nothing
-        /// unverified is left behind.
+        /// A copy didn't match what came from the OP-1 when it was read back, so it isn't a verified copy, or a file
+        /// written to the OP-1 didn't read back as what was sent. Nothing unverified is left behind, unless `changed`
+        /// says so.
         public static let verificationFailed = Code("verificationFailed")
         /// A file on this device, not the OP-1, couldn't be written or read: a full disk, a missing folder, or no
         /// permission. `underlying` is the system's error, and `path` is the OP-1 file being copied.
@@ -120,7 +121,12 @@ public struct FieldError: Error, Sendable, LocalizedError {
         case .tooLarge:
             "On the OP-1, \(pathDescription) is too large to read into memory."
         case .verificationFailed:
-            "The copy of \(pathDescription) didn't match the OP-1's when it was read back."
+            if let reason {
+                // A write: what the OP-1 stored, read back, isn't what was sent.
+                "\(pathDescriptionCapitalized) didn't come out right on the OP-1: \(reason)."
+            } else {
+                "The copy of \(pathDescription) didn't match the OP-1's when it was read back."
+            }
         case .localFileFailed:
             if let underlying = underlying as? LocalizedError, let reason = underlying.errorDescription {
                 "Couldn't save the copy of \(pathDescription) on this device. \(reason)"

@@ -27,6 +27,12 @@ package struct FirmwareProfile: Sendable, Equatable {
     package let maximumTapeFrames: Int
     /// How many tapes the OP-1 holds.
     package let maximumTapes: Int
+    /// The folders that take presets and convert what they receive (`write.preset-converted`).
+    package let presetFolders: [String]
+    /// The extensions a preset's name may have, from the folders' `readme.txt`.
+    package let presetExtensions: Set<String>
+    /// The audio FieldTapeKit sends as a preset: what the OP-1 has been seen to keep sample for sample.
+    package let presetFormats: [WAVFormat]
 
     package static let v1_7_3 = FirmwareProfile(
         version: FirmwareVersion("1.7.3")!,
@@ -51,7 +57,16 @@ package struct FirmwareProfile: Sendable, Equatable {
         trackFormat: WAVFormat(encoding: WAVFormat.pcm, channels: 2, sampleRate: 44_100, bitsPerSample: 32),
         sideFormat: WAVFormat(encoding: WAVFormat.pcm, channels: 2, sampleRate: 44_100, bitsPerSample: 16),
         maximumTapeFrames: 6 * 60 * 44_100,
-        maximumTapes: 8)
+        maximumTapes: 8,
+        presetFolders: ["synth/user", "drum/user"],
+        presetExtensions: ["aif", "aiff", "aifc", "wav"],
+        // 44.1 kHz stereo from the probe's WAV write, 22,050 Hz mono from the OP-1's own preset applefly.aif
+        // (PROBE-NOTES.md, 2026-11-03 and 2026-11-05). 44.1 kHz mono is what the readme states.
+        presetFormats: [
+            WAVFormat(encoding: WAVFormat.pcm, channels: 1, sampleRate: 44_100, bitsPerSample: 16),
+            WAVFormat(encoding: WAVFormat.pcm, channels: 2, sampleRate: 44_100, bitsPerSample: 16),
+            WAVFormat(encoding: WAVFormat.pcm, channels: 1, sampleRate: 22_050, bitsPerSample: 16),
+        ])
 
     /// Every firmware this release has a baseline for, oldest first.
     static let tested: [FirmwareProfile] = [.v1_7_3]

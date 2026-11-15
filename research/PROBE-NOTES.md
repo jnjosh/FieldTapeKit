@@ -131,6 +131,8 @@ The first write test copied a preset. Results from that iPad run on 2026-11-03 (
 
 **The WRITE FAIL was the OP-1 editing the preset, not corruption.** `probe-copy.aif` was the same 62,012 bytes as `applefly.aif`, and the difference stayed the same across two reads. All 298 differing bytes are in the `op-1` JSON in the AIFF's `APPL` chunk, and the `SSND` audio is identical. The JSON changed in three ways: `name` went from `applefly` to `probe-copy`, `synth_version: 1` was removed, and `drum_version: 2` was added. The file stayed the same size because the chunk is padded.
 
+`applefly.aif` is 16-bit mono at 22,050 Hz, by its `COMM` chunk, so the OP-1's own presets aren't all 44.1 kHz (found while building step 9b, 2026-11-14).
+
 So the OP-1 reads presets it receives and normalizes them. For the real app:
 - Don't verify preset writes with a whole-file hash. Compare the audio and the metadata fields that should survive.
 - The filename sets the preset name, so renaming a file renames the preset.

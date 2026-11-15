@@ -222,6 +222,8 @@ Added by the owner on 2026-11-14.
 
 Decided by the owner at the same time, and recorded in ADR 0002's change log: a write that reads back wrong is deleted and reported, and audio is checked against the profile's formats before sending.
 
+Decided by the owner for 9b, and recorded in ADR 0002's change log: the read-back checks the samples, not only the length. A preset must be 16-bit PCM at 44.1 kHz mono or stereo, or 22,050 Hz mono. A shortened preset isn't reported, and `synth/user/` follows the same rules, checked in step 11.
+
 ### 10. Replacing files
 
 **Adds (public):** the two `ExistingFile` replace cases: `.replace(keepingCopyAt:)` and `.replace(confirmed:)`. Each is built from steps 8 and 9: a verified copy or a confirmation first, then delete, then send.
@@ -234,7 +236,7 @@ Decided by the owner at the same time, and recorded in ADR 0002's change log: a 
 
 **Adds:**
 - The scratch tape `fieldcheck #1-2`, with generated tones and a generated `tape.json`.
-- `drum/user/fieldcheck.wav`.
+- `drum/user/fieldcheck.wav` and `synth/user/fieldcheck.wav`. Nothing has been written to `synth/user/` yet, so its cap, if any, is unknown, and so is the format code the OP-1 reports for a converted file.
 - Free-space readings before and after.
 - The album checks, on an empty side only.
 - The long check, off unless asked for.

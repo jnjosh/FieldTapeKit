@@ -54,6 +54,11 @@ extension Data {
         Swift.withUnsafeBytes(of: value.littleEndian) { append(contentsOf: $0) }
     }
 
+    /// For AIFF, which is big-endian.
+    mutating func appendBigEndian<T: FixedWidthInteger>(_ value: T) {
+        Swift.withUnsafeBytes(of: value.bigEndian) { append(contentsOf: $0) }
+    }
+
     /// One-byte character count, including the terminator, then UTF-16LE. An empty string is a single zero.
     mutating func appendPTPString(_ string: String) {
         guard !string.isEmpty else { return append(0) }

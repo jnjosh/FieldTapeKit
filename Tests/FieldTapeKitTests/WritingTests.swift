@@ -91,9 +91,8 @@ import Testing
         ("tapes/2026-312#01/track_5.wav", "a tape holds only tape.json and track_1.wav to track_4.wav"),
         ("tapes/2026-312#01/readme.txt", "a tape holds only tape.json and track_1.wav to track_4.wav"),
         ("mixdown/side_c.wav", "mixdown holds only side_a.wav and side_b.wav"),
-        ("synth/user/pad.wav", "writing presets isn't supported yet"),
-        ("tapes/loose.wav", "FieldTapeKit writes only tape files and album sides"),
-        ("synth/slots/1/pad.aif", "FieldTapeKit writes only tape files and album sides"),
+        ("tapes/loose.wav", "FieldTapeKit writes only tape files, album sides and presets"),
+        ("synth/slots/1/pad.aif", "FieldTapeKit writes only tape files, album sides and presets"),
     ])
     func refusesWhatAFolderDoesntAllow(path: String, reason: String) async throws {
         let (device, simulator) = await Self.device()

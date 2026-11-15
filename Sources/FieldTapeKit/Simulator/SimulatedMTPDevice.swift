@@ -18,7 +18,8 @@ actor SimulatedMTPDevice: MTPTransport {
         case shortData(request: Int, keeping: Int)
         /// Deleting the object with this name is refused with this response code.
         case refuseDeleting(name: String, responseCode: UInt16)
-        /// The file with this name is stored with its first byte changed, so it reads back wrong.
+        /// The file with this name is stored with its last byte changed, so it reads back wrong. For a preset
+        /// that's a sample, after the conversion.
         case corruptStored(name: String)
         /// Every SendObject is refused with this response code, after its SendObjectInfo succeeded.
         case refuseSendObject(responseCode: UInt16)
@@ -325,14 +326,33 @@ actor SimulatedMTPDevice: MTPTransport {
         guard let handle = pending, var object = objects[handle] else { return (Data(), Response.noValidObjectInfo, []) }
         pending = nil
         for case .refuseSendObject(let responseCode) in faults { return (Data(), responseCode, []) }
-        var data = dataOut ?? Data()
+        var data = convertPreset(dataOut ?? Data(), named: object.name, in: object.parent)
         for case .corruptStored(let name) in faults where name == object.name && !data.isEmpty {
-            data[data.startIndex] ^= 0xFF
+            data[data.index(before: data.endIndex)] ^= 0xFF
         }
         object.data = data
         objects[handle] = object
         rebuildTapeJSON(afterWriting: object)
         return (Data(), Response.ok, [])
+    }
+
+    /// What `synth/user/` and `drum/user/` store for audio they receive: AIFC with `sowt`, the same samples, cut to
+    /// 20 seconds in `drum/user/` (`write.preset-converted`), with an `op-1` metadata chunk naming the preset after
+    /// the file. Anything that isn't audio is kept as it is, since what the OP-1 does then isn't known. Nor is
+    /// the format code it reports afterwards, so the one it was sent with is kept.
+    private func convertPreset(_ data: Data, named name: String, in parent: UInt32) -> Data {
+        guard let folder = objects[parent], folder.name.lowercased() == "user",
+              let kind = objects[folder.parent], kind.parent == Self.root,
+              ["synth", "drum"].contains(kind.name.lowercased()),
+              let audio = try? PCMAudio(data) else { return data }
+        var samples = audio.samples
+        if kind.name.lowercased() == "drum" {
+            samples = samples.prefix(20 * audio.format.sampleRate * audio.format.frameBytes)
+        }
+        let preset = (name as NSString).deletingPathExtension
+        let metadata = (try? JSONSerialization.data(withJSONObject: ["\(kind.name.lowercased())_version": 2, "name": preset],
+                                                    options: [.sortedKeys])) ?? Data()
+        return PCMAudio(container: .aifc, format: audio.format, samples: Data(samples)).aifcBytes(metadata: metadata)
     }
 
     /// After a track is written, the OP-1 rebuilds its tape's `tape.json`: one clip per track with audio, from frame 0

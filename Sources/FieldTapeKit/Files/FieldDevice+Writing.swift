@@ -23,6 +23,11 @@ public struct UploadOptions: Sendable {
 extension FieldDevice {
     /// Writes `data` as a new file at `path`, and returns it as the OP-1 lists it.
     ///
+    /// In `synth/user/` and `drum/user/` the OP-1 converts what it receives: it stores AIFC under the name it was
+    /// sent, `.wav` included, and may shorten it (to 20 seconds in `drum/user/`). The item returned is the file as
+    /// stored, and the read-back checks its audio instead of its bytes: the same format, and the same samples as
+    /// the start of what was sent. A preset must be 16-bit PCM, at 44.1 kHz mono or stereo or 22,050 Hz mono.
+    ///
     /// Everything is checked before anything is sent: the folder exists, nothing is at the path, the folder allows
     /// the name, and audio is in the format the OP-1 uses there (`WriteRules`). The name is sent lowercase, as the
     /// OP-1 stores names. If the send fails or is cancelled partway, the half-made file is deleted. If the file reads
@@ -104,7 +109,7 @@ extension FieldDevice {
             let newName = name.lowercased()
             let newPath = parent.path.appending(newName)
             let names = try Self.components(of: parent.path).map { $0.lowercased() } + [newName]
-            try WriteRules(profile: profile).checkFile(names, data: data, path: newPath)
+            let readBack = try WriteRules(profile: profile).checkFile(names, data: data, path: newPath)
             try Task.checkCancellation()
 
             let dataset = PTPObjectInfo.dataset(storageID: storageID, format: WriteRules.format(of: newName),
@@ -119,20 +124,35 @@ extension FieldDevice {
             progress?.complete(count: 1)
 
             if options.verify {
-                let readBack: Data
+                let stored: Data
                 do {
-                    readBack = try await session.object(handle)
+                    stored = try await session.object(handle)
                 } catch {
                     throw await cleanUp(handle, at: newPath, after: error)
                 }
-                guard SHA256.hash(data: readBack) == SHA256.hash(data: data) else {
-                    throw await cleanUp(handle, at: newPath, after: FieldError(.verificationFailed, path: newPath))
+                if let mismatch = Self.mismatch(stored, sent: data, as: readBack) {
+                    let error = FieldError(.verificationFailed, path: newPath, reason: mismatch)
+                    throw await cleanUp(handle, at: newPath, after: error)
                 }
                 progress?.complete(count: 1)
             }
             return FieldItem(path: newPath, info: try await session.objectInfo(handle))
         } catch {
             throw FieldError.wrapping(error, path: path)
+        }
+    }
+
+    /// Why the stored file doesn't match what was sent, or nil if it does.
+    private static func mismatch(_ stored: Data, sent: Data, as readBack: WriteRules.ReadBack) -> String? {
+        switch readBack {
+        case .exact:
+            return SHA256.hash(data: stored) == SHA256.hash(data: sent) ? nil : "it read back differently"
+        case .preset(let audio):
+            do {
+                return try PCMAudio(stored).mismatch(asStoredFrom: audio)
+            } catch {
+                return "what the OP-1 stored isn't audio: \(error)"
+            }
         }
     }
 
