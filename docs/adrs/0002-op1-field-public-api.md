@@ -643,3 +643,12 @@ These are possible later features, deliberately left out for now:
   - **A shortened preset isn't reported.** `write` returns the item as the OP-1 stored it, and the public API doesn't change. The file that was sent is untouched, so nothing is lost.
   - **`synth/user/` follows the same rules,** with no cap assumed. Nothing has been written there yet, so level 2 checks it on hardware.
   - Also settled while building it: a preset WAV's chunks are walked, so WAVs from other apps with extra chunks are accepted. The read-back would catch the OP-1 handling one differently. A write that reads back wrong now says why in its error.
+- **2026-11-14:** Decided by the owner while building step 10 of the plan, replacing files:
+  - **`.replace(keepingCopyAt:)` needs a free URL.** A taken one throws `localFileFailed` before anything changes, so the copy is always exactly where the caller said, and `write` still returns only the `FieldItem`. Unlike `removeItem(at:keepingCopyAt:)`, it never adds a number.
+  - **A replace with nothing at the path** writes the file as new. `.replace(keepingCopyAt:)` makes no copy. `.replace(confirmed:)` throws `changedSinceConfirmation`, because what the person confirmed is gone.
+  - **A replacement that reads back wrong is deleted,** as a new write is in 9a. The path is left empty, `changed` lists it, and the copy or the confirmation covers the old file.
+  - Also settled while building it:
+    - Everything is checked before the old file is deleted: the folder rules and formats, then the copy and its verification, or the confirmation.
+    - A confirmation must be for the same path, ignoring case, or it's `notAllowed`. It's used up when the delete is sent, as in `removeItem(_:)`. A folder at the path is `isADirectory`.
+    - Once the old file is deleted, cancelling no longer stops the write, so the path isn't left empty just because a task was cancelled. Any failure after the delete lists the path in `changed`.
+    - `ExistingFile` is a struct with `.fail` and two static `replace` functions, not an enum. Swift can't match two enum cases that share the name `replace` in a pattern. Callers write the same code as with an enum, but can't switch on it.

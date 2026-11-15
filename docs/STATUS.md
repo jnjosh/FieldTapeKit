@@ -148,9 +148,16 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - Unknown until step 11: what `synth/user/` does, and the format code the OP-1 reports for a converted file.
   - 218 tests pass on the Mac and the iOS simulator (146 FieldTapeKit, 67 FieldCheckKit, 5 conformance tests).
 
+- **Step 10 is done, tested only on the simulator.** Hardware checks it in step 11:
+  - `UploadOptions.existing` takes `.replace(keepingCopyAt:)` and `.replace(confirmed:)`, for `write` and `copyItem(at: URL, to: FilePath)`. Each checks the rules, then covers the old file with a verified copy or a confirmation, then deletes it and sends the new one.
+  - The copy's URL must be free (`localFileFailed`), so the copy is exactly there. With nothing at the path, the write goes ahead as new, though a confirmation for something that's gone is refused. A replacement that reads back wrong is deleted, and `changed` lists the path (decided 2026-11-14, in ADR 0002's change log).
+  - Once the old file is deleted, cancelling no longer stops the write. That isn't tested: the simulator has no way to cancel in the middle of a send.
+  - `ExistingFile` is now a struct with static members, because Swift can't match two enum cases both named `replace`. Callers write the same code.
+  - 232 tests pass on the Mac and the iOS simulator (160 FieldTapeKit, 67 FieldCheckKit, 5 conformance tests).
+
 ## Next steps
 
-1. Step 10: replacing files.
+1. Step 11: FieldCheck level 2, the first step that writes to the OP-1. It checks steps 8 to 10 on hardware, and needs one free tape slot.
 
 ## The OP-1 right now
 

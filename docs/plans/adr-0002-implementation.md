@@ -230,6 +230,8 @@ Decided by the owner for 9b, and recorded in ADR 0002's change log: the read-bac
 
 **Tests:** a failed copy changes nothing, a stale confirmation is refused, and a failure after the delete reports `changed`.
 
+Decided by the owner (2026-11-14), and recorded in ADR 0002's change log: the copy's URL must be free, a replace with nothing at the path writes the file as new, and a replacement that reads back wrong is deleted.
+
 **On the OP-1:** checked in step 11.
 
 ### 11. FieldCheck level 2 (ADR 0003)

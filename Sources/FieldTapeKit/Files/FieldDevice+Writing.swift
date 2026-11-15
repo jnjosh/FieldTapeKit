@@ -2,10 +2,29 @@ import CryptoKit
 import Foundation
 import System
 
-/// What a write does when its path is taken. Replacing comes in step 10 of the plan.
-public enum ExistingFile: Sendable, Hashable {
+/// What a write does when its path is taken. MTP can't replace a file in place, so replacing is delete, then send,
+/// and the file that's there is covered first by a verified copy or a person's confirmation (ADR 0002, safety rule 1).
+public struct ExistingFile: Sendable, Hashable {
+    enum Rule: Sendable, Hashable {
+        case fail
+        case keepingCopy(URL)
+        case confirmed(FileDeletion)
+    }
+
+    let rule: Rule
+
     /// Throw `alreadyExists` and change nothing.
-    case fail
+    public static let fail = ExistingFile(rule: .fail)
+
+    /// Copy the file that's there to `backup` and verify the copy, then replace it. `backup` must be free, so the
+    /// copy is exactly there: a taken one throws `localFileFailed` before anything changes. If nothing is at the
+    /// path, the write goes ahead and no copy is made.
+    public static func replace(keepingCopyAt backup: URL) -> ExistingFile { ExistingFile(rule: .keepingCopy(backup)) }
+
+    /// Replace the file a person confirmed losing, from `prepareToRemove(at:)` for the same path. The confirmation
+    /// is checked as `removeItem(_:)` checks one, and used up. If nothing is at the path any more, it's
+    /// `changedSinceConfirmation`.
+    public static func replace(confirmed deletion: FileDeletion) -> ExistingFile { ExistingFile(rule: .confirmed(deletion)) }
 }
 
 public struct UploadOptions: Sendable {
@@ -21,7 +40,8 @@ public struct UploadOptions: Sendable {
 }
 
 extension FieldDevice {
-    /// Writes `data` as a new file at `path`, and returns it as the OP-1 lists it.
+    /// Writes `data` as a new file at `path`, or over the file there as `options.existing` says, and returns it as
+    /// the OP-1 lists it.
     ///
     /// In `synth/user/` and `drum/user/` the OP-1 converts what it receives: it stores AIFC under the name it was
     /// sent, `.wav` included, and may shorten it (to 20 seconds in `drum/user/`). The item returned is the file as
@@ -34,9 +54,15 @@ extension FieldDevice {
     /// back differently, it's deleted and `verificationFailed` is thrown. Either way, `changed` lists the file only
     /// if it couldn't be deleted.
     ///
+    /// A replace checks all of that, and the copy or the confirmation, before deleting the old file. Once it's
+    /// deleted, cancelling no longer stops the write, so the path isn't left empty for that, and any failure after
+    /// the delete lists the path in `changed`: the old file is gone, and the copy or the confirmation covers it.
+    /// There's no automatic retry.
+    ///
     /// - Throws: `FieldError` with `.notFound` for a missing folder, `.notADirectory`, `.alreadyExists`,
-    ///   `.notAllowed`, `.tapeTooLong`, `.insufficientSpace`, `.verificationFailed`, `.disconnected`, `.timedOut` or
-    ///   `.deviceRefused`, or `CancellationError`.
+    ///   `.isADirectory` for a folder at the path, `.notAllowed`, `.tapeTooLong`, `.insufficientSpace`,
+    ///   `.verificationFailed`, `.changedSinceConfirmation`, `.confirmationAlreadyUsed`, `.localFileFailed` for the
+    ///   copy, `.disconnected`, `.timedOut` or `.deviceRefused`, or `CancellationError`.
     public func write(_ data: Data, to path: FilePath, options: UploadOptions = .init()) async throws -> FieldItem {
         try await send(data, to: path, options: options, progress: nil)
     }
@@ -103,43 +129,111 @@ extension FieldDevice {
         do {
             let (parent, name) = try await parentAndName(of: path)
             let siblings = try await children(of: parent)
-            switch options.existing {
-            case .fail: try Self.refuseIfTaken(name, in: siblings, parent: parent)
-            }
             let newName = name.lowercased()
             let newPath = parent.path.appending(newName)
+            let existing = siblings.first { $0.info.filename.lowercased() == newName }
+                .map { Located(handle: $0.handle, path: parent.path.appending($0.info.filename), info: $0.info) }
+            if case .fail = options.existing.rule, let existing {
+                throw FieldError(.alreadyExists, path: existing.path)
+            }
             let names = try Self.components(of: parent.path).map { $0.lowercased() } + [newName]
             let readBack = try WriteRules(profile: profile).checkFile(names, data: data, path: newPath)
+            try await coverReplacing(existing, at: newPath, as: options.existing.rule)
             try Task.checkCancellation()
 
-            let dataset = PTPObjectInfo.dataset(storageID: storageID, format: WriteRules.format(of: newName),
-                                                size: UInt32(data.count), parent: parent.handle, filename: newName)
-            let handle = try await session.sendObjectInfo(storage: storageID, parent: parent.handle, dataset: dataset)
+            guard let existing else {
+                return try await sendNew(data, parent: parent, at: newPath, readBack: readBack, verify: options.verify,
+                                         progress: progress)
+            }
+            if case .confirmed(let confirmation) = options.existing.rule { usedConfirmations.insert(confirmation.id) }
+            try await session.deleteObject(existing.handle)
+            // The old file is gone, so the write runs to the end whatever happens to the caller's task: an
+            // unstructured task isn't cancelled with it.
+            let send = Task {
+                try await sendNew(data, parent: parent, at: newPath, readBack: readBack, verify: options.verify,
+                                  progress: progress)
+            }
             do {
-                try Task.checkCancellation()
-                try await session.sendObject(data)
+                return try await send.value
             } catch {
-                throw await cleanUp(handle, at: newPath, after: error)
+                let wrapped = FieldError.wrapping(error, path: newPath)
+                guard let wrapped = wrapped as? FieldError else { throw wrapped }
+                throw wrapped.changed.contains(existing.path) ? wrapped : wrapped.adding(changed: [existing.path])
             }
-            progress?.complete(count: 1)
-
-            if options.verify {
-                let stored: Data
-                do {
-                    stored = try await session.object(handle)
-                } catch {
-                    throw await cleanUp(handle, at: newPath, after: error)
-                }
-                if let mismatch = Self.mismatch(stored, sent: data, as: readBack) {
-                    let error = FieldError(.verificationFailed, path: newPath, reason: mismatch)
-                    throw await cleanUp(handle, at: newPath, after: error)
-                }
-                progress?.complete(count: 1)
-            }
-            return FieldItem(path: newPath, info: try await session.objectInfo(handle))
         } catch {
             throw FieldError.wrapping(error, path: path)
         }
+    }
+
+    /// Checks that the file at the path is covered before it's replaced: copied and verified, or confirmed by a
+    /// person and unchanged since. Nothing on the OP-1 changes here.
+    private func coverReplacing(_ existing: Located?, at path: FilePath, as rule: ExistingFile.Rule) async throws {
+        switch rule {
+        case .fail:
+            return
+        case .keepingCopy(let backup):
+            guard let existing, let info = existing.info else { return }
+            guard !info.isFolder else { throw FieldError(.isADirectory, path: existing.path) }
+            if FileManager.default.fileExists(atPath: backup.path(percentEncoded: false)) {
+                throw FieldError(.localFileFailed, path: existing.path,
+                                 underlying: CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: backup.path]))
+            }
+            let copy = try await copyItem(at: existing.path, to: backup)
+            guard copy == backup else {
+                // The URL was taken after the check, so the copy went elsewhere and the caller wouldn't find it.
+                try? FileManager.default.removeItem(at: copy)
+                throw FieldError(.localFileFailed, path: existing.path,
+                                 underlying: CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: backup.path]))
+            }
+            // The copy is of the file as it was. If the OP-1 lists it differently now, the copy doesn't cover it.
+            guard let after = try await locate(existing.path), after.handle == existing.handle,
+                  after.info?.compressedSize == info.compressedSize else {
+                throw FieldError(.verificationFailed, path: existing.path)
+            }
+        case .confirmed(let confirmation):
+            let confirmed = confirmation.item.path
+            guard !usedConfirmations.contains(confirmation.id) else { throw FieldError(.confirmationAlreadyUsed, path: confirmed) }
+            guard confirmed.string.lowercased() == path.string.lowercased() else {
+                throw FieldError(.notAllowed, path: path, reason: "the confirmation is for \(confirmed)")
+            }
+            guard !confirmation.item.isDirectory else { throw FieldError(.isADirectory, path: confirmed) }
+            guard confirmation.deviceID == id, let existing, let info = existing.info,
+                  FieldItem(path: existing.path, info: info) == confirmation.item else {
+                throw FieldError(.changedSinceConfirmation, path: confirmed)
+            }
+        }
+    }
+
+    /// Sends a file to a path that's free, reads it back, and returns it. A file that doesn't come out right is
+    /// deleted, and `changed` lists it only if that fails.
+    private func sendNew(_ data: Data, parent: Located, at newPath: FilePath, readBack: WriteRules.ReadBack,
+                         verify: Bool, progress: ProgressManager?) async throws -> FieldItem {
+        let newName = newPath.lastComponent!.string
+        let dataset = PTPObjectInfo.dataset(storageID: storageID, format: WriteRules.format(of: newName),
+                                            size: UInt32(data.count), parent: parent.handle, filename: newName)
+        let handle = try await session.sendObjectInfo(storage: storageID, parent: parent.handle, dataset: dataset)
+        do {
+            try Task.checkCancellation()
+            try await session.sendObject(data)
+        } catch {
+            throw await cleanUp(handle, at: newPath, after: error)
+        }
+        progress?.complete(count: 1)
+
+        if verify {
+            let stored: Data
+            do {
+                stored = try await session.object(handle)
+            } catch {
+                throw await cleanUp(handle, at: newPath, after: error)
+            }
+            if let mismatch = Self.mismatch(stored, sent: data, as: readBack) {
+                let error = FieldError(.verificationFailed, path: newPath, reason: mismatch)
+                throw await cleanUp(handle, at: newPath, after: error)
+            }
+            progress?.complete(count: 1)
+        }
+        return FieldItem(path: newPath, info: try await session.objectInfo(handle))
     }
 
     /// Why the stored file doesn't match what was sent, or nil if it does.
