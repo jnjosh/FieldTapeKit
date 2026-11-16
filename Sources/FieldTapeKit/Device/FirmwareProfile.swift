@@ -25,6 +25,13 @@ package struct FirmwareProfile: Sendable, Equatable {
     package let sideFormat: WAVFormat
     /// The longest a tape can be, in frames: 6 minutes at 44.1 kHz.
     package let maximumTapeFrames: Int
+    /// The longest album side FieldTapeKit sends, in frames. The OP-1's own limit isn't known
+    /// (`album.side-limit`), so it's the tape's 6 minutes until FieldCheck finds it.
+    package let maximumSideFrames: Int
+    /// Whether FieldTapeKit writes album sides on this firmware. Not on 1.7.3: a side written over MTP, once the OP-1
+    /// has left MTP mode, hangs the OP-1 when it's written again, until it's restarted (`album.write-again`). Until
+    /// that's understood, album writing is off, and only reading and copying the album work.
+    package let albumWrites: Bool
     /// How many tapes the OP-1 holds.
     package let maximumTapes: Int
     /// The longest tape name the OP-1 keeps. A longer one is accepted over MTP, then cut to this length once the
@@ -60,6 +67,10 @@ package struct FirmwareProfile: Sendable, Equatable {
         trackFormat: WAVFormat(encoding: WAVFormat.pcm, channels: 2, sampleRate: 44_100, bitsPerSample: 32),
         sideFormat: WAVFormat(encoding: WAVFormat.pcm, channels: 2, sampleRate: 44_100, bitsPerSample: 16),
         maximumTapeFrames: 6 * 60 * 44_100,
+        maximumSideFrames: 6 * 60 * 44_100,
+        // Four side writes hung the OP-1 on 2026-11-16, each over a side written over MTP before a reconnect
+        // (PROBE-NOTES.md). Album writing is a future improvement, decided by the owner.
+        albumWrites: false,
         maximumTapes: 8,
         // FieldCheck's 15-character scratch tape came back cut to 12 after a reconnect (PROBE-NOTES.md, 2026-11-15).
         maximumTapeNameLength: 12,

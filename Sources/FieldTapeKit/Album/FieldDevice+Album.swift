@@ -34,7 +34,7 @@ extension FieldDevice {
     public func copySide(_ side: Album.Side, to folder: URL, progress: consuming Subprogress? = nil) async throws -> AlbumSideCopy {
         let path = FilePath.op1Mixdown.appending(side.fileName)
         do {
-            let (album, handles) = try await listAlbum()
+            let (album, files) = try await listAlbum()
             let listed = album[side]
             try Self.checkCopyable(listed)
             var manager: ProgressManager?
@@ -42,7 +42,7 @@ extension FieldDevice {
             case .some(let progress): manager = progress.start(totalCount: listed.size)
             case .none: break
             }
-            return try await copy(listed, handle: handles[side]!, to: folder, progress: manager)
+            return try await copy(listed, handle: files[side]!.handle, to: folder, progress: manager)
         } catch {
             throw FieldError.wrapping(error, path: path)
         }
@@ -59,7 +59,7 @@ extension FieldDevice {
     public func copyAlbum(to folder: URL, progress: consuming Subprogress? = nil) async throws -> [AlbumSideCopy] {
         var copies: [AlbumSideCopy] = []
         do {
-            let (album, handles) = try await listAlbum()
+            let (album, files) = try await listAlbum()
             let recorded = album.sides.filter { !$0.isEmpty }
             for side in recorded { try Self.checkCopyable(side) }
             var manager: ProgressManager?
@@ -69,7 +69,7 @@ extension FieldDevice {
             }
             for side in recorded {
                 do {
-                    copies.append(try await copy(side, handle: handles[side.side]!, to: folder, progress: manager))
+                    copies.append(try await copy(side, handle: files[side.side]!.handle, to: folder, progress: manager))
                 } catch {
                     throw FieldError.wrapping(error, path: side.path)
                 }
@@ -90,8 +90,8 @@ extension FieldDevice {
     public func side(_ side: Album.Side, matches copy: AlbumSideCopy) async throws -> Bool {
         let path = FilePath.op1Mixdown.appending(side.fileName)
         do {
-            let (album, handles) = try await listAlbum()
-            guard let handle = handles[side], album[side].size == copy.size else { return false }
+            let (album, files) = try await listAlbum()
+            guard let handle = files[side]?.handle, album[side].size == copy.size else { return false }
             try Task.checkCancellation()
             let data = try await session.object(handle)
             guard data.count == copy.size else {
@@ -105,12 +105,12 @@ extension FieldDevice {
 
     // MARK: Helpers
 
-    /// The album from a fresh listing of `mixdown/`, and the handle of each side's file, where there is one.
-    private func listAlbum() async throws -> (album: Album, handles: [Album.Side: UInt32]) {
+    /// The album from a fresh listing of `mixdown/`, and each side's file, where there is one.
+    func listAlbum() async throws -> (album: Album, files: [Album.Side: (handle: UInt32, item: FieldItem)]) {
         guard let folder = try await locate(.op1Mixdown), folder.isDirectory else { throw FieldError(.notFound, path: .op1Mixdown) }
         let children = try await children(of: folder)
         var sides: [Album.Side: AlbumSide] = [:]
-        var handles: [Album.Side: UInt32] = [:]
+        var files: [Album.Side: (handle: UInt32, item: FieldItem)] = [:]
         for side in Album.Side.allCases {
             try Task.checkCancellation()
             let path = folder.path.appending(side.fileName)
@@ -127,9 +127,9 @@ extension FieldDevice {
             let start = size > 0 ? try await session.partialObject(child.handle, offset: 0, maxLength: UInt32(min(size, WAVHeader.size))) : Data()
             let (format, problems) = sideProblems(header: start, size: size)
             sides[side] = AlbumSide(side: side, path: listedPath, size: size, format: format, problems: problems)
-            handles[side] = child.handle
+            files[side] = (child.handle, FieldItem(path: listedPath, info: child.info))
         }
-        return (Album(a: sides[.a]!, b: sides[.b]!), handles)
+        return (Album(a: sides[.a]!, b: sides[.b]!), files)
     }
 
     /// A side's format and problems, from the start of its file and its size.

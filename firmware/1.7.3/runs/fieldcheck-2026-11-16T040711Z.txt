@@ -1,0 +1,120 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.48] Watching for an OP-1 in MTP mode
+[   8.07] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[   8.07] Storage: 6429185024 bytes, 6289325056 free
+[   8.24] Side B holds FieldCheck's tone. Level 2's copy is level2-2026-11-16T035851Z/side_b before level 2.wav, 3,992,876 bytes, SHA-256 9204518b5ef84a37dcf171ed29082a1261933c625d355ea925b7ab5f361a97aa
+[  23.31] Putting Side B back from level2-2026-11-16T035851Z/side_b before level 2.wav
+[  60.57]   Checking mixdown/side_b.wav holds FieldCheck's tone
+[  60.57]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  60.57]   ← getObjectHandles 0x2001, 20 bytes in, 4 ms
+[  60.57]   → getObjectInfo 0x1
+[  60.57]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  60.57]   → getObjectInfo 0x16
+[  60.57]   ← getObjectInfo 0x2001, 130 bytes in, 1 ms
+[  60.57]   → getObjectInfo 0x2B
+[  60.57]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  60.57]   → getObjectInfo 0x41
+[  60.57]   ← getObjectInfo 0x2001, 136 bytes in, 1 ms
+[  60.57]   → getObjectHandles 0xFFFFFFFF 0x0 0x41
+[  60.57]   ← getObjectHandles 0x2001, 16 bytes in, 1 ms
+[  60.57]   → getObjectInfo 0x42
+[  60.57]   ← getObjectInfo 0x2001, 142 bytes in, 0 ms
+[  60.57]   → getObjectInfo 0x43
+[  60.57]   ← getObjectInfo 0x2001, 142 bytes in, 0 ms
+[  60.57]   → getObjectInfo 0x44
+[  60.57]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  60.57]   → getPartialObject 0x42 0x0 0x2C
+[  60.58]   ← getPartialObject 0x2001, 44 bytes in, 9 ms
+[  60.58]   → getPartialObject 0x43 0x0 0x2C
+[  60.58]   ← getPartialObject 0x2001, 44 bytes in, 6 ms
+[  60.58]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  60.58]   ← getObjectHandles 0x2001, 20 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x1
+[  60.58]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x16
+[  60.58]   ← getObjectInfo 0x2001, 130 bytes in, 0 ms
+[  60.58]   → getObjectInfo 0x2B
+[  60.58]   ← getObjectInfo 0x2001, 132 bytes in, 0 ms
+[  60.58]   → getObjectInfo 0x41
+[  60.58]   ← getObjectInfo 0x2001, 136 bytes in, 0 ms
+[  60.58]   → getObjectHandles 0xFFFFFFFF 0x0 0x41
+[  60.58]   ← getObjectHandles 0x2001, 16 bytes in, 0 ms
+[  60.58]   → getObjectInfo 0x42
+[  60.58]   ← getObjectInfo 0x2001, 142 bytes in, 0 ms
+[  60.58]   → getObjectInfo 0x43
+[  60.58]   ← getObjectInfo 0x2001, 142 bytes in, 0 ms
+[  60.58]   → getObjectInfo 0x44
+[  60.58]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  60.58]   → getObject 0x43
+[  60.58]   ← getObject 0x2001, 352844 bytes in, 26 ms
+[  60.58]   Confirming mixdown/side_b.wav
+[  60.58]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  60.58]   ← getObjectHandles 0x2001, 20 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x1
+[  60.58]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x16
+[  60.58]   ← getObjectInfo 0x2001, 130 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x2B
+[  60.58]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x41
+[  60.58]   ← getObjectInfo 0x2001, 136 bytes in, 1 ms
+[  60.58]   → getObjectHandles 0xFFFFFFFF 0x0 0x41
+[  60.58]   ← getObjectHandles 0x2001, 16 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x42
+[  60.58]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x43
+[  60.58]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x44
+[  60.58]   ← getObjectInfo 0x2001, 142 bytes in, 0 ms
+[  60.58]   → getPartialObject 0x42 0x0 0x2C
+[  60.58]   ← getPartialObject 0x2001, 44 bytes in, 5 ms
+[  60.58]   → getPartialObject 0x43 0x0 0x2C
+[  60.58]   ← getPartialObject 0x2001, 44 bytes in, 5 ms
+[  60.58]   Restoring mixdown/side_b.wav from level2-2026-11-16T035851Z/side_b before level 2.wav
+[  60.58]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  60.58]   ← getObjectHandles 0x2001, 20 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x1
+[  60.58]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x16
+[  60.58]   ← getObjectInfo 0x2001, 130 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x2B
+[  60.58]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x41
+[  60.58]   ← getObjectInfo 0x2001, 136 bytes in, 0 ms
+[  60.58]   → getObjectHandles 0xFFFFFFFF 0x0 0x41
+[  60.58]   ← getObjectHandles 0x2001, 16 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x42
+[  60.58]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x43
+[  60.58]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x44
+[  60.58]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  60.58]   → getPartialObject 0x42 0x0 0x2C
+[  60.58]   ← getPartialObject 0x2001, 44 bytes in, 5 ms
+[  60.58]   → getPartialObject 0x43 0x0 0x2C
+[  60.58]   ← getPartialObject 0x2001, 44 bytes in, 7 ms
+[  60.58]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  60.58]   ← getObjectHandles 0x2001, 20 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x1
+[  60.58]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  60.58]   → getObjectInfo 0x16
+[  60.58]   ← getObjectInfo 0x2001, 130 bytes in, 0 ms
+[  60.59]   → getObjectInfo 0x2B
+[  60.59]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  60.59]   → getObjectInfo 0x41
+[  60.59]   ← getObjectInfo 0x2001, 136 bytes in, 1 ms
+[  60.59]   → getObjectHandles 0xFFFFFFFF 0x0 0x41
+[  60.59]   ← getObjectHandles 0x2001, 16 bytes in, 1 ms
+[  60.59]   → getObjectInfo 0x42
+[  60.59]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  60.59]   → getObjectInfo 0x43
+[  60.59]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  60.59]   → getObjectInfo 0x44
+[  60.59]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  60.59]   → deleteObject 0x43 0x0
+[  60.59]   ← deleteObject 0x2001, 0 bytes in, 3 ms
+[  60.59]   → sendObjectInfo 0x10001 0x41, 78 bytes out
+[  60.59]   ✕ sendObjectInfo: no answer after 30.0 seconds
+[  60.59]     a GetDeviceInfo ping got no answer in 5.0 seconds either
+[  60.59] Not put back: Putting mixdown/side_b.wav back stopped: The OP-1 is no longer connected. Changed: mixdown/side_b.wav. The copy is kept.
+[  86.85] Disconnected

@@ -28,6 +28,9 @@ actor SimulatedMTPDevice: MTPTransport {
         case changeAfterReading(name: String, to: Data, reads: Int = 1)
         /// GetObject for the file with this name comes back a byte short, once.
         case shortRead(name: String)
+        /// After a reconnect, both album sides are the OP-1's own again, whatever was written to them over MTP. It's
+        /// one answer to `album.write-kept`, which isn't known yet. Without it, a written side lasts.
+        case albumKeepsItsOwn
     }
 
     struct Object: Sendable {
@@ -71,6 +74,9 @@ actor SimulatedMTPDevice: MTPTransport {
     private(set) var sentNames: [String] = []
     /// The file SendObjectInfo announced, waiting for its SendObject.
     private var pending: UInt32?
+    /// The album as the OP-1 itself holds it, by side name. A side deleted over MTP is back from it after a
+    /// reconnect, as the owner saw on 1.7.3 (PROBE-NOTES.md, 2026-11-16).
+    private var album: [String: Data] = [:]
 
     /// Free space when it was made, before any later `addFile`.
     let initialFreeSpace: UInt64
@@ -102,6 +108,11 @@ actor SimulatedMTPDevice: MTPTransport {
         lay(contents, in: Self.root)
         self.objects = objects
         self.nextHandle = nextHandle
+        for side in Self.sideNames {
+            if let object = objects.values.first(where: { $0.name == side && objects[$0.parent]?.name == "mixdown" }) {
+                album[side] = object.data
+            }
+        }
         let used = objects.values.reduce(UInt64(0)) { $0 + UInt64($1.data.count) }
         initialFreeSpace = capacity - min(used, capacity)
     }
@@ -147,6 +158,7 @@ actor SimulatedMTPDevice: MTPTransport {
         guard let handle = objects.first(where: { $0.value.name == name && objects[$0.value.parent]?.name == folder })?.key
         else { return }
         replace(handle, with: data)
+        if folder == "mixdown", Self.sideNames.contains(name) { album[name] = data }
     }
 
     func add(faults more: [Fault]) {
@@ -157,7 +169,10 @@ actor SimulatedMTPDevice: MTPTransport {
     /// lowercase, a tape's name is cut to 12 characters, a tape made over MTP gets a `readme.txt`, every object gets a
     /// new handle, and files list at their real size again (`reconnect.renamed`, `names.maximum`,
     /// `reconnect.handles`, `rebuild.stale-size`; PROBE-NOTES.md, 2026-11-08 and 2026-11-15). What happens when two
-    /// cut names collide isn't known, so the simulator leaves both. Make a new `FieldDevice` on it afterwards, as a
+    /// cut names collide isn't known, so the simulator leaves both. An album side deleted over MTP is back, as the
+    /// OP-1 last had it (PROBE-NOTES.md, 2026-11-16). A side written over MTP lasts, unless `albumKeepsItsOwn` says
+    /// otherwise (`album.write-kept`). The hang when such a side is written again (`album.write-again`) isn't
+    /// modeled, since what causes it isn't known. Make a new `FieldDevice` on it afterwards, as a
     /// real reconnect does.
     func leaveAndReenterMTPMode() {
         var handles: [UInt32: UInt32] = [Self.root: Self.root]
@@ -174,6 +189,22 @@ actor SimulatedMTPDevice: MTPTransport {
         }
         objects = renumbered
         pending = nil
+        if let mixdown = objects.first(where: { $0.value.parent == Self.root && $0.value.name == "mixdown" })?.key {
+            let keepsItsOwn = faults.contains { if case .albumKeepsItsOwn = $0 { true } else { false } }
+            for side in Self.sideNames {
+                let handle = objects.first { $0.value.parent == mixdown && $0.value.name == side }?.key
+                switch (handle, album[side]) {
+                case (nil, let own?):
+                    addFile(side, data: own, in: mixdown)
+                case (let handle?, let own?) where keepsItsOwn:
+                    replace(handle, with: own)
+                case (let handle?, _):
+                    album[side] = objects[handle]!.data
+                case (nil, nil):
+                    break
+                }
+            }
+        }
         if let tapes = tapesFolder {
             let folders = objects.filter { $0.value.parent == tapes && $0.value.format == PTPObjectFormat.association }.keys
             let limit = FirmwareProfile.v1_7_3.maximumTapeNameLength
@@ -349,6 +380,8 @@ actor SimulatedMTPDevice: MTPTransport {
     // MARK: Writing, as 1.7.3 does
 
     /// Folders that hold tapes, by handle: the folder named `tapes` at the root.
+    static let sideNames = ["side_a.wav", "side_b.wav"]
+
     private var tapesFolder: UInt32? {
         objects.first { $0.value.parent == Self.root && $0.value.name.lowercased() == "tapes" }?.key
     }
@@ -400,6 +433,8 @@ actor SimulatedMTPDevice: MTPTransport {
         }
         object.data = data
         objects[handle] = object
+        let keepsItsOwn = faults.contains { if case .albumKeepsItsOwn = $0 { true } else { false } }
+        if !keepsItsOwn, objects[object.parent]?.name == "mixdown", Self.sideNames.contains(object.name) { album[object.name] = data }
         rebuildTapeJSON(afterWriting: object)
         return (Data(), Response.ok, [])
     }

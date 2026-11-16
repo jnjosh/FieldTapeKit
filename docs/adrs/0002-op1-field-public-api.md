@@ -404,26 +404,26 @@ public struct AlbumSideCopy: Sendable, Hashable, Codable {   // an app can store
     var copiedAt: Date
 }
 
-public enum SideConflict: Sendable {
-    case fail                               // default: .alreadyExists if the side has audio
-    case replace(copyingExistingTo: URL)    // copy and verify the side first
-    case replace(confirmed: SideReplacement)
+public struct SideConflict: Sendable, Hashable {   // a struct, as TapeConflict is
+    static let fail                                                  // default: .alreadyExists if the side has audio
+    static func replace(copyingExistingTo copy: URL) -> SideConflict // copy and verify the side first, to exactly that URL
+    static func replace(confirmed: SideReplacement) -> SideConflict
 }
 
-public struct SideReplacement: Sendable, Identifiable {
+public struct SideReplacement: Sendable, Hashable, Identifiable {
     let id: UUID
     let side: AlbumSide                // as read fresh by prepareToReplace
     var audio: Duration                // how much audio would be lost
     var losesNothing: Bool             // the side is empty: safe to skip the prompt
-    // Internal: a fingerprint of the side's size, and the device it belongs to
+    // Internal: the device it belongs to. The side as listed is its fingerprint.
 }
 ```
 
 - **Copies are plain WAV files,** not archives. A side is one file with no metadata of its own, so a WAV is the most natural thing to hand an app or a person. Copies are named for the side and the date, such as `Side A 2026-11-08.wav`. As with archives, a copy never overwrites a local file: if the name is taken, a number is added.
 - **Sides change, so copies remember what they copied.** `AlbumSideCopy` records the size and SHA-256 of what came off the OP-1. `side(_:matches:)` compares the size first, and reads the side again only when the sizes are equal. That lets an app show "recorded since your last copy" or skip a copy it already has.
 - **An empty side is skipped.** `copyAlbum` copies only sides with audio. `copySide` on an empty side throws `.notFound`, because there's nothing to copy.
-- **Restoring follows the same safety rules as tapes** (section 6). Writing over a side that has audio needs either a verified copy of it or a person's confirmation, through `prepareToReplace`. An empty side can be written to freely. Before sending, FieldTapeKit checks the file is a 44.1 kHz WAV, as the readme requires.
-- **What the probe showed:** reading and writing a side back byte for byte worked on 1.7.3. Writing a side in a different format from the one the OP-1 records, and what the OP-1 does with a side written while it's playing the album, are untested. FieldCheck should cover both (ADR 0003).
+- **Restoring follows the same safety rules as tapes** (section 6). Writing over a side that has audio needs either a verified copy of it or a person's confirmation, through `prepareToReplace`. An empty side can be written to freely. **Album writing is off on 1.7.3** (2026-11-16, Change Log): `restoreSide` and writes to the sides refuse with `notAllowed`. A side written over MTP hung the OP-1 when it was written again after a reconnect, until it was restarted (`album.write-again`). Reading and copying the album work. Writing it again is a future improvement. Before sending, FieldTapeKit checks the file is a 44.1 kHz WAV, as the readme requires.
+- **What the probe showed:** reading and writing a side back byte for byte worked on 1.7.3, within one session. A side deleted over MTP came back after a reconnect, but a side written over MTP lasts (FieldCheck levels 2 and 3, 2026-11-16, `album.write-kept`). Putting a side back right after hung once, which is being traced. Writing a side in a different format from the one the OP-1 records, and what the OP-1 does with a side written while it's playing the album, are untested. FieldCheck should cover both (ADR 0003).
 - **No erasing.** Whether deleting a side file is safe, or whether the OP-1 recreates it, is untested, so there's no call for it. Restoring from a short silent WAV does the same job.
 
 ### 6. Safety rules
@@ -652,6 +652,19 @@ These are possible later features, deliberately left out for now:
   - **`synth/user/` follows the same rules,** with no cap assumed. Nothing has been written there yet, so level 2 checks it on hardware.
 - **2026-11-15:** FieldCheck's first level 2 run (PROBE-NOTES.md) found that **`synth/user/` keeps 6 seconds**, where `drum/user/` keeps 20, and that **a converted preset keeps the format code it was sent with:** a WAV stored as AIFC is still listed as WAV. Neither changes a decision. A shortened preset was already allowed, and nothing in FieldTapeKit depends on a cap, which only the simulator models. But `FieldFormat` in a preset folder says what was sent, not what's stored, unlike the 2026-11-14 entry's reasoning for reading it from the format code. Its documentation says so now.
   - Also settled while building it: a preset WAV's chunks are walked, so WAVs from other apps with extra chunks are accepted. The read-back would catch the OP-1 handling one differently. A write that reads back wrong now says why in its error.
+- **2026-11-16:** Decided by the owner while building step 21 of the plan, restoring album sides:
+  - **Only a WAV in the OP-1's own layout and format is restored,** byte for byte: the 44-byte header, 16-bit stereo PCM at 44.1 kHz, matching its size, such as `copySide`'s copies. A WAV from another app with other chunks, or another format, is `notAllowed`. Rewriting it to the OP-1's layout was rejected for now: what's on the OP-1 would differ from the file, and `album.write-other-format` is still unknown.
+  - **A side over 6 minutes is refused with `tapeTooLong`.** The OP-1's own limit for a side hasn't been observed, so this is the tape's limit, kept in the firmware profile as `maximumSideFrames`, and a new expectation, `album.side-limit`, records that it's unknown. The file layer refuses it too.
+  - **A failure after the old side is deleted stops and reports,** as safety rule 6 says. Nothing more is written, so the side's file may be missing, and `changed` lists it. A half-made file from a refused send is still deleted, as for any write. Putting an empty side back automatically was rejected: it's another write after a failure, and whether the OP-1 minds a missing side is untested.
+  - Also settled while building it:
+    - `restoreSide` reads the file, checks it, then covers the side, and writes it with the file layer's replace, so a side gets the same checks again, delete, send, byte-for-byte read-back and `changed` as any file. Once the old side is deleted, cancelling no longer stops it.
+    - An empty side, or a missing one, is written over whatever `conflict` says, and isn't copied, since nothing is lost.
+    - `.replace(copyingExistingTo:)` copies to exactly that URL, which must be free, as `.replace(keepingCopyAt:)` does, and the copy is kept even if the restore fails.
+    - A `SideReplacement` is refused if it's used, from another connection, for the other side (`notAllowed`), or the side as listed now differs. It's used up when the old side is deleted, so one cancelled before that still works.
+    - `SideConflict` is a struct, as `TapeConflict` is.
+  - **Whether a written side lasts isn't known, so step 21 waits for the OP-1.** The owner found the OP-1 can't empty a side, and that a side deleted over MTP came back after a reconnect (PROBE-NOTES.md). If the OP-1 rebuilds `mixdown/` from its own album, `restoreSide` would seem to work and change nothing. FieldCheck checks it across levels 2 and 3 (`album.write-kept`, ADR 0003), and step 21 isn't committed or tagged until that run shows whether `restoreSide` stays as it is, gets a warning, or is removed for 1.7.3. An in-session check in the conformance suite was dropped, since it can't show this.
+    - **The first run answered it: a written side lasts** on 1.7.3 (PROBE-NOTES.md, 2026-11-16), so `restoreSide` stays as it is. But putting side B back in level 3 hung, so step 21 still waits until a side can be put back on the OP-1, with every MTP request traced.
+  - **Album writing is off on 1.7.3, as a future improvement,** decided by the owner. A rule that a side can't grow was tried first: three hangs had each written a side longer than the one it replaced. Then level 3 put side B back at exactly the same length, and that hung too. What fits all four hangs is a side written over MTP in an earlier connection; every side write that worked went over a side recorded on the OP-1 (PROBE-NOTES.md). The owner's app needs only to read and copy the album. So `FirmwareProfile.albumWrites` is false on 1.7.3, and `restoreSide`, and the file layer's writes to `side_a.wav` and `side_b.wav`, throw `notAllowed` before anything changes. `restoreSide`'s code and tests stay, through a package-only override that FieldCheck uses to put back a side it overwrote. The growth rule's refusal is removed, and `album.side-grow` is replaced by `album.write-again`, which records the hang. Rewriting it to refuse only an MTP-written side was rejected for now: FieldTapeKit can't tell such a side apart yet.
 - **2026-11-16:** Decided by the owner while building step 20 of the plan, reading and copying the album:
   - **A side's copy is named for the day it was copied,** in the device's time zone, such as `Side A 2026-11-16.wav`, and a taken name gets a number. The date the OP-1 reports for the file was rejected for now: whether its clock and MTP dates can be trusted isn't checked.
   - **A side that isn't sound is listed with its `problems`,** as a tape is: a missing file, a header that can't be read or doesn't match the file's size, or another format than 16-bit stereo PCM at 44.1 kHz. `album()` still lists both sides, and `copySide` refuses that side with `notAllowed`. So `AlbumSide.format` is optional, nil when the header can't be read.

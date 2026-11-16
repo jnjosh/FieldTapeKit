@@ -5,14 +5,25 @@ import Testing
 @testable import FieldTapeKit
 
 @Suite struct LevelThreeTests {
-    /// A clean level 2 run on a simulated 1.7.3, and the level 3 it leaves.
-    static func afterLevelTwo(_ faults: [SimulatedMTPDevice.Fault] = []) async throws
+    /// A clean level 2 run on a simulated 1.7.3, and the level 3 it leaves. Level 2's folder is left for level 3,
+    /// in the temporary directory, which `files` is.
+    /// `writesAlbum` lets album writing through, which 1.7.3 has off (`album.write-again`), so the album checks can
+    /// be tested. Level 3 then lets it through on its new connection too.
+    static func afterLevelTwo(_ faults: [SimulatedMTPDevice.Fault] = [], album: [PendingNode] = LevelTwoTests.defaultAlbum,
+                              writesAlbum: Bool = false) async throws
         -> (FieldDevice, SimulatedMTPDevice, CheckReport, LevelThree.Pending?) {
-        let (device, simulator) = LevelTwoTests.device(faults)
+        let (device, simulator) = LevelTwoTests.device(faults, album: album)
+        await device.overrideAlbumWrites(writesAlbum)
         let workspace = try LevelTwoTests.workspace()
-        defer { try? FileManager.default.removeItem(at: workspace) }
         let report = await LevelTwoTests.run(device, in: workspace)
-        return (device, simulator, report, await LevelThree.pending(after: report, on: device))
+        return (device, simulator, report, await LevelThree.pending(after: report, on: device, workspace: workspace))
+    }
+
+    static let files = FileManager.default.temporaryDirectory
+
+    static func run(_ device: FieldDevice, _ pending: LevelThree.Pending) async -> CheckReport {
+        await device.overrideAlbumWrites(pending.album != nil)
+        return await LevelThree.run(on: device, pending: pending, files: files, host: LevelOneTests.host)
     }
 
     static let expectations = ["reconnect.handles", "names.maximum", "reconnect.renamed", "reconnect.kept",
@@ -29,7 +40,7 @@ import Testing
         await simulator.leaveAndReenterMTPMode()
         let device = FieldDevice.simulated(simulator)
         #expect(await LevelThree.refusal(on: device, pending: saved) == nil)
-        let report = await LevelThree.run(on: device, pending: saved, host: LevelOneTests.host)
+        let report = await Self.run(device, saved)
         #expect(report.level == 3)
         #expect(report.results.map(\.expectation) == Self.expectations)
         for result in report.results { #expect(result.outcome == .pass, "\(result.expectation): \(result.summary)") }
@@ -44,6 +55,8 @@ import Testing
         #expect(summaries["delete.folder-with-files"] == "One DeleteObject on the folder deleted it and its 6 files.")
         #expect(summaries["delete.files-then-folder"] == "Deleted fieldck #2-1's 6 files, each tape's files and then its "
                 + "folder, and it's gone.")
+        #expect(saved.album == nil, "album writing is off on 1.7.3")
+        #expect(try await device.contents(of: "mixdown/side_b.wav") == LevelTwoTests.sideB, "side B isn't touched")
         for tape in LevelTwo.tapes { #expect(try await !device.fileExists(at: tape)) }
     }
 
@@ -53,7 +66,7 @@ import Testing
         await simulator.leaveAndReenterMTPMode()
         await simulator.add(faults: [.refuseDeleting(name: "fieldck #1-2", responseCode: PTPResponseCode.generalError)])
         let device = FieldDevice.simulated(simulator)
-        let report = await LevelThree.run(on: device, pending: saved, host: LevelOneTests.host)
+        let report = await Self.run(device, saved)
         #expect(report.results[4].outcome == .pass)
         #expect(report.results[4].summary == "DeleteObject on the folder, with its 6 files in it, was refused with 0x2002, "
                 + "and nothing was deleted. So the files go first.")
@@ -68,6 +81,7 @@ import Testing
         let reloaded = try LevelThree.Pending(json: try saved.jsonData())
         #expect(reloaded.connection == nil)
         #expect(reloaded.handles == saved.handles && reloaded.serialNumber == saved.serialNumber)
+        #expect(reloaded.album == saved.album)
     }
 
     // MARK: Before it starts
@@ -84,15 +98,15 @@ import Testing
         await simulator.leaveAndReenterMTPMode()
         let device = FieldDevice.simulated(simulator)
         saved = LevelThree.Pending(serialNumber: "OTHER", levelTwoStarted: saved.levelTwoStarted, handles: saved.handles,
-                                   connection: nil)
+                                   album: nil, connection: nil)
         #expect(await LevelThree.refusal(on: device, pending: saved)?.description
                 == "Level 3 is waiting for the OP-1 with serial OTHER, not SIMULATED.")
         #expect(await LevelThree.refusal(on: device, pending: saved)?.endsLevelThree == false)
 
         _ = await LevelTwo.deleteLeftovers(on: device)
         let mine = LevelThree.Pending(serialNumber: "SIMULATED", levelTwoStarted: saved.levelTwoStarted, handles: saved.handles,
-                                      connection: nil)
-        let report = await LevelThree.run(on: device, pending: mine, host: LevelOneTests.host)
+                                      album: nil, connection: nil)
+        let report = await Self.run(device, mine)
         #expect(report.results.allSatisfy {
             $0.outcome == .notRun && $0.summary == "The scratch tape fieldck #1-2 isn't on the OP-1 any more, so there's nothing "
                 + "for level 3 to check. tapes/ holds: nothing."
@@ -105,11 +119,83 @@ import Testing
         let (_, simulator, _, pending) = try await Self.afterLevelTwo()
         var saved = try #require(pending)
         saved.connection = nil
-        let report = await LevelThree.run(on: FieldDevice.simulated(simulator), pending: saved, host: LevelOneTests.host)
+        let report = await Self.run(FieldDevice.simulated(simulator), saved)
         #expect(report.results[0].outcome == .fail)
         #expect(report.results[0].summary.hasPrefix("All 6 of the scratch tape's objects kept their handles."))
         #expect(report.results.dropFirst().allSatisfy { $0.outcome == .notRun })
         #expect(try await FieldDevice.simulated(simulator).fileExists(at: LevelTwo.scratchTape))
+    }
+
+    // MARK: The album
+
+    static let sideB = WAVHeader.bytes(format: FirmwareProfile.v1_7_3.sideFormat, dataBytes: 4 * 44_100)
+        + Data(repeating: 7, count: 4 * 44_100)
+    static let recorded: [PendingNode] = [.file("side_a.wav", .silence(seconds: 1)), .file("side_b.wav", .data(sideB))]
+
+    @Test func sideBIsPutBackWhenTheToneLasted() async throws {
+        let (_, simulator, _, pending) = try await Self.afterLevelTwo(album: Self.recorded, writesAlbum: true)
+        let saved = try #require(pending)
+        #expect(saved.album?.side == .b)
+        #expect(LevelThree.steps(for: saved).last?.hasPrefix("Read mixdown/side_b.wav, to see whether level 2's tone lasted") == true)
+        await simulator.leaveAndReenterMTPMode()
+        let device = FieldDevice.simulated(simulator)
+        let report = await Self.run(device, saved)
+        let album = try #require(report.results.last)
+        #expect(album.expectation == "album.write-kept" && album.outcome == .pass, "\(album.summary)")
+        #expect(try await device.contents(of: "mixdown/side_b.wav") == Self.sideB)
+    }
+
+    @Test func anOP1ThatPutsItsOwnSideBackFailsAndWritesNothing() async throws {
+        let (_, simulator, _, pending) = try await Self.afterLevelTwo([.albumKeepsItsOwn], album: Self.recorded, writesAlbum: true)
+        let saved = try #require(pending)
+        await simulator.leaveAndReenterMTPMode()
+        let device = FieldDevice.simulated(simulator)
+        let deletedBefore = await simulator.deleted
+        let report = await Self.run(device, saved)
+        let album = try #require(report.results.last)
+        #expect(album.outcome == .fail)
+        #expect(album.summary.hasPrefix("After the reconnect, mixdown/side_b.wav was back as it was before level 2: the OP-1 put its own side back"))
+        #expect(try await device.contents(of: "mixdown/side_b.wav") == Self.sideB)
+        #expect(await simulator.deleted.filter { $0.hasPrefix("side_") } == deletedBefore.filter { $0.hasPrefix("side_") },
+                "no side was deleted in level 3")
+        // The tape checks ran in full before it.
+        #expect(report.results.dropLast().allSatisfy { $0.outcome == .pass })
+    }
+
+    @Test func aMissingCopyLeavesTheSideAlone() async throws {
+        let (_, simulator, _, pending) = try await Self.afterLevelTwo(album: Self.recorded, writesAlbum: true)
+        let saved = try #require(pending)
+        let album = try #require(saved.album)
+        try FileManager.default.removeItem(at: Self.files.appending(path: album.folder).appending(path: album.file))
+        await simulator.leaveAndReenterMTPMode()
+        let device = FieldDevice.simulated(simulator)
+        let report = await Self.run(device, saved)
+        #expect(report.results.last?.outcome == .fail)
+        #expect(report.results.last?.summary.hasPrefix("Level 2's copy of mixdown/side_b.wav,") == true)
+        #expect(try await device.contents(of: "mixdown/side_b.wav") == LevelTwo.Content.sideTone(bytes: Self.sideB.count))
+    }
+
+    @Test func theSideIsPutBackEvenIfTheScratchTapeIsGone() async throws {
+        let (_, simulator, _, pending) = try await Self.afterLevelTwo(album: Self.recorded, writesAlbum: true)
+        let saved = try #require(pending)
+        await simulator.leaveAndReenterMTPMode()
+        let device = FieldDevice.simulated(simulator)
+        _ = await LevelTwo.deleteLeftovers(on: device)
+        #expect(await LevelThree.refusal(on: device, pending: saved) == nil)
+        let report = await Self.run(device, saved)
+        #expect(report.results.dropLast().allSatisfy { $0.outcome == .notRun })
+        #expect(report.results.last?.outcome == .pass)
+        #expect(try await device.contents(of: "mixdown/side_b.wav") == Self.sideB)
+    }
+
+    @Test func judgesWhetherTheToneLasted() {
+        let copy = Self.sideB
+        #expect(LevelThree.writeKept(side: "mixdown/side_b.wav", now: LevelTwo.Content.side, copy: copy, restored: copy).outcome == .pass)
+        #expect(LevelThree.writeKept(side: "mixdown/side_b.wav", now: LevelTwo.Content.side, copy: copy, restored: Data()).outcome == .fail)
+        #expect(LevelThree.writeKept(side: "mixdown/side_b.wav", now: copy, copy: copy, restored: nil).outcome == .fail)
+        #expect(LevelThree.writeKept(side: "mixdown/side_b.wav", now: Data(count: 50), copy: copy, restored: nil).summary
+                == "After the reconnect, mixdown/side_b.wav is 50 bytes, neither level 2's tone nor the side as it was. Nothing was "
+                + "written. Level 2's copy is kept.")
     }
 
     // MARK: Judging

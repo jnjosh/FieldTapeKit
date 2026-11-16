@@ -251,11 +251,37 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **`side(_:matches:)`** compares the size, then the SHA-256, with an `AlbumSideCopy`, which is `Codable`.
   - **A new reading check** copies the album off, matches each side by SHA-256, checks `side(_:matches:)`, and deletes the copies. It passed in the conformance tests on the simulated OP-1.
   - 382 tests pass on the Mac and 381 on the iOS simulator (280 and 279 FieldTapeKit, 93 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
+- **Step 21 is built, with album writing off on 1.7.3** (2026-11-16). Not committed: the owner found the OP-1 can't empty an album side, and a side deleted over MTP came back after a reconnect (PROBE-NOTES.md). So whether a side written over MTP lasts isn't known, and `restoreSide` depends on it. Decided by the owner, recorded in the plan and the change logs of ADR 0002 and ADR 0003:
+  - **`restoreSide(_:from:conflict:progress:)`** writes a WAV as side A or B through the file layer's replace, read back byte for byte. An empty or missing side is written freely.
+  - **`SideConflict.replace(copyingExistingTo:)`** copies the side to an exact, free URL first, and **`.replace(confirmed:)`** takes a `SideReplacement` from `prepareToReplace(_:)`, which works once, on one connection, while the side is unchanged.
+  - **Only the OP-1's own WAV layout and format is restored,** and a side over 6 minutes is `tapeTooLong`, a guess recorded as the new expectation `album.side-limit`.
+  - **A failure after the old side is deleted stops and reports it in `changed`,** with nothing more written.
+  - **FieldCheck checks whether a written side lasts, `album.write-kept`, across levels 2 and 3.** Level 2's last check copies side B off, verifies it, and writes a tone over it with `restoreSide`. Level 3 checks the tone lasted after the reconnect, then puts side B back from the copy with a confirmation. If the OP-1 put its own side back, nothing more is written. ADR 0003 now allows writing one album side, after a verified copy.
+  - The simulator holds the OP-1's own album: a deleted side is back after a reconnect, and a written side lasts, unless a test fault makes the OP-1 keep its own.
+  - **The first run on the OP-1** (iPad Pro, 2026-11-16, log `firmware/1.7.3/runs/fieldcheck-2026-11-16T035757Z.txt`): level 2 passed 10 of 10 and wrote the tone over side B after a verified copy. **A written side lasts:** after the reconnect, free space showed the tone stored, and the owner heard it on the OP-1. But putting side B back in level 3 hung: the OP-1 stopped answering a request for 30 s, and a ping after it, so which request isn't known. Level 3's tape checks passed 6 of 6. **Side B still holds FieldCheck's tone.** The verified copy is in FieldCheck's Documents and the owner's Downloads (SHA-256 `9204518b…5f361a97aa`).
+  - **FieldCheck can now put the side back:** "Put Side B back from level 2's copy…" appears when a side holds FieldCheck's tone. It writes only over the tone, after a confirmation, with `restoreSide`, and logs every MTP request it sends, with its response and time, so a hang names its request.
+  - **The first put-back hung too,** at `SendObjectInfo` for side B, just after its delete answered OK (log `firmware/1.7.3/runs/fieldcheck-2026-11-16T040711Z.txt`). After a restart, the OP-1 refilled side B with the tone. The put-back now does a warm-up write first, to tell the two possible causes apart.
+  - **Not the first write after a reconnect:** with a warm-up write and delete of `drum/user/fieldcheck.wav` first, which worked, side B's SendObjectInfo hung again (log `fieldcheck-2026-11-16T041259Z.txt`). So a side most likely can't grow past what the OP-1 holds for it.
+  - **Side B is back** (log `fieldcheck-2026-11-16T041944Z.txt`): the owner recorded about 28 s onto side B, and FieldCheck copied that recording off, then put the 3,992,876-byte original back over it, read back byte for byte. A shrinking side worked right after a reconnect.
+  - **The growth rule was wrong** (log `fieldcheck-2026-11-16T043311Z.txt`): with the tone exactly as long as side B, level 2 passed 10 of 10, but level 3 hung putting side B back at the same length. Every hang was over a side written over MTP in an earlier connection.
+  - **Album writing is off on 1.7.3, as a future improvement, decided by the owner:** `FirmwareProfile.albumWrites` is false, and `restoreSide` and writes to the sides throw `notAllowed`. Reading and copying the album work. The code stays, through a package-only override for FieldCheck's put-back and the tests. `album.side-grow` is replaced by `album.write-again`. Levels 2 and 3 leave the album alone.
+  - **Side B holds FieldCheck's 22.6-second tone,** by the owner's choice for now. The verified copy is `level2-2026-11-16T043329Z/side_b before level 2.wav` in FieldCheck's Documents and the owner's Downloads. To put it back: record at least 25 s over side B on the OP-1, then use FieldCheck's put-back.
+  - FieldCheck's put-back now also works over a side the owner recorded: it copies that off first with `.replace(copyingExistingTo:)`, and refuses, writing nothing, if the side is shorter than the copy. A copy that's back is marked and offered no more.
+  - **A fourth hang, away from the album** (log `fieldcheck-2026-11-16T042721Z.txt`): level 2 stopped in `write.preset-converted`, after both presets were written, with no trace. Side B wasn't touched, since the album check is last. FieldCheck now keeps the last 50 MTP requests during every level, cleanup and conformance run, and logs them when one gets no answer.
+  - 422 tests pass on the Mac and 421 on the iOS simulator (301 and 300 FieldTapeKit, 112 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
 
 ## Next steps
 
-1. Step 21: restoring album sides, `1.0.0-alpha.3`.
-2. `album.write-exact` on hardware, whenever an album side is empty.
+1. Commit step 21, with album writing off on 1.7.3.
+2. Decide whether `1.0.0-alpha.3`, planned for restoring album sides, is tagged with album writing off.
+3. Step 22: FieldCheck comparing with the baseline, and the draft ADR.
+
+## Future improvements
+
+- **Writing album sides on the OP-1** (turned off 2026-11-16, decided by the owner; ADR 0002's change log). `restoreSide` is built and tested in the simulator, and the 1.7.3 profile turns it off. What's known (PROBE-NOTES.md, 2026-11-16):
+  - A side written over MTP lasts after a reconnect (`album.write-kept`), and a side deleted over MTP comes back.
+  - Writing a side again, once it was written over MTP in an earlier connection, hangs the OP-1 at SendObjectInfo until it's restarted, at any length (`album.write-again`). A side recorded on the OP-1 can be written over.
+  - Still to find out: whether a side can be written twice in one connection, and whether anything over MTP, such as the side's ObjectInfo, tells an MTP-written side from a recorded one. Either could let `restoreSide` refuse only the sides that hang.
 
 ## The OP-1 right now
 

@@ -31,17 +31,32 @@ extension LevelTwo {
             return WAVHeader.bytes(format: format, dataBytes: samples.count) + samples
         }()
 
-        /// 2 seconds of a tone in the album side format, written only to a side that's empty (`album.write-exact`).
-        static let side: Data = {
+        /// 2 seconds of a tone in the album side format, which level 2 wrote over side B before 2026-11-16's change.
+        /// It's still recognized as FieldCheck's, so a side left holding it can be put back.
+        static let side = sideTone(frames: trackFrames)
+
+        /// A tone in the album side format, `frames` long. Level 2 writes one exactly as long as the side it writes
+        /// over, where album writing is on.
+        static func sideTone(frames: Int) -> Data {
             let format = profile.sideFormat
-            var samples = Data(capacity: trackFrames * format.frameBytes)
-            for frame in 0..<trackFrames {
+            var samples = Data(capacity: frames * format.frameBytes)
+            for frame in 0..<frames {
                 let value = Int16(sin(2 * .pi * 392 * Double(frame) / 44_100) * 0.25 * Double(Int16.max))
                 samples.appendLittleEndianSample(value)
                 samples.appendLittleEndianSample(value)
             }
             return WAVHeader.bytes(format: format, dataBytes: samples.count) + samples
-        }()
+        }
+
+        /// The tone as long as a side of `bytes`, header included.
+        static func sideTone(bytes: Int) -> Data {
+            sideTone(frames: max(bytes - WAVHeader.size, 0) / profile.sideFormat.frameBytes)
+        }
+
+        /// Whether `data` is one of FieldCheck's tones: the 2-second one, or one as long as itself.
+        static func isSideTone(_ data: Data) -> Bool {
+            data == side || data == sideTone(bytes: data.count)
+        }
 
         /// A full 6-minute track, the longest the OP-1 allows, for the long check (`tape.track-limit`): 127,008,044
         /// bytes. Made when asked for, not kept, since it's large. The tone is 441 Hz, so one period is exactly 100

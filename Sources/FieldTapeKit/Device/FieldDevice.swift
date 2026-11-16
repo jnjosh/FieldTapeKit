@@ -29,6 +29,17 @@ public actor FieldDevice: Identifiable {
     private var wasRemoved = false
     /// Confirmations already used. Each works once (ADR 0002, safety rule 1).
     var usedConfirmations: Set<UUID> = []
+    /// Lets album sides be written although the firmware profile has album writing off, for FieldCheck to put back a
+    /// side it overwrote, and for tests of the code that writes them. Package-only: apps can't turn it on.
+    var albumWritesOverridden = false
+
+    /// Whether album sides can be written on this connection.
+    package var albumWritesAllowed: Bool { profile.albumWrites || albumWritesOverridden }
+
+    /// Turns the override of `FirmwareProfile.albumWrites` on or off for this connection.
+    package func overrideAlbumWrites(_ on: Bool) {
+        albumWritesOverridden = on
+    }
 
     init(session: MTPSession, info: FieldDeviceInfo, profile: FirmwareProfile, usb: USBIdentity?,
          storageID: UInt32 = SimulatedMTPDevice.storageID) {

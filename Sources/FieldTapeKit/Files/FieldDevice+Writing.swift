@@ -40,6 +40,10 @@ public struct UploadOptions: Sendable {
 }
 
 extension FieldDevice {
+    /// Why a write to `mixdown/` is refused on firmware with album writing off (`album.write-again`).
+    static let albumWritesOff = "album sides aren't written on this firmware: a side written over MTP hangs the OP-1 when "
+        + "it's written again after a reconnect, until it's restarted"
+
     /// Writes `data` as a new file at `path`, or over the file there as `options.existing` says, and returns it as
     /// the OP-1 lists it.
     ///
@@ -127,6 +131,10 @@ extension FieldDevice {
     private func send(_ data: Data, to path: FilePath, options: UploadOptions,
                       progress: ProgressManager?) async throws -> FieldItem {
         do {
+            let lowered = try Self.components(of: path).map { $0.lowercased() }
+            if lowered.count == 2, lowered[0] == "mixdown", profile.albumFiles.required.contains(lowered[1]), !albumWritesAllowed {
+                throw FieldError(.notAllowed, path: path, reason: Self.albumWritesOff)
+            }
             let (parent, name) = try await parentAndName(of: path)
             let siblings = try await children(of: parent)
             let newName = name.lowercased()
@@ -138,6 +146,7 @@ extension FieldDevice {
             }
             let names = try Self.components(of: parent.path).map { $0.lowercased() } + [newName]
             let readBack = try WriteRules(profile: profile).checkFile(names, data: data, path: newPath)
+
             try await coverReplacing(existing, at: newPath, as: options.existing.rule)
             try Task.checkCancellation()
 

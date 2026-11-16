@@ -208,9 +208,10 @@ import Testing
         let workspace = try LevelTwoTests.workspace()
         defer { try? FileManager.default.removeItem(at: workspace) }
         let levelTwo = await LevelTwoTests.run(device, longCheck: true, in: workspace)
-        let pending = try #require(await LevelThree.pending(after: levelTwo, on: device))
+        let pending = try #require(await LevelThree.pending(after: levelTwo, on: device, workspace: workspace))
         await simulator.leaveAndReenterMTPMode()
-        let levelThree = await LevelThree.run(on: FieldDevice.simulated(simulator), pending: pending, host: LevelOneTests.host)
+        let levelThree = await LevelThree.run(on: FieldDevice.simulated(simulator), pending: pending,
+                                              files: workspace.deletingLastPathComponent(), host: LevelOneTests.host)
         return [levelOne, levelTwo, levelThree]
     }
 
@@ -225,7 +226,7 @@ import Testing
         #expect(!storage2.values(at: "afterCleanup").isEmpty)
         #expect(baseline[level: 2]?.expectations["names.maximum"]?.observed?.values(at: "longListedAs") == ["fieldck #2-13"])
         #expect(baseline[level: 3]?.expectations["names.maximum"]?.observed?.values(at: "longListedAs") == ["fieldck #2-1"])
-        #expect(baseline[level: 2]?.expectations["album.write-exact"]?.observed != nil, "the simulated sides are empty")
+        #expect(baseline[level: 2]?.expectations["album.write-exact"]?.observed == nil, "album writing is off on 1.7.3")
         try Self.expectAgreement(baseline)
         // Dates are saved to the second, so only what was observed is compared.
         #expect(try Baseline(json: baseline.jsonData()).levels.map(\.expectations) == baseline.levels.map(\.expectations))

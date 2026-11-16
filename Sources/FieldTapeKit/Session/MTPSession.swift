@@ -34,11 +34,19 @@ package actor MTPSession {
     private var isBusy = false
     private var waiting: [CheckedContinuation<Void, Never>] = []
     private(set) var isDisconnected = false
+    /// Told about every request and how it ended, when set, to find which one a device stops answering.
+    private var trace: (@Sendable (String) -> Void)?
 
     init(transport: any MTPTransport, timeout: Duration = .seconds(30), pingTimeout: Duration = .seconds(5)) {
         self.transport = transport
         self.timeout = timeout
         self.pingTimeout = pingTimeout
+    }
+
+    /// Starts or stops telling `trace` about each request: what was sent, then the response code, the bytes that
+    /// came back and how long it took, or that it got no answer. It's for diagnosing, so it's package-only.
+    package func setTrace(_ trace: (@Sendable (String) -> Void)?) {
+        self.trace = trace
     }
 
     /// Sends one operation and returns its data phase and response parameters.
@@ -52,20 +60,36 @@ package actor MTPSession {
         try Task.checkCancellation()
 
         let command = PTPContainer.command(operation, transactionID: takeTransactionID(), params: params)
+        let clock = ContinuousClock()
+        let start = clock.now
+        trace?("→ \(operation)" + params.map { String(format: " 0x%X", $0) }.joined()
+               + (dataOut.map { ", \($0.count) bytes out" } ?? ""))
         let transaction: MTPTransaction
         do {
             transaction = try await Self.withTimeout(timeout) { [transport] in
                 try await transport.transact(command: command, dataOut: dataOut)
             }
         } catch is RequestTimeout {
-            if await deviceAnswersPing() { throw MTPError.timedOut(operation) }
+            trace?("✕ \(operation): no answer after \(timeout)")
+            if await deviceAnswersPing() {
+                trace?("  a GetDeviceInfo ping was answered")
+                throw MTPError.timedOut(operation)
+            }
+            trace?("  a GetDeviceInfo ping got no answer in \(pingTimeout) either")
             isDisconnected = true
             throw MTPError.disconnected
+        } catch {
+            trace?("✕ \(operation): \(error)")
+            throw error
         }
 
         guard let code = PTPContainer.responseCode(transaction.response) else {
+            trace?("✕ \(operation): unreadable response")
             throw MTPError.unreadableResponse(operation)
         }
+        let elapsed = clock.now - start
+        trace?("← \(operation) " + String(format: "0x%04X", code) + ", \(transaction.data.count) bytes in, "
+               + "\(elapsed.components.seconds * 1_000 + elapsed.components.attoseconds / 1_000_000_000_000_000) ms")
         guard code == PTPResponseCode.ok else { throw MTPError.refused(operation, responseCode: code) }
         return MTPReply(payload: PTPContainer.payload(transaction.data, for: operation),
                         params: PTPContainer.responseParams(transaction.response),

@@ -3,13 +3,15 @@
 // This launch's latest clean run of each level can be saved together as the firmware's baseline, to copy into the
 // repository's firmware/ folder. Level 2 writes only FieldCheck's own scratch content, after a person confirms its plan. A clean level 2
 // leaves level 3 waiting, saved in Documents, for after the OP-1 leaves MTP mode and comes back. Level 3 checks the
-// scratch tape and deletes it. FieldCheck offers to delete content left by a run that didn't finish.
+// scratch tape and deletes it. FieldCheck offers to delete content left by a run that didn't finish, and to put back an
+// album side left holding its tone, from level 2's copy, logging every MTP request.
 // It also runs FieldTapeKit's conformance suite, the checks the simulator passes too, and logs the results.
 // Explore (ExploreView.swift) browses the OP-1 through FieldTapeKit's public API, as an app would. It only reads.
 
 import FieldCheckKit
 import FieldTapeConformance
 import FieldTapeKit
+import Synchronization
 import SwiftUI
 import System
 import UIKit
@@ -21,6 +23,13 @@ struct FieldCheckApp: App {
             RootView()
         }
     }
+}
+
+/// Trace lines from the MTP session, collected in order and logged once the work is done.
+final class TraceLines: Sendable {
+    private let lines = Mutex<[String]>([])
+    func append(_ line: String) { lines.withLock { $0.append(line) } }
+    var all: [String] { lines.withLock { $0 } }
 }
 
 @MainActor
@@ -45,6 +54,8 @@ final class ConnectionLog {
     private(set) var pendingLevelThree: LevelThree.Pending?
     /// FieldCheck's own content found on each connection, from a run that didn't finish.
     private(set) var leftovers: [FieldDevice.ID: [FilePath]] = [:]
+    /// A copy level 2 kept of an album side that isn't back yet, on each connection, and what the side holds now.
+    private(set) var sideToPutBack: [FieldDevice.ID: (copy: SideRestore.Copy, current: SideRestore.Current)] = [:]
     private let pendingURL = URL.documentsDirectory.appending(path: "level3-pending.json")
     private let started = Date()
     private let fileURL: URL
@@ -92,9 +103,49 @@ final class ConnectionLog {
         pendingLevelThree?.connection == device.id
     }
 
-    /// Looks for FieldCheck's own content on the OP-1. It only reads.
+    /// Looks for FieldCheck's own content on the OP-1: its tapes and presets, and a copy level 2 kept of an album
+    /// side that isn't back yet, while level 3 isn't waiting to put it back. It only reads.
     private func findLeftovers(on device: FieldDevice) async {
         leftovers[device.id] = await LevelTwo.plan(for: device).leftovers
+        sideToPutBack[device.id] = nil
+        guard pendingLevelThree?.album == nil || !isLevelThreePending(for: device) else { return }
+        for copy in SideRestore.copies(in: .documentsDirectory) {
+            let name = "\(copy.folder)/\(copy.url.lastPathComponent), \(copy.size.formatted()) bytes, SHA-256 \(copy.sha256)"
+            switch try? await SideRestore.current(copy, on: device) {
+            case .matches:
+                SideRestore.markPutBack(copy.url)
+                record("\(copy.side) matches level 2's copy \(name), so it's back")
+            case .tone:
+                sideToPutBack[device.id] = (copy, .tone)
+                record("\(copy.side) holds FieldCheck's tone. Level 2's copy is \(name)")
+                return
+            case .other(let side):
+                sideToPutBack[device.id] = (copy, .other(side))
+                record("\(copy.side) holds \(side.size.formatted()) bytes that aren't level 2's copy, \(name)")
+                return
+            case nil:
+                continue
+            }
+        }
+    }
+
+    /// Puts an album side back from level 2's copy, after a person confirms, and logs every MTP request it sends.
+    /// Over FieldCheck's tone it's replaced as it is. Over anything else, that's copied next to level 2's copy first.
+    func putSideBack(on device: FieldDevice, from copy: SideRestore.Copy, over current: SideRestore.Current) async {
+        guard running == nil else { return }
+        running = device.id
+        defer { running = nil }
+        record("Putting \(copy.side) back from \(copy.folder)/\(copy.url.lastPathComponent)")
+        let replaced: URL? = if case .other = current {
+            copy.url.deletingLastPathComponent().appending(path: "side_\(copy.side.rawValue) replaced \(Self.stamp()).wav")
+        } else {
+            nil
+        }
+        let lines = TraceLines()
+        let outcome = await SideRestore.putBack(copy, on: device, copyingReplacedTo: replaced) { lines.append($0) }
+        for line in lines.all { record("  " + line) }
+        record((outcome.succeeded ? "Put back: " : "Not put back: ") + outcome.summary)
+        await findLeftovers(on: device)
     }
 
     /// Level 1 only reads, so it needs no confirmation.
@@ -103,7 +154,8 @@ final class ConnectionLog {
         running = device.id
         defer { running = nil }
         record("Level 1: running")
-        let report = await LevelOne.run(on: device, host: host)
+        let (report, trace) = await RequestTrace.during(device) { await LevelOne.run(on: device, host: host) }
+        logIfStopped(trace)
         reports[device.id] = report
         latestByLevel[report.level] = report
         for result in report.results where result.outcome != .pass {
@@ -139,13 +191,19 @@ final class ConnectionLog {
             return
         }
         record("Level 2: running\(longCheck ? " with the long check" : ""), copies go in \(workspace.lastPathComponent)")
-        let report = await LevelTwo.run(on: device, plan: plan, longCheck: longCheck, workspace: workspace, host: host)
+        let (report, trace) = await RequestTrace.during(device) {
+            await LevelTwo.run(on: device, plan: plan, longCheck: longCheck, workspace: workspace, host: host)
+        }
+        logIfStopped(trace)
         reports[device.id] = report
         latestByLevel[report.level] = report
-        if let pending = await LevelThree.pending(after: report, on: device) {
+        if let pending = await LevelThree.pending(after: report, on: device, workspace: workspace) {
             setPendingLevelThree(pending)
             record("Level 3 is waiting: leave MTP mode on the OP-1, then enter it again. You can play the scratch tape "
                 + "on the OP-1 in between.")
+            if let album = pending.album {
+                record("\(album.side) holds FieldCheck's tone until level 3 puts it back from \(album.folder)/\(album.file).")
+            }
         }
         await findLeftovers(on: device)
         for result in report.results {
@@ -166,11 +224,16 @@ final class ConnectionLog {
         running = device.id
         defer { running = nil }
         record("Deleting FieldCheck's content")
-        let result = await LevelTwo.deleteLeftovers(on: device)
+        let (result, trace) = await RequestTrace.during(device) { await LevelTwo.deleteLeftovers(on: device) }
+        logIfStopped(trace)
         record("\(result.expectation) \(result.outcome.rawValue): \(result.summary)")
         if isLevelThreePending(for: device) {
-            setPendingLevelThree(nil)
-            record("Level 3 isn't waiting any more, since FieldCheck's tapes were deleted")
+            if let album = pendingLevelThree?.album {
+                record("Level 3 is still waiting, to check \(album.side) and put it back from \(album.folder)/\(album.file)")
+            } else {
+                setPendingLevelThree(nil)
+                record("Level 3 isn't waiting any more, since FieldCheck's tapes were deleted")
+            }
         }
         await findLeftovers(on: device)
     }
@@ -192,7 +255,10 @@ final class ConnectionLog {
             return
         }
         record("Level 3: running, after level 2 at \(pending.levelTwoStarted.formatted(.iso8601))")
-        let report = await LevelThree.run(on: device, pending: pending, host: host)
+        let (report, trace) = await RequestTrace.during(device) {
+            await LevelThree.run(on: device, pending: pending, files: .documentsDirectory, host: host)
+        }
+        logIfStopped(trace)
         reports[device.id] = report
         latestByLevel[report.level] = report
         for result in report.results {
@@ -240,7 +306,8 @@ final class ConnectionLog {
         // One check at a time, so the memory each one takes shows in the log.
         var results: [Conformance.Result] = []
         for check in writing ? Conformance.writingChecks : Conformance.checks {
-            let result = await check.run(on: device, workspace: workspace)
+            let (result, trace) = await RequestTrace.during(device) { await check.run(on: device, workspace: workspace) }
+            logIfStopped(trace)
             results.append(result)
             switch result.outcome {
             case .pass: record("Conformance: pass: \(result.name)\(result.detail.map { ". \($0)" } ?? "")")
@@ -342,6 +409,13 @@ final class ConnectionLog {
         }
     }
 
+    /// Logs the last MTP requests if one got no answer, so the log says where the OP-1 stopped.
+    private func logIfStopped(_ trace: RequestTrace) {
+        guard trace.sawFailure else { return }
+        record("The last \(trace.all.count) MTP requests, up to the one that got no answer:")
+        for line in trace.all { record("  " + line) }
+    }
+
     func record(_ message: String) {
         let line = String(format: "[%7.2f] ", Date().timeIntervalSince(started)) + message
         entries.append(Entry(line: line))
@@ -374,6 +448,8 @@ struct ValidateView: View {
     /// A level 2 plan waiting for the person to confirm, and the device it's for.
     @State private var plan: (device: FieldDevice, plan: LevelTwo.Plan)?
     @State private var cleanup: FieldDevice?
+    /// The side the person is asked to confirm putting back, the copy it comes from, and what the side holds now.
+    @State private var putBack: (device: FieldDevice, copy: SideRestore.Copy, current: SideRestore.Current)?
     /// The device a level 3 is waiting for the person to confirm on.
     @State private var levelThree: FieldDevice?
     /// What the writing conformance checks do, for the person to confirm.
@@ -390,6 +466,10 @@ struct ValidateView: View {
         ]
         return steps.map { "• " + $0 }.joined(separator: "\n")
     }()
+
+    static func duration(_ duration: Duration) -> String {
+        duration.formatted(.units(allowed: [.minutes, .seconds], width: .narrow))
+    }
 
     /// The device the writing conformance checks are waiting for the person to confirm on.
     @State private var writingConformance: FieldDevice?
@@ -436,6 +516,21 @@ struct ValidateView: View {
                             }
                             Button("Delete FieldCheck's content…", role: .destructive) { cleanup = device }
                                 .disabled(log.running != nil)
+                        }
+                        if let offer = log.sideToPutBack[device.id] {
+                            let copy = offer.copy
+                            Group {
+                                if case .other(let side) = offer.current {
+                                    Text("\(copy.side) holds \(Self.duration(side.duration)) that isn't level 2's copy of it, in \(copy.folder).")
+                                } else {
+                                    Text("\(copy.side) holds FieldCheck's 2-second tone. Level 2's copy of it is in \(copy.folder).")
+                                }
+                            }
+                            .foregroundStyle(.secondary)
+                            Button(log.running == device.id ? "Putting \(copy.side) back…" : "Put \(copy.side) back from level 2's copy…") {
+                                putBack = (device, copy, offer.current)
+                            }
+                            .disabled(log.running != nil)
                         }
                     }
                 }
@@ -486,14 +581,34 @@ struct ValidateView: View {
                     Text(pending.plan.steps.map { "• \($0)" }.joined(separator: "\n"))
                 }
             }
+            .confirmationDialog("Put the side back?", isPresented: Binding(get: { putBack != nil }, set: { if !$0 { putBack = nil } }),
+                                titleVisibility: .visible, presenting: putBack) { pending in
+                Button("Put the copy back", role: .destructive) {
+                    Task { await log.putSideBack(on: pending.device, from: pending.copy, over: pending.current) }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: { pending in
+                let copy = "\(pending.copy.folder)/\(pending.copy.url.lastPathComponent), \(pending.copy.size.formatted()) bytes, "
+                    + "SHA-256 \(pending.copy.sha256.prefix(8))…\(pending.copy.sha256.suffix(10))"
+                let side = "mixdown/side_\(pending.copy.side.rawValue).wav"
+                if case .other(let now) = pending.current {
+                    Text("Copies what \(side) holds now, \(Self.duration(now.duration)) and \(now.size.formatted()) bytes, next to "
+                         + "level 2's copy and verifies it, then replaces it with \(copy). If the side is shorter than the "
+                         + "copy, nothing is written. It logs every MTP request it sends.")
+                } else {
+                    Text("Replaces FieldCheck's 2-second tone on \(side) with \(copy). It writes only if the side still "
+                         + "holds the tone. It logs every MTP request it sends.")
+                }
+            }
             .confirmationDialog("Level 3", isPresented: Binding(get: { levelThree != nil }, set: { if !$0 { levelThree = nil } }),
                                 titleVisibility: .visible, presenting: levelThree) { device in
-                Button("Check, then delete FieldCheck's tapes", role: .destructive) {
+                Button(log.pendingLevelThree?.album == nil ? "Check, then delete FieldCheck's tapes"
+                       : "Check, put the side back, and delete FieldCheck's tapes", role: .destructive) {
                     Task { await log.runLevelThree(on: device) }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: { _ in
-                Text(LevelThree.steps.map { "• \($0)" }.joined(separator: "\n"))
+                Text(LevelThree.steps(for: log.pendingLevelThree).map { "• \($0)" }.joined(separator: "\n"))
             }
             .confirmationDialog("Writing conformance", isPresented: Binding(get: { writingConformance != nil },
                                                                               set: { if !$0 { writingConformance = nil } }),

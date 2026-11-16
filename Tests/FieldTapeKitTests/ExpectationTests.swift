@@ -3,11 +3,11 @@ import Testing
 
 @Suite struct ExpectationTests {
     /// ADR 0003's list, with `read.cost` added on 2026-11-14, and `write.speed` split from `read.speed` on
-    /// 2026-11-15. IDs are stable, so a rename or removal here must be deliberate.
+    /// 2026-11-15, and `album.write-kept`, `album.write-again` and `album.side-limit` added on 2026-11-16. IDs are stable, so a rename or removal here must be deliberate.
     static let adr0003 = [
         "device.operations", "device.storage", "device.identity", "session.implicit", "session.data-phase",
         "layout.folders", "layout.readmes", "names.lowercase", "names.maximum", "tape.files", "tape.wav-format",
-        "album.files", "album.wav-format", "album.write-exact", "album.write-other-format", "tape.json-keys",
+        "album.files", "album.wav-format", "album.write-exact", "album.write-other-format", "album.write-kept", "album.write-again", "album.side-limit", "tape.json-keys",
         "tape.json-units", "tape.types", "tape.track-limit", "read.partial", "read.speed", "write.speed", "read.cost",
         "write.folder", "write.exact", "write.refused-name", "write.preset-converted", "rebuild.tape-json", "rebuild.stale-size",
         "delete.files-then-folder", "delete.folder-with-files", "reconnect.kept", "reconnect.renamed",

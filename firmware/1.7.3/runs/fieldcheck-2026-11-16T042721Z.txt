@@ -1,0 +1,21 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.45] Watching for an OP-1 in MTP mode
+[   4.00] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[   4.00] Storage: 6429185024 bytes, 6285685760 free
+[  13.69] Level 2: running, copies go in level2-2026-11-16T042735Z
+[  59.50] Level 2: names.maximum pass: The OP-1 took FIELDCK #1-2, 12 characters, as fieldck #1-2, and FIELDCK #2-13, 13 characters, as fieldck #2-13. What it keeps after a reconnect is level 3.
+[  59.50] Level 2: write.folder pass: SendObjectInfo alone made the tape, a folder (0x3001, association type 1) with 0 items in it.
+[  59.50] Level 2: write.exact pass: 5 files, 2,822,826 bytes, each read back byte for byte, again after the write's own check.
+[  59.50] Level 2: write.refused-name pass: track_5.wav was refused with 0x2002, before any data was sent.
+[  59.50] Level 2: rebuild.tape-json pass: After the tracks were written, tape.json read back different from the one written before them.
+[  59.50] Level 2: rebuild.stale-size pass: The rebuilt tape.json is still listed and read at the 250 bytes written. Then track_1.wav was replaced, keeping a copy, and the generated tape.json replaced the stale one, last. Both read back exactly.
+[  59.50] Level 2: tape.track-limit not run: The long check wasn't asked for.
+[  59.50] Level 2: write.preset-converted fail: The OP-1 disconnected during this check.
+[  59.50] Level 2: write.speed not run: The OP-1 disconnected.
+[  59.50] Level 2: device.storage not run: The OP-1 disconnected.
+[  59.50] Level 2: album.write-exact not run: The OP-1 disconnected.
+[  59.50] Level 2: 6 pass, 1 fail, 4 not run
+[  59.50] Saved fieldcheck-2026-11-16T042735Z.json and fieldcheck-2026-11-16T042735Z.md
+[  62.03] Disconnected
+[  64.79] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  64.79] Storage: 6429185024 bytes, 6275446784 free

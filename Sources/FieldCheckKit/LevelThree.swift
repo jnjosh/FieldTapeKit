@@ -1,3 +1,4 @@
+import CryptoKit
 import FieldTapeKit
 import Foundation
 import System
@@ -11,19 +12,36 @@ import System
 /// name was cut to 12. Then it deletes the scratch tape with one DeleteObject on its folder, to see what that does,
 /// and deletes what's left, files first and then the folder, as FieldTapeKit does. It stops at the first failure
 /// and leaves the tapes for cleanup.
+///
+/// If level 2 wrote its tone over an album side, level 3 then checks whether the tone lasted (`album.write-kept`),
+/// and puts the side back from level 2's copy. That runs whatever the tape checks found, and even if the scratch tape
+/// is gone, so the side is never left holding the tone.
 public enum LevelThree {
+    /// The album side level 2 wrote its tone over, and the copy it kept of the side.
+    public struct AlbumWrite: Sendable, Hashable, Codable {
+        public let side: Album.Side
+        /// The folder level 2 kept the copy in, by name, and the copy's name. The folder is found again in the folder
+        /// the app gives level 3, since an app's own folder can move between launches.
+        public let folder: String
+        public let file: String
+        /// The copy's SHA-256, read when level 2 finished.
+        public let sha256: String
+    }
+
     /// What level 2 left for level 3 to check, saved between app launches.
     public struct Pending: Sendable, Hashable, Codable {
         public let serialNumber: String
         public let levelTwoStarted: Date
         /// The scratch tape's handles in level 2's connection, by path: the folder and each file (`reconnect.handles`).
         let handles: [String: UInt32]
+        /// The album side level 2 wrote over, or nil if it didn't write one.
+        public let album: AlbumWrite?
         /// The connection level 2 ran on, while the app is still running. It isn't saved, because after a relaunch
         /// every connection is a new one.
         public var connection: FieldDevice.ID?
 
         private enum CodingKeys: String, CodingKey {
-            case serialNumber, levelTwoStarted, handles
+            case serialNumber, levelTwoStarted, handles, album
         }
 
         public func jsonData() throws -> Data {
@@ -34,10 +52,12 @@ public enum LevelThree {
             self = try ReportFiles.decoder().decode(Self.self, from: json)
         }
 
-        init(serialNumber: String, levelTwoStarted: Date, handles: [String: UInt32], connection: FieldDevice.ID?) {
+        init(serialNumber: String, levelTwoStarted: Date, handles: [String: UInt32], album: AlbumWrite?,
+             connection: FieldDevice.ID?) {
             self.serialNumber = serialNumber
             self.levelTwoStarted = levelTwoStarted
             self.handles = handles
+            self.album = album
             self.connection = connection
         }
     }
@@ -67,14 +87,21 @@ public enum LevelThree {
         }
 
         /// Whether level 3 can never run on this OP-1 now, so it's no longer waiting. A wrong OP-1 or connection
-        /// can be put right, and the pending level 3 is kept for it.
+        /// can be put right, and the pending level 3 is kept for it. With an album side to put back, the scratch
+        /// tape being gone isn't a refusal.
         public var endsLevelThree: Bool {
             if case .tapeGone = self { true } else { false }
         }
     }
 
     /// What level 3 will do, for a person to confirm before it starts.
-    public static let steps = [
+    public static func steps(for pending: Pending?) -> [String] {
+        guard let album = pending?.album else { return steps }
+        let path = "mixdown/side_\(album.side.rawValue).wav"
+        return steps + ["Read \(path), to see whether level 2's tone lasted after the reconnect. If it did, put \(album.side) back from level 2's copy, \(album.folder)/\(album.file), with a confirmation, and check it reads back as it was."]
+    }
+
+    static let steps = [
         "Read the scratch tape \(LevelTwo.scratchTape.lastComponent!.string): its handles, its name, its files, and its tracks and tape.json, which should be as level 2 left them.",
         "Look for \(LevelTwo.longTapeCut.lastComponent!.string), the 13-character tape cut to 12.",
         "Delete the scratch tape with one DeleteObject on its folder, with its files still in it, to see what the OP-1 does.",
@@ -82,8 +109,9 @@ public enum LevelThree {
     ]
 
     /// The level 3 that `levelTwo` leaves, or nil if it doesn't leave one: only a level 2 run with no failures
-    /// does, and only while its scratch tape is on the OP-1. It only reads.
-    public static func pending(after levelTwo: CheckReport, on device: FieldDevice) async -> Pending? {
+    /// does, and only while its scratch tape is on the OP-1. `workspace` is the folder level 2 ran with, where its
+    /// copy of an album side is. It only reads.
+    public static func pending(after levelTwo: CheckReport, on device: FieldDevice, workspace: URL) async -> Pending? {
         guard levelTwo.level == 2, !levelTwo.results.contains(where: { $0.outcome == .fail }),
               levelTwo.results.contains(where: { $0.expectation == "rebuild.stale-size" && $0.outcome == .pass }) else {
             return nil
@@ -94,8 +122,19 @@ public enum LevelThree {
             for item in try await device.contentsOfDirectory(at: folder.path) {
                 if let file = try await device.locate(item.path) { handles[file.path.string] = file.handle }
             }
+            var album: AlbumWrite?
+            if levelTwo.results.contains(where: { $0.expectation == "album.write-exact" && $0.outcome == .pass }) {
+                let side = try await device.album().sides.first { side in
+                    FileManager.default.fileExists(atPath: workspace.appending(path: LevelTwo.sideCopy(side.side)).path(percentEncoded: false))
+                }
+                if let side {
+                    let file = LevelTwo.sideCopy(side.side)
+                    let copy = try Data(contentsOf: workspace.appending(path: file))
+                    album = AlbumWrite(side: side.side, folder: workspace.lastPathComponent, file: file, sha256: sha256(copy))
+                }
+            }
             return Pending(serialNumber: device.info.serialNumber, levelTwoStarted: levelTwo.started, handles: handles,
-                           connection: device.id)
+                           album: album, connection: device.id)
         } catch {
             return nil
         }
@@ -108,7 +147,7 @@ public enum LevelThree {
         }
         if pending.connection == device.id { return .sameConnection }
         do {
-            guard try await device.fileExists(at: LevelTwo.scratchTape) else {
+            guard try await device.fileExists(at: LevelTwo.scratchTape) || pending.album != nil else {
                 return .tapeGone(tapes: try await device.contentsOfDirectory(at: .op1Tapes).filter(\.isDirectory).map(\.name).sorted())
             }
         } catch {
@@ -118,14 +157,24 @@ public enum LevelThree {
     }
 
     /// Runs level 3. If it can't run on this connection, every check is reported as not run, with the reason.
-    public static func run(on device: FieldDevice, pending: Pending, host: CheckReport.Host) async -> CheckReport {
+    /// `files` is the folder level 2's run folder is in, such as the app's Documents.
+    public static func run(on device: FieldDevice, pending: Pending, files: URL, host: CheckReport.Host) async -> CheckReport {
         let started = Date.now
         let checks = checks(for: device, pending: pending)
-        let results: [CheckResult]
+        let album = pending.album.map { [albumCheck(on: device, album: $0, files: files)] } ?? []
+        var results: [CheckResult]
         if let refusal = await refusal(on: device, pending: pending) {
-            results = checks.map { CheckResult(expectation: $0.expectation, outcome: .notRun, summary: refusal.description) }
+            results = (checks + album).map { CheckResult(expectation: $0.expectation, outcome: .notRun, summary: refusal.description) }
         } else {
-            results = await CheckRunner.run(checks, stopAtFirstFailure: true)
+            let tapeThere = (try? await device.fileExists(at: LevelTwo.scratchTape)) ?? true
+            if tapeThere {
+                results = await CheckRunner.run(checks, stopAtFirstFailure: true)
+            } else {
+                let gone = "The scratch tape \(LevelTwo.scratchTape.lastComponent!.string) isn't on the OP-1 any more."
+                results = checks.map { CheckResult(expectation: $0.expectation, outcome: .notRun, summary: gone) }
+            }
+            // Whatever the tape checks found, so the side is put back.
+            results += await CheckRunner.run(album)
         }
         return CheckReport(level: 3, started: started, finished: .now, device: CheckReport.Device(device.info),
                            host: host, results: results)
@@ -198,6 +247,56 @@ public enum LevelThree {
             },
         ]
     }
+
+    /// Reads the side level 2 wrote its tone over. If the tone lasted, it puts the side back from level 2's copy, with
+    /// a confirmation, and reads it back. If the side is back as it was, the OP-1 put its own back, and nothing is
+    /// written. Anything else is left as it is.
+    static func albumCheck(on device: FieldDevice, album: AlbumWrite, files: URL) -> Check {
+        Check("album.write-kept") {
+            let path = FilePath("mixdown/side_\(album.side.rawValue).wav")
+            let url = files.appending(path: album.folder).appending(path: album.file)
+            guard let copy = try? Data(contentsOf: url), sha256(copy) == album.sha256 else {
+                return .fail("Level 2's copy of \(path), \(album.folder)/\(album.file), is missing or changed, so \(path) "
+                             + "wasn't touched. It may still hold FieldCheck's tone.")
+            }
+            let now = try await device.contents(of: path, maximumSize: 1 << 27)
+            guard LevelTwo.Content.isSideTone(now) else {
+                if now == copy { SideRestore.markPutBack(url) }
+                return writeKept(side: path, now: now, copy: copy, restored: nil)
+            }
+            let replacement = try await device.prepareToReplace(album.side)
+            _ = try await device.restoreSide(album.side, from: url, conflict: .replace(confirmed: replacement))
+            let restored = try await device.contents(of: path, maximumSize: 1 << 27)
+            if restored == copy { SideRestore.markPutBack(url) }
+            return writeKept(side: path, now: now, copy: copy, restored: restored)
+        }
+    }
+
+    static func writeKept(side: FilePath, now: Data, copy: Data, restored: Data?) -> Finding {
+        let kept = LevelTwo.Content.isSideTone(now)
+        var fields: [String: CheckValue] = ["side": .string(side.string), "toneKept": .bool(kept),
+                                            "backAsItWas": .bool(now == copy)]
+        if let restored { fields["restoredAsItWas"] = .bool(restored == copy) }
+        let observed = CheckValue.record(fields)
+        let varies = ["side"]
+        if kept {
+            guard restored == copy else {
+                return .fail("After the reconnect, \(side) still held level 2's tone, so a written side lasts. But putting it "
+                             + "back from level 2's copy didn't read back as it was. The copy is kept.", observed: observed, varies: varies)
+            }
+            return .pass("After the reconnect, \(side) still held level 2's tone, so a side written over MTP lasts. It was put "
+                         + "back from level 2's copy, and reads back as it was.", observed: observed, varies: varies)
+        }
+        if now == copy {
+            return .fail("After the reconnect, \(side) was back as it was before level 2: the OP-1 put its own side back, so "
+                         + "a side written over MTP doesn't last on this firmware, and restoreSide can't put a side back. "
+                         + "Nothing more was written.", observed: observed, varies: varies)
+        }
+        return .fail("After the reconnect, \(side) is \(now.count.formatted()) bytes, neither level 2's tone nor the side as it "
+                     + "was. Nothing was written. Level 2's copy is kept.", observed: observed, varies: varies)
+    }
+
+    static func sha256(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
 
     /// The tracks as level 2 leaves them: `track_1.wav` replaced, the others as first written.
     static var expectedTracks: [(String, Data)] {

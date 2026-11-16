@@ -400,6 +400,8 @@ Decided by the owner for step 20 (2026-11-16), and recorded in ADR 0002's change
 
 **Relies on:** `album.write-exact`. `album.write-other-format` stays unknown until FieldCheck has run it.
 
+Decided by the owner for step 21 (2026-11-16), and recorded in ADR 0002's change log: only a WAV in the OP-1's own layout and format is restored, a side over 6 minutes is refused (`album.side-limit`), and a failure after the old side is deleted stops and reports. **On the OP-1, a side written over MTP hung the OP-1 when it was written again after a reconnect** (`album.write-again`), so album writing is off on 1.7.3, as a future improvement: `restoreSide` is built and tested in the simulator, but refuses on 1.7.3. FieldCheck's levels 2 and 3 found a written side lasts (`album.write-kept`) before it was turned off.
+
 ## Part 5: Ready for beta
 
 ### 22. FieldCheck: comparing with the baseline, and the draft ADR (ADR 0003)

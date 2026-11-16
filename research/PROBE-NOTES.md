@@ -374,6 +374,69 @@ Step 15's `copyTape`, through the conformance suite from a fresh launch (log `fi
 - On the Mac's simulator, copying an 84 MB simulated tape three times in a row kept about 2 MB in all. So FieldTapeKit's own code doesn't keep the data. What stays comes from the ImageCaptureCore path: its own buffers, or the `NSData` it returns being released late.
 - **It levels off (three runs in one launch, log `fieldcheck-2026-11-15T193457Z.txt`).** After each copy of the 78 MB tape, FieldCheck held 151.9, then 148.9, then 132.6 MB. It never grew by the tape's size. Between runs it fell to about 112 MB, and early in the third run, with nothing transferring, to 47.4 MB. The highest it reached was 194.1 MB. So the ImageCaptureCore path keeps transferred data for a while and releases it later: a bounded cost of up to about 170 MB over the app's own, not a leak. All three copies had the same track hashes.
 
+## A deleted album side comes back after a reconnect (the owner, macOS companion app, 2026-11-16)
+
+**The OP-1 can't empty a side itself:** there's no way to clear or delete one on the device, only to record over it. So a side is never empty unless it was never recorded, and FieldCheck's `album.write-exact`, which needs an empty side, has never run on this OP-1.
+
+**A side deleted over MTP was back after leaving MTP mode.** The owner deleted a side with the macOS companion app over MTP. The delete looked like it worked, but after leaving MTP mode and entering it again, the file was there again. No log was kept, and whether it came back with its old contents hasn't been checked, though nothing else could have made it.
+
+**What it suggests, not yet shown:** the OP-1 keeps the album itself and rebuilds `mixdown/` from it when it leaves MTP mode, as it rebuilds `tape.json`. If so, a side written over MTP might also be replaced by the OP-1's own copy after a reconnect. The probe's 2026-11-08 mixdown write can't tell: it wrote `side_b.wav` back with the same bytes, and checked them only in the same session. FieldCheck now checks it across a reconnect (`album.write-kept`, ADR 0003).
+
+## A written side lasts, but putting it back hung (FieldCheck levels 2 and 3, iPad, 2026-11-16)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T035757Z.txt`, with the level 2 report `fieldcheck-2026-11-16T035851Z` and the level 3 report `fieldcheck-2026-11-16T035919Z`.
+
+**Level 2 passed 10 of 10.** Its new last check copied side B (3,992,876 bytes) into `level2-2026-11-16T035851Z/side_b before level 2.wav` and verified it, then wrote FieldCheck's 2-second tone (352,844 bytes) over side B with `restoreSide`, and read it back byte for byte. The copy pulled to the Mac has SHA-256 `9204518b…5f361a97aa`, the same as the probe's 2026-11-08 backup and step 20's run, so side B can be put back exactly.
+
+**A written side lasts after leaving MTP mode.** After the reconnect, free space was 6,283,678,720 bytes: level 2's 6,280,039,424 before the album step, plus 3,992,876 for side B, less 352,844 for the tone, is 6,283,679,456, within 736 bytes. So the OP-1 kept the tone, not its own side. The owner then played side B on the OP-1 and heard the 2-second tone. So `album.write-kept` holds on 1.7.3, and the 2026-11-16 delete that came back was the OP-1 refilling a missing side, not rebuilding a written one.
+
+**Putting side B back hung.** Level 3's tape checks passed 6 of 6. Then `album.write-kept` stopped with "The OP-1 disconnected during this check": a request got no answer in 30 s, and the ping after it none in 5 s (level 3 took 37 s). The iPad logged no disconnect, so the OP-1 stopped answering MTP while still attached, as on 2026-11-08. Which request hung isn't known: the report kept only the disconnect. Side B still holds the tone. FieldCheck now traces every MTP request when it puts a side back, and offers that for a side holding its tone.
+
+
+## Putting side B back hangs at SendObjectInfo (FieldCheck, iPad, 2026-11-16)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T040711Z.txt`, FieldCheck's new "Put Side B back", with every MTP request traced.
+
+**The OP-1 stopped answering at SendObjectInfo.** The reads all answered in under 30 ms. `DeleteObject 0x43`, side B holding the 352,844-byte tone, answered OK in 3 ms. Then `SendObjectInfo` into `mixdown/` (parent 0x41, a 78-byte dataset announcing 3,992,876 bytes for `side_b.wav`) got no answer in 30 s, nor a ping in 5 s. The OP-1 had to be restarted, as after level 3. **After the restart, side B was the tone again:** the OP-1 refilled the deleted side from its own album, which holds what was last written to it.
+
+**What's the same in the two hangs, and what worked:**
+- Both hung putting the 3,992,876-byte side B over the 352,844-byte tone, as the first write after a reconnect.
+- Writes that worked: the probe's side B over itself at the same size (2026-11-08), and level 2's tone over side B, shorter, after several other writes in the session.
+- So a side growing longer than the one it replaces, or a side being the first write after a reconnect, are both still possible causes. Neither is shown.
+
+**Not the first write after a reconnect (log `fieldcheck-2026-11-16T041259Z.txt`).** With a warm-up first, in the same connection, `drum/user/fieldcheck.wav` was written and deleted without trouble: SendObjectInfo answered in 2 ms, SendObject sent 4,410,044 bytes in 2.4 s, and the read-back and delete answered. Then side B's delete answered OK in 2 ms, and its SendObjectInfo hung the same way, and the OP-1 needed a restart again. Side B is still the tone. So it's something about writing this side: most likely that a side can't grow past what the OP-1 holds for it (352,844 bytes now), since every side write that worked was the same size or shorter. Not yet shown.
+
+**Side B is back, by writing a shorter side (log `fieldcheck-2026-11-16T041944Z.txt`).** The owner recorded about 28 s onto side B on the OP-1 (4,949,548 bytes). FieldCheck copied that recording off into the level 2 folder as `side_b replaced 2026-11-16T042001Z.wav` and verified it, deleted side B, and sent the 3,992,876-byte copy: SendObjectInfo answered in 3 ms, SendObject in 825 ms, and side B read back byte for byte. So a side written shorter than the one it replaces works right after a reconnect, as the tone did in level 2, and every write that hung was one where the side grew. That's strong support for "a side can't grow over MTP" on 1.7.3, though growth from an empty side hasn't been tried.
+
+## A hang in level 2, away from the album (FieldCheck, iPad, 2026-11-16)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T042721Z.txt`, level 2 report `fieldcheck-2026-11-16T042735Z`.
+
+**Level 2 stopped at `write.preset-converted`** with "The OP-1 disconnected during this check": no answer for 30 s, nor to a ping, and the run took 45.8 s. The album check comes last, so it didn't run, and side B wasn't touched. There's no trace: level 2 doesn't trace its requests yet.
+
+**Where it stopped, from free space.** After the reconnect, free space was 10,238,976 bytes below the start. The scratch tapes (5,645,976) and both presets as the OP-1 stores them (3,532,220 and 1,059,548) make 10,237,744, within 1,232 bytes. So both presets were written and are still there, and the drum preset's copy never reached the run folder. The hang was after the second preset was written: reading it back, reading free space, or reading the drum preset to copy it before deleting it. All of those are reads.
+
+**What it changes.** It's the fourth hang today, and the first that isn't a side growing. Every earlier level 2 passed this check, including today's first, and the warm-up wrote and deleted the drum preset without trouble. So "a side can't grow" still fits the three side hangs, but the OP-1 can also stop answering elsewhere, and it may be getting more likely after several restarts in one day. Whether it was the same hang can't be told without a trace.
+
+## Not growth: a side written over MTP can't be replaced after a reconnect (FieldCheck, iPad, 2026-11-16)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T043311Z.txt`, level 2 `fieldcheck-2026-11-16T043329Z` and level 3 `fieldcheck-2026-11-16T043349Z`. FieldCheck's leftovers from the hung run were deleted first, without trouble.
+
+**Level 2 passed 10 of 10**, with the tone exactly as long as side B, 3,992,876 bytes. **Level 3's tape checks passed 6 of 6.** Then putting side B back, at the same length, hung exactly as before: side B's `DeleteObject` answered OK in 2 ms, and the `SendObjectInfo` after it got no answer in 30 s, nor a ping in 5 s. The OP-1 froze and had to be restarted. So **the side didn't grow, and it still hung: the growth rule is wrong.**
+
+**What fits all four side hangs, and all three side writes that worked:**
+
+| Write | Side B held | Result |
+|---|---|---|
+| Probe, 2026-11-08 | audio, the same bytes | worked |
+| Level 2, twice today | the owner's audio | worked |
+| Put-back after the owner recorded over side B | a recording made on the OP-1 | worked |
+| Level 3, and both put-backs, after a reconnect or restart | FieldCheck's tone, written over MTP in an earlier connection | **hung**, every time |
+
+So the likely rule is: **once the OP-1 leaves MTP mode, a side written over MTP can't be written over MTP again**, at any length, until it's recorded over on the OP-1. A restart doesn't clear it: two of the hangs came right after one. Recording over the side on the OP-1 does. Not yet known: whether writing a side twice in one connection works, and whether anything visible, such as the side's ObjectInfo, tells the two kinds of side apart. A side's ObjectInfo is 142 bytes in both states.
+
+**Decided by the owner: album writing is off on 1.7.3, as a future improvement** (ADR 0002's change log). The owner's app needs only to read and copy the album. Side B is left holding FieldCheck's 22.6-second tone for now. The verified copy is in `level2-2026-11-16T043329Z`, and putting it back means recording over side B on the OP-1 first, then FieldCheck's put-back.
+
 ## Entering MTP mode from the app (paused 2026-11-08: possible, a future feature)
 
 **Status:** paused by the user as too fragile for now, and kept as a possible future feature for the framework. What works: detecting a plugged-in OP-1 over USB MIDI, `greet`, and switching it into MTP mode with `mode`, from both the Mac and the iPad. What doesn't yet: on the iPad, ImageCaptureCore never saw the OP-1 after any switch in that session. Even MTP mode entered with the buttons failed until the OP-1 was restarted. Not tested: Leave MTP mode (closing the session), and a full app-triggered switch on a freshly restarted OP-1. To pick this up, start there, and restart the OP-1 whenever it shows connected but the app sees nothing. **The MIDI code was removed from the probe on 2026-11-08,** at the user's request, so it can't recreate the stuck state. That was `OP1MIDI.swift` (the `TESysEx` encoder and the CoreMIDI client), its tests, and the MIDI toggle and Enter and Leave MTP mode buttons. The format and bytes are kept below, and the Mac tools `tools/op1-midi-listen.swift` and `tools/op1-sysex.swift` remain. They only send when run by hand. The probe still logs each device's USB IDs.
@@ -418,6 +481,7 @@ Open questions:
 
 - Does GetObject work for full-size tapes? It worked on a 22 MB track at 18.8 MB/s (2026-11-14), and holds the whole file in memory. A full 127 MB track hasn't been tried. Reading in GetPartialObject chunks avoids holding it, but every read costs time in proportion to where it ends (2026-11-14, above), so chunked reads of large files are slow.
 - Is `mixdown/` stored byte for byte like `tapes/`, and is 5.8 MB/s representative of large writes?
+- Does a side written over MTP last past leaving MTP mode, or does the OP-1 put its own back (2026-11-16, above)?
 - Does the OP-1 use a written file without a restart, and does replacing a tape track need `tape.json` updated?
 - Do writes work the same from iPhone?
 - Can the app keep the device if it's backgrounded mid-transfer? `ICDeviceBrowser` has suspend callbacks that the probe ignores.

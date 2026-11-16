@@ -9,10 +9,12 @@ import System
 /// to 12 once it leaves MTP mode. It writes the scratch tape a new tape's `tape.json`, then generated tones, which make the
 /// OP-1 rebuild `tape.json` with its old size still listed, as the probe saw. It tries a name a tape doesn't allow,
 /// replaces a track keeping a copy, and replaces `tape.json` with a generated one, last. When asked, the long check
-/// replaces a track with a full 6-minute one and puts it back. On an empty album side it writes a tone and puts the
-/// empty side back. It writes a preset to `drum/user/` and `synth/user/`, then deletes both. Writes are timed for
-/// `write.speed`, and free space is read before, after the writes, and after the presets are deleted. The scratch
-/// tape stays for level 3, or for `deleteLeftovers(on:)`.
+/// replaces a track with a full 6-minute one and puts it back. It writes a preset to `drum/user/` and `synth/user/`,
+/// then deletes both. Writes are timed for `write.speed`, and free space is read before, after the writes, and after
+/// the presets are deleted. Where album writing is on, last, it copies an album side with audio off, side B if it
+/// has any, and writes a tone of exactly its length over it with `restoreSide`, for level 3 to check it lasted and put
+/// the side back. On 1.7.3 album writing is off (`album.write-again`), so the album isn't touched. The scratch tape
+/// stays for level 3, or for `deleteLeftovers(on:)`.
 ///
 /// Everything goes through FieldTapeKit's public file layer, so a run checks steps 8 to 10 of the plan on hardware,
 /// apart from the refused name, which is sent raw because FieldTapeKit refuses it before sending. It stops at the
@@ -31,8 +33,9 @@ public enum LevelTwo {
     public static let tapes: [FilePath] = [scratchTape, longTape, longTapeCut]
     /// Written and deleted within the run.
     public static let presets: [FilePath] = ["drum/user/fieldcheck.wav", "synth/user/fieldcheck.wav"]
-    /// The album sides, in the order an empty one is picked.
-    static let sides: [FilePath] = ["mixdown/side_a.wav", "mixdown/side_b.wav"]
+    /// The tone written to an album side, and the copy kept of the side, in the run's folder.
+    static let sideTone = "fieldcheck side tone.wav"
+    static func sideCopy(_ side: Album.Side) -> String { "side_\(side.rawValue) before level 2.wav" }
     /// What level 2 makes, which it may delete as leftovers.
     public static var ownContent: [FilePath] { tapes + presets }
 
@@ -45,21 +48,23 @@ public enum LevelTwo {
         public let refusal: String?
         /// FieldCheck's own content left on the OP-1 by an earlier run, which `deleteLeftovers(on:)` deletes.
         public let leftovers: [FilePath]
-        /// The album side the album check writes to, the first that's empty, or nil if both have audio.
-        public let emptySide: FilePath?
+        /// The album side the album check writes over, as listed: side B if it's sound with audio, or else side A.
+        /// Nil if neither is. An empty side is never written: a tone would make it grow.
+        public let albumSide: AlbumSide?
     }
 
     /// Looks at the OP-1 and says what a run would do, or why it can't: no free tape slot, or FieldCheck's content
     /// left from an earlier run. It only reads.
     public static func plan(for device: FieldDevice) async -> Plan {
-        var emptySide: FilePath?
-        for side in sides where emptySide == nil {
-            if let item = try? await device.item(at: side), item.size == WAVHeader.size { emptySide = item.path }
-        }
-        let album = if let emptySide {
-            "\(emptySide) is empty: copy it to this run's folder, write a 2-second tone to it, then put the empty side back."
+        let writesAlbum = await device.albumWritesAllowed
+        let listed = writesAlbum ? try? await device.album() : nil
+        let albumSide = listed.flatMap { album in [album.b, album.a].first { $0.isSound && !$0.isEmpty } }
+        let album = if !writesAlbum {
+            "The album isn't touched: album writing is off on firmware \(device.info.firmware), since a side written over MTP hung the OP-1 when it was written again."
+        } else if let albumSide {
+            "\(albumSide.path) has \(albumSide.duration.formatted(.units(allowed: [.minutes, .seconds], width: .narrow))) of your audio: copy it to this run's folder and verify the copy, then write a tone of the same length over it. Until level 3 runs, \(albumSide.side) holds the tone. Level 3 checks the tone lasted after the reconnect, then puts your \(albumSide.side) back from the copy and checks it."
         } else {
-            "Both album sides have audio, so the album isn't touched."
+            "Neither album side has sound audio, so the album isn't touched: a tone over an empty side would make it grow, which hangs the OP-1."
         }
         let steps = [
             "Make the tape \(scratchTape.lastComponent!.string) in a free slot (\(scratchName), 12 characters, the most the OP-1 keeps), and \(longTape.lastComponent!.string) in another (\(longName), 13 characters), with a new tape's tape.json and the same tones. Level 3 checks the OP-1 cut the second name to 12.",
@@ -67,8 +72,8 @@ public enum LevelTwo {
             "Try track_5.wav in it, which the OP-1 should refuse. If it's taken, it's deleted.",
             "Read the tape.json the OP-1 rebuilds, then replace track_1.wav with another tone, keeping a copy in this run's folder, and replace tape.json with a generated one, last.",
             "Only with the long check: replace track_2.wav with a 6-minute tone of 127 MB, read it back, then put the 2-second one back and tape.json again, last. It adds about half a minute.",
-            album,
             "Write \(presets.map(\.string).joined(separator: " and ")), 25-second tones, then delete them, keeping a copy of the drum one in this run's folder.",
+            album,
             "Leave both tapes on the OP-1, for level 3, which deletes them.",
         ]
         do {
@@ -84,10 +89,10 @@ public enum LevelTwo {
             } else {
                 nil
             }
-            return Plan(deviceID: device.id, steps: steps, refusal: refusal, leftovers: leftovers, emptySide: emptySide)
+            return Plan(deviceID: device.id, steps: steps, refusal: refusal, leftovers: leftovers, albumSide: albumSide)
         } catch {
             return Plan(deviceID: device.id, steps: steps,
-                        refusal: "Couldn't look at the OP-1: \(error.localizedDescription)", leftovers: [], emptySide: nil)
+                        refusal: "Couldn't look at the OP-1: \(error.localizedDescription)", leftovers: [], albumSide: nil)
         }
     }
 
@@ -295,21 +300,6 @@ public enum LevelTwo {
                                            options: UploadOptions(existing: .replace(confirmed: try await device.prepareToRemove(at: json))))
                 return finding
             },
-            Check("album.write-exact") {
-                guard let side = plan.emptySide else { return .notRun("Both album sides have audio, so the album wasn't touched.") }
-                // Read fresh: the side must still be empty, and in a form FieldTapeKit can write back.
-                let empty = try await device.contents(of: side)
-                guard empty.count == WAVHeader.size, let header = try? WAVHeader(empty), header.format == device.profile.sideFormat,
-                      header.problems(fileSize: empty.count).isEmpty else {
-                    return .notRun("\(side) isn't an empty side any more, so the album wasn't touched.")
-                }
-                let copy = workspace.appending(path: "mixdown-\(side.lastComponent!.string)")
-                let (_, read) = try await write(Content.side, to: side, options: UploadOptions(existing: .replace(keepingCopyAt: copy)))
-                guard read == Content.side else { return albumExact(side: side, read: read, empty: empty, restored: nil) }
-                _ = try await device.write(empty, to: side,
-                                           options: UploadOptions(existing: .replace(confirmed: try await device.prepareToRemove(at: side))))
-                return albumExact(side: side, read: read, empty: empty, restored: try await device.contents(of: side))
-            },
             Check("write.preset-converted") {
                 var stored: [(path: FilePath, audio: PCMAudio, format: FieldFormat, size: Int)] = []
                 for path in presets {
@@ -339,7 +329,46 @@ public enum LevelTwo {
                 return freeSpace(before: before, afterWrites: afterWrites, afterCleanup: try await free(),
                                  tapeBytes: await run.tapeBytes, presetBytes: await run.presetBytes)
             },
+            // Last, so a failure anywhere before it leaves the album untouched, and nothing after it can stop level 3.
+            Check("album.write-exact") {
+                guard await device.albumWritesAllowed else {
+                    return .notRun("Album writing is off on firmware \(device.info.firmware), so the album wasn't touched.")
+                }
+                guard let planned = plan.albumSide else { return .notRun("Neither album side has sound audio, so the album wasn't touched.") }
+                return try await writeTone(over: planned, on: device, workspace: workspace)
+            },
         ]
+    }
+
+    /// Copies `planned` off into `workspace` and verifies it, writes a tone of the same length over it with
+    /// `restoreSide`, and reads it back. If the tone doesn't read back, the side is put back from the copy at once.
+    static func writeTone(over planned: AlbumSide, on device: FieldDevice, workspace: URL) async throws -> Finding {
+        let side = planned.side
+        guard try await device.album()[side] == planned else {
+            return .notRun("\(planned.path) changed since level 2 was planned, so the album wasn't touched.")
+        }
+        let original = try await device.contents(of: planned.path, maximumSize: 1 << 27)
+        let copy = workspace.appending(path: sideCopy(side))
+        let toneData = Content.sideTone(bytes: planned.size)
+        let tone = workspace.appending(path: sideTone)
+        try toneData.write(to: tone, options: .withoutOverwriting)
+        defer { try? FileManager.default.removeItem(at: tone) }
+        do {
+            _ = try await device.restoreSide(side, from: tone, conflict: .replace(copyingExistingTo: copy))
+        } catch let error as FieldError where !error.changed.isEmpty {
+            // Stopped after the old side was deleted, so nothing more is written (ADR 0002, safety rule 6).
+            return .fail("restoreSide stopped after deleting \(planned.path): \(error.localizedDescription) Its copy is in this "
+                         + "run's folder as \(sideCopy(side)). The OP-1 may put its own side back once it leaves MTP mode.")
+        }
+        let kept = try Data(contentsOf: copy)
+        let read = try await device.contents(of: planned.path, maximumSize: 1 << 27)
+        var restored: Data?
+        if read != toneData, kept == original {
+            let replacement = try await device.prepareToReplace(side)
+            _ = try await device.restoreSide(side, from: copy, conflict: .replace(confirmed: replacement))
+            restored = try await device.contents(of: planned.path, maximumSize: 1 << 27)
+        }
+        return albumExact(side: planned, tone: toneData, read: read, original: original, copy: kept, restored: restored)
     }
 
     // MARK: Judging
@@ -439,22 +468,26 @@ public enum LevelTwo {
                      + "2-second track and tape.json were put back.", observed: .record(observed), varies: varies)
     }
 
-    static func albumExact(side: FilePath, read: Data, empty: Data, restored: Data?) -> Finding {
-        var fields: [String: CheckValue] = ["side": .string(side.string), "bytes": .int(Content.side.count),
-                                            "readBytes": .int(read.count), "emptyBytes": .int(empty.count)]
-        if let restored { fields["restoredBytes"] = .int(restored.count) }
+    static func albumExact(side: AlbumSide, tone: Data, read: Data, original: Data, copy: Data, restored: Data?) -> Finding {
+        var fields: [String: CheckValue] = ["side": .string(side.path.string), "sameLength": .bool(tone.count == side.size),
+                                            "readBack": .bool(read == tone), "copy": .string(sideCopy(side.side))]
+        if let restored { fields["restoredAsItWas"] = .bool(restored == original) }
+        // Which side, and its copy, depend on what's on the OP-1.
         let observed = CheckValue.record(fields)
-        guard read == Content.side else {
-            return .fail("\(side) read back as \(read.count.formatted()) bytes that don't match the \(Content.side.count.formatted()) "
-                         + "written. The tone is left on it, and the empty side's copy is in this run's folder.", observed: observed)
+        let varies = ["side", "copy"]
+        guard copy == original else {
+            return .fail("The copy of \(side.path) in this run's folder doesn't hold what was read from the OP-1, so "
+                         + "\(side.path) holds FieldCheck's tone. It wasn't put back from the copy.", observed: observed, varies: varies)
         }
-        guard let restored, restored == empty else {
-            return .fail("\(side) read back exactly, but the empty side didn't come back as it was. Its copy is in this run's folder.",
-                         observed: observed)
+        guard read == tone else {
+            let back = restored == original ? "It was put back from the copy, and reads back as it was."
+                : "Putting it back from the copy in this run's folder didn't read back as it was."
+            return .fail("\(side.path) read back as \(read.count.formatted()) bytes that don't match the "
+                         + "\(tone.count.formatted()) written. \(back)", observed: observed, varies: varies)
         }
-        return .pass("\(side) was empty. A 2-second side of \(Content.side.count.formatted()) bytes was written and read back "
-                     + "byte for byte, then the \(empty.count)-byte empty side was put back, and it reads back the same.",
-                     observed: observed)
+        return .pass("\(side.path) was copied off and verified, then a tone of the same length, \(tone.count.formatted()) bytes, "
+                     + "was written with restoreSide and read back byte for byte. It holds the tone until level 3 puts it back.",
+                     observed: observed, varies: varies)
     }
 
     static func writeSpeed(_ writes: [TimedWrite]) -> Finding {

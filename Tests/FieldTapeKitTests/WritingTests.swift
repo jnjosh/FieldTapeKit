@@ -58,12 +58,18 @@ import Testing
         #expect(try await device.item(at: "tapes/2026-312#01/tape.json")?.size == Self.blankJSON.count)
     }
 
-    @Test func writesAnAlbumSide() async throws {
-        let (device, _) = await Self.device()
-        // The default layout's sides exist, so this writes to a mixdown with side B removed first.
-        try await device.removeItem(try await device.prepareToRemove(at: "mixdown/side_b.wav"))
+    @Test func albumSidesArentWrittenOn173UnlessLetThrough() async throws {
+        let (device, simulator) = await Self.device()
+        let path: FilePath = "mixdown/side_b.wav"
         let side = Self.wav(Self.profile.sideFormat)
-        let item = try await device.write(side, to: "mixdown/side_b.wav")
+        // Off on 1.7.3 (`album.write-again`).
+        await #expect {
+            try await device.write(side, to: path, options: .init(existing: .replace(confirmed: try await device.prepareToRemove(at: path))))
+        } throws: { ($0 as? FieldError)?.code == .notAllowed && ($0 as? FieldError)?.path == path }
+        #expect(await simulator.deleted.isEmpty)
+
+        await device.overrideAlbumWrites(true)
+        let item = try await device.write(side, to: path, options: .init(existing: .replace(confirmed: try await device.prepareToRemove(at: path))))
         #expect(try await device.contents(of: item.path) == side)
     }
 

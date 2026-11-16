@@ -46,7 +46,10 @@ struct WriteRules {
             guard profile.albumFiles.required.contains(names[1]) else {
                 throw FieldError(.notAllowed, path: path, reason: "mixdown holds only side_a.wav and side_b.wav")
             }
-            _ = try checkWAV(data, format: profile.sideFormat, kind: "an album side", path: path)
+            let header = try checkWAV(data, format: profile.sideFormat, kind: "an album side", path: path)
+            if header.dataSize / profile.sideFormat.frameBytes > profile.maximumSideFrames {
+                throw FieldError(.tapeTooLong, path: path, reason: "an album side can be at most 6 minutes")
+            }
         default:
             throw FieldError(.notAllowed, path: path, reason: "FieldTapeKit writes only tape files, album sides and presets")
         }

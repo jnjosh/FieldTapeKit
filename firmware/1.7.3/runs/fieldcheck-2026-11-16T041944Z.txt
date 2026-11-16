@@ -1,0 +1,185 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.37] Watching for an OP-1 in MTP mode
+[   3.80] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[   3.80] Storage: 6429185024 bytes, 6284728320 free
+[   3.96] Side B holds 4,949,548 bytes that aren't level 2's copy, level2-2026-11-16T035851Z/side_b before level 2.wav, 3,992,876 bytes, SHA-256 9204518b5ef84a37dcf171ed29082a1261933c625d355ea925b7ab5f361a97aa
+[  17.33] Putting Side B back from level2-2026-11-16T035851Z/side_b before level 2.wav
+[  19.02]   Reading mixdown/side_b.wav
+[  19.02]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  19.02]   ← getObjectHandles 0x2001, 20 bytes in, 8 ms
+[  19.02]   → getObjectInfo 0x1
+[  19.02]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x16
+[  19.02]   ← getObjectInfo 0x2001, 130 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x2B
+[  19.02]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x41
+[  19.02]   ← getObjectInfo 0x2001, 136 bytes in, 1 ms
+[  19.02]   → getObjectHandles 0xFFFFFFFF 0x0 0x41
+[  19.02]   ← getObjectHandles 0x2001, 16 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x42
+[  19.02]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x43
+[  19.02]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x44
+[  19.02]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.02]   → getPartialObject 0x42 0x0 0x2C
+[  19.02]   ← getPartialObject 0x2001, 44 bytes in, 10 ms
+[  19.02]   → getPartialObject 0x43 0x0 0x2C
+[  19.02]   ← getPartialObject 0x2001, 44 bytes in, 6 ms
+[  19.02]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  19.02]   ← getObjectHandles 0x2001, 20 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x1
+[  19.02]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x16
+[  19.02]   ← getObjectInfo 0x2001, 130 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x2B
+[  19.02]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x41
+[  19.02]   ← getObjectInfo 0x2001, 136 bytes in, 1 ms
+[  19.02]   → getObjectHandles 0xFFFFFFFF 0x0 0x41
+[  19.02]   ← getObjectHandles 0x2001, 16 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x42
+[  19.02]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x43
+[  19.02]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x44
+[  19.02]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.02]   → getPartialObject 0x42 0x0 0x2C
+[  19.02]   ← getPartialObject 0x2001, 44 bytes in, 5 ms
+[  19.02]   → getPartialObject 0x43 0x0 0x2C
+[  19.02]   ← getPartialObject 0x2001, 44 bytes in, 6 ms
+[  19.02]   Restoring mixdown/side_b.wav from level2-2026-11-16T035851Z/side_b before level 2.wav
+[  19.02]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  19.02]   ← getObjectHandles 0x2001, 20 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x1
+[  19.02]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x16
+[  19.02]   ← getObjectInfo 0x2001, 130 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x2B
+[  19.02]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x41
+[  19.02]   ← getObjectInfo 0x2001, 136 bytes in, 1 ms
+[  19.02]   → getObjectHandles 0xFFFFFFFF 0x0 0x41
+[  19.02]   ← getObjectHandles 0x2001, 16 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x42
+[  19.02]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x43
+[  19.02]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.02]   → getObjectInfo 0x44
+[  19.02]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.02]   → getPartialObject 0x42 0x0 0x2C
+[  19.02]   ← getPartialObject 0x2001, 44 bytes in, 6 ms
+[  19.02]   → getPartialObject 0x43 0x0 0x2C
+[  19.02]   ← getPartialObject 0x2001, 44 bytes in, 6 ms
+[  19.02]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  19.03]   ← getObjectHandles 0x2001, 20 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x1
+[  19.03]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x16
+[  19.03]   ← getObjectInfo 0x2001, 130 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x2B
+[  19.03]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x41
+[  19.03]   ← getObjectInfo 0x2001, 136 bytes in, 1 ms
+[  19.03]   → getObjectHandles 0xFFFFFFFF 0x0 0x41
+[  19.03]   ← getObjectHandles 0x2001, 16 bytes in, 0 ms
+[  19.03]   → getObjectInfo 0x42
+[  19.03]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x43
+[  19.03]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x44
+[  19.03]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.03]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  19.03]   ← getObjectHandles 0x2001, 20 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x1
+[  19.03]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x16
+[  19.03]   ← getObjectInfo 0x2001, 130 bytes in, 0 ms
+[  19.03]   → getObjectInfo 0x2B
+[  19.03]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x41
+[  19.03]   ← getObjectInfo 0x2001, 136 bytes in, 0 ms
+[  19.03]   → getObjectHandles 0xFFFFFFFF 0x0 0x41
+[  19.03]   ← getObjectHandles 0x2001, 16 bytes in, 0 ms
+[  19.03]   → getObjectInfo 0x42
+[  19.03]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x43
+[  19.03]   ← getObjectInfo 0x2001, 142 bytes in, 0 ms
+[  19.03]   → getObjectInfo 0x44
+[  19.03]   ← getObjectInfo 0x2001, 142 bytes in, 0 ms
+[  19.03]   → getObject 0x43
+[  19.03]   ← getObject 0x2001, 4949548 bytes in, 244 ms
+[  19.03]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  19.03]   ← getObjectHandles 0x2001, 20 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x1
+[  19.03]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x16
+[  19.03]   ← getObjectInfo 0x2001, 130 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x2B
+[  19.03]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x41
+[  19.03]   ← getObjectInfo 0x2001, 136 bytes in, 1 ms
+[  19.03]   → getObjectHandles 0xFFFFFFFF 0x0 0x41
+[  19.03]   ← getObjectHandles 0x2001, 16 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x42
+[  19.03]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x43
+[  19.03]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x44
+[  19.03]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.03]   → deleteObject 0x43 0x0
+[  19.03]   ← deleteObject 0x2001, 0 bytes in, 1 ms
+[  19.03]   → sendObjectInfo 0x10001 0x41, 78 bytes out
+[  19.03]   ← sendObjectInfo 0x2001, 0 bytes in, 3 ms
+[  19.03]   → sendObject, 3992876 bytes out
+[  19.03]   ← sendObject 0x2001, 0 bytes in, 825 ms
+[  19.03]   → getObject 0x45
+[  19.03]   ← getObject 0x2001, 3992876 bytes in, 208 ms
+[  19.03]   → getObjectInfo 0x45
+[  19.03]   ← getObjectInfo 0x2001, 142 bytes in, 3 ms
+[  19.03]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  19.03]   ← getObjectHandles 0x2001, 20 bytes in, 2 ms
+[  19.03]   → getObjectInfo 0x1
+[  19.03]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x16
+[  19.03]   ← getObjectInfo 0x2001, 130 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x2B
+[  19.03]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x41
+[  19.03]   ← getObjectInfo 0x2001, 136 bytes in, 1 ms
+[  19.03]   → getObjectHandles 0xFFFFFFFF 0x0 0x41
+[  19.03]   ← getObjectHandles 0x2001, 16 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x45
+[  19.03]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x42
+[  19.03]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x44
+[  19.03]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.03]   → getPartialObject 0x42 0x0 0x2C
+[  19.03]   ← getPartialObject 0x2001, 44 bytes in, 5 ms
+[  19.03]   → getPartialObject 0x45 0x0 0x2C
+[  19.03]   ← getPartialObject 0x2001, 44 bytes in, 6 ms
+[  19.03]   Reading mixdown/side_b.wav back
+[  19.03]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  19.03]   ← getObjectHandles 0x2001, 20 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x1
+[  19.03]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x16
+[  19.03]   ← getObjectInfo 0x2001, 130 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x2B
+[  19.03]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  19.03]   → getObjectInfo 0x41
+[  19.03]   ← getObjectInfo 0x2001, 136 bytes in, 1 ms
+[  19.04]   → getObjectHandles 0xFFFFFFFF 0x0 0x41
+[  19.04]   ← getObjectHandles 0x2001, 16 bytes in, 1 ms
+[  19.04]   → getObjectInfo 0x45
+[  19.04]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.04]   → getObjectInfo 0x42
+[  19.04]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.04]   → getObjectInfo 0x44
+[  19.04]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  19.04]   → getObject 0x45
+[  19.04]   ← getObject 0x2001, 3992876 bytes in, 204 ms
+[  19.04] Put back: mixdown/side_b.wav was put back from level2-2026-11-16T035851Z/side_b before level 2.wav, 3,992,876 bytes, and reads back byte for byte. What it held before is kept as side_b replaced 2026-11-16T042001Z.wav.
+[  28.36] Disconnected
