@@ -495,6 +495,20 @@ Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T135303Z.txt`.
 
 To tell our changes from the OP-1's state, FieldCheck was built from commit `21450d5` (step 18), from before any album work, with the old 30 s timeout and ping. It's the build that passed every level on 2026-11-15. The iPad had been restarted. **Level 1 stalled in `read.cost` the same way**: "The OP-1 disconnected during this check" after 54.5 s, and level 2 couldn't start. So **the stall isn't caused by anything changed since step 18.** It's in the OP-1's state, the iPad, or the cable, and it began right after side B was written over MTP several times, late on 2026-11-15.
 
+## The Mac copies every tape cleanly, with the same cable (the owner, macOS companion app, 2026-11-16)
+
+Right after the control stalled on the iPad, the owner plugged the OP-1 into the Mac with the same cable and copied all three tapes off with the macOS companion app: 2026-286#01, 2026-220#01 and 2026-276#01, about 100 MB in all. **None stalled.** 2026-276#01's four tracks have the SHA-256s FieldCheck recorded for it on the iPad (`d47bbe1d…`, `46d0b9be…`, `4daf143e…`, `714da5ed…`), so the OP-1 served them exactly.
+
+So the OP-1 and the cable work. **The stall is on the iPad's side:** its USB port, iPadOS's MTP service, or ImageCaptureCore on it. Restarting the iPad didn't clear it. Not yet tried: another iOS device, such as the iPhone the probe also ran on (2026-11-08).
+
+## The iPhone passes all three levels: the stall is this iPad's (FieldCheck, iPhone, iOS 27.2, 2026-11-16)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T140744Z.txt`, the same FieldCheck build, OP-1 and cable as the iPad's last runs.
+
+**Every level passed, with 0 changed against the baseline:** level 1 18 of 18, level 2 9 of 9 (the long check and the album not run, as expected), and level 3 6 of 6, in 1.3 s. No request was slow. It's the first clean run of all three levels since 2026-11-15.
+
+So **the stall belongs to this iPad**, iPad Pro on iPadOS 27.2.1: its USB-C port, or a state its MTP stack has kept since the evening of 2026-11-15, which a restart didn't clear. The OP-1, the cable, FieldTapeKit and FieldCheck all work. Not yet known: what on the iPad causes it, and whether it clears by itself.
+
 ## Entering MTP mode from the app (paused 2026-11-08: possible, a future feature)
 
 **Status:** paused by the user as too fragile for now, and kept as a possible future feature for the framework. What works: detecting a plugged-in OP-1 over USB MIDI, `greet`, and switching it into MTP mode with `mode`, from both the Mac and the iPad. What doesn't yet: on the iPad, ImageCaptureCore never saw the OP-1 after any switch in that session. Even MTP mode entered with the buttons failed until the OP-1 was restarted. Not tested: Leave MTP mode (closing the session), and a full app-triggered switch on a freshly restarted OP-1. To pick this up, start there, and restart the OP-1 whenever it shows connected but the app sees nothing. **The MIDI code was removed from the probe on 2026-11-08,** at the user's request, so it can't recreate the stuck state. That was `OP1MIDI.swift` (the `TESysEx` encoder and the CoreMIDI client), its tests, and the MIDI toggle and Enter and Leave MTP mode buttons. The format and bytes are kept below, and the Mac tools `tools/op1-midi-listen.swift` and `tools/op1-sysex.swift` remain. They only send when run by hand. The probe still logs each device's USB IDs.

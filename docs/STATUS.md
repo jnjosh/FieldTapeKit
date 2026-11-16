@@ -269,7 +269,7 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - FieldCheck's put-back now also works over a side the owner recorded: it copies that off first with `.replace(copyingExistingTo:)`, and refuses, writing nothing, if the side is shorter than the copy. A copy that's back is marked and offered no more.
   - **A fourth hang, away from the album** (log `fieldcheck-2026-11-16T042721Z.txt`): level 2 stopped in `write.preset-converted`, after both presets were written, with no trace. Side B wasn't touched, since the album check is last. FieldCheck now keeps the last 50 MTP requests during every level, cleanup and conformance run, and logs them when one gets no answer.
   - 422 tests pass on the Mac and 421 on the iOS simulator (301 and 300 FieldTapeKit, 112 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
-- **Step 22 is done** (2026-11-16): levels 1 and 2 match the 1.7.3 baseline on the OP-1 with 0 changed. Level 3 didn't finish, because of the GetObject hang below. Decided by the owner, recorded in the plan and ADR 0003's change log:
+- **Step 22 is done** (2026-11-16): on the iPhone, all three levels match the 1.7.3 baseline with 0 changed, as the plan asks. On the iPad Pro, level 3 didn't finish, because of the stall below. Decided by the owner, recorded in the plan and ADR 0003's change log:
   - **The baselines are built into FieldCheckKit,** a copy of `firmware/1.7.3/baseline.json` that a test keeps identical, and FieldCheck compares each level's report with its firmware's baseline, or the closest one, as soon as it runs.
   - **A pass that observed something else is `changed`,** with each difference's old and new values and a suggested class: additive, divergent, or incompatible for a fail. Fields that vary are left out, with no ranges.
   - **The report lists failures, then changes,** and says what it was compared with. **A draft ADR,** `fieldcheck-<time>.draft-adr.md`, is saved beside any report with a change or a failure, following the ADR template with a compatibility table for each.
@@ -283,7 +283,7 @@ Where the project stands, so a new session can pick it up. Update this when the 
 
 ## Next steps
 
-1. **The stall.** A request sometimes gets no answer; after about 60 s it comes back with no response, and the next request stalls too, until a replug (PROBE-NOTES.md, 2026-11-16). FieldTapeKit now waits up to 90 s, with no ping. Restarting the iPad didn't help, and FieldCheck built from step 18, before the album work, stalls the same way, so our changes are ruled out. Next: copy a tape off with the macOS companion app, to tell the OP-1 from the iPad's side.
+1. **The stall is this iPad's.** On the iPhone, with the same OP-1, cable and build, all three levels passed with 0 changed (log `fieldcheck-2026-11-16T140744Z.txt`). The iPad Pro still stalls after a restart. Run hardware checks on the iPhone for now, and try the iPad again later, or with another port or cable adapter, to see whether it clears.
 2. Step 23: the safety-rule suite.
 
 ## Future improvements
