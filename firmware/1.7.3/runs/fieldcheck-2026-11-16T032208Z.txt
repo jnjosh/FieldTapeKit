@@ -1,0 +1,19 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.06] Watching for an OP-1 in MTP mode
+[  15.76] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  15.76] Storage: 6429185024 bytes, 6285685760 free
+[  23.69] Conformance: running, writing checks, making and deleting tapes/conformance. Memory: 41.3 MB, peak 146.1 MB
+[  24.29] Conformance: pass: Creating a tape makes an empty, sound tape, and deleting it frees its slot. tapes/conformance: Studio, 4 blank tracks, tape.json 250 bytes
+[  24.29] Conformance: Memory: 32.3 MB, peak 146.1 MB
+[  26.71] Conformance: pass: Duplicating the smallest tape makes a copy that matches it. 2026-286#01 to conformance, 3036280 bytes. track_1 59fd90f42b49dab48e56c433baaa9dc2439b66c9d04e6eb0f0f8bca645df9da7, track_2 c02a591887eb7c23bd346ad09952e56a6295f34f4f9c628e3976393cb4be956c, track_3 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e, track_4 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e
+[  26.71] Conformance: Memory: 36.7 MB, peak 146.1 MB
+[  28.82] Conformance: pass: Restoring an archive of the smallest tape makes a tape that matches the archive. 2026-286#01.reelarchive to tapes/conformance. track_1 59fd90f42b49dab48e56c433baaa9dc2439b66c9d04e6eb0f0f8bca645df9da7, track_2 c02a591887eb7c23bd346ad09952e56a6295f34f4f9c628e3976393cb4be956c, track_3 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e, track_4 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e
+[  28.82] Conformance: Memory: 36.2 MB, peak 146.1 MB
+[  31.23] Conformance: pass: Moving a duplicate of the smallest tape off makes an archive that matches it, and frees its slot. tapes/conformance to conformance.reelarchive, 3036280 bytes. track_1 59fd90f42b49dab48e56c433baaa9dc2439b66c9d04e6eb0f0f8bca645df9da7, track_2 c02a591887eb7c23bd346ad09952e56a6295f34f4f9c628e3976393cb4be956c, track_3 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e, track_4 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e
+[  31.23] Conformance: Memory: 36.5 MB, peak 146.1 MB
+[  33.67] Conformance: pass: Deleting a duplicate, keeping the smallest tape as its copy, frees its slot. tapes/conformance, keeping tapes/2026-286#01: 3036280 bytes matched by SHA-256 in 0.8 s
+[  33.67] Conformance: Memory: 35.0 MB, peak 146.1 MB
+[  36.72] Conformance: pass: Restoring over the scratch tape, archiving it first and then with a confirmation, matches each archive. 2026-286#01.reelarchive over tapes/conformance, archived first, 3036280 bytes; then the empty tape back with a confirmation. track_1 59fd90f42b49dab48e56c433baaa9dc2439b66c9d04e6eb0f0f8bca645df9da7, track_2 c02a591887eb7c23bd346ad09952e56a6295f34f4f9c628e3976393cb4be956c, track_3 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e, track_4 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e
+[  36.72] Conformance: Memory: 36.0 MB, peak 146.1 MB
+[  36.72] Conformance: 6 of 6 without a failure
+[  44.97] Disconnected

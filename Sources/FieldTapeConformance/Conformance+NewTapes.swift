@@ -10,7 +10,7 @@ extension Conformance {
 
     /// Checks that write to the OP-1, so an app asks before running them. Each makes the scratch tape in a free
     /// slot, checks it, and deletes it, so nothing is left behind. The person's own tapes are only read. The restore
-    /// and move checks make an archive in the workspace, and delete it when they're done.
+    /// move and restoring-over checks make archives in the workspace, and delete them when they're done.
     public static let writingChecks: [Check] = [
         Check("Creating a tape makes an empty, sound tape, and deleting it frees its slot", copying: { device, _ in
             let name = try TapeName(scratchTape)
@@ -102,7 +102,45 @@ extension Conformance {
                     + String(format: "%.1f s", seconds)
             }
         }),
+        Check("Restoring over the scratch tape, archiving it first and then with a confirmation, matches each archive", copying: { device, workspace in
+            let name = try TapeName(scratchTape)
+            let source = try await smallestTape(on: device)
+            let before = try await scratchSlot(on: device, name)
+            let archive = try await device.copyTape(source, to: workspace)
+            defer { try? FileManager.default.removeItem(at: archive.url) }
+            let backup = workspace.appending(path: "\(scratchTape) before restoring.reelarchive")
+            defer { try? FileManager.default.removeItem(at: backup) }
+            return try await withScratch(on: device, slotsBefore: before, make: { try await device.createTape(named: name) }) { blank in
+                // Audio over the empty tape, archiving it first.
+                let restored = try await device.restoreTape(from: archive, as: name, conflict: .replace(archivingExistingTo: backup))
+                try expect(restored.path == blank.path, "the restored tape is at \(restored.path), not \(blank.path)")
+                try await expectMatches(restored, archive, on: device)
+                let kept = try ReelArchive(contentsOf: backup)
+                try expect(kept.manifest.data == blank.manifest?.data && kept.tracks.allSatisfy(\.isBlank),
+                           "the archive made first isn't of the empty tape")
+                // The empty tape back over the audio, with a confirmation.
+                let deletion = try await device.prepareToDelete(restored)
+                let emptied = try await device.restoreTape(from: kept, as: name, conflict: .replace(confirmed: deletion))
+                try expect(emptied.isEmpty, "restoring the empty tape back didn't empty it")
+                try await expectMatches(emptied, kept, on: device)
+                try expect(try await device.tape(named: source.name) == source, "\(source.name) changed on the OP-1")
+                return "\(archive.url.lastPathComponent) over \(blank.path), archived first, \(size(restored)) bytes; then the "
+                    + "empty tape back with a confirmation. "
+                    + archive.tracks.map { "track_\($0.number) \($0.sha256)" }.joined(separator: ", ")
+            }
+        }),
     ]
+
+    /// The tape on the OP-1 holds exactly what the archive holds: the same `tape.json`, and every track by SHA-256.
+    private static func expectMatches(_ tape: Tape, _ archive: ReelArchive, on device: FieldDevice) async throws {
+        try expect(tape.isSound, "\(tape.path) isn't sound: " + tape.problems.joined(separator: "; "))
+        try expect(tape.manifest?.data == archive.manifest.data, "\(tape.path)'s tape.json isn't the archive's")
+        try expect(tape.tracks.map(\.size) == archive.tracks.map(\.size), "\(tape.path)'s tracks aren't the archive's sizes")
+        for (track, archived) in zip(tape.tracks, archive.tracks) {
+            try expect(try await digest(of: track, on: device) == archived.sha256,
+                       "track_\(archived.number) on the OP-1 doesn't match \(archive.url.lastPathComponent)")
+        }
+    }
 
     private static func digest(of track: TapeTrack, on device: FieldDevice) async throws -> String {
         SHA256.hash(data: try await device.contents(of: track.path, maximumSize: 1 << 30)).map { String(format: "%02x", $0) }.joined()

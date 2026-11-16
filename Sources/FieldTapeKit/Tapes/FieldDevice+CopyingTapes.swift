@@ -27,6 +27,22 @@ extension FieldDevice {
     ///   `.disconnected`, `.timedOut` or `.deviceRefused`, or `CancellationError`.
     public func copyTape(_ tape: Tape, to folder: URL, compression: ReelArchive.Compression = .none,
                          progress: consuming Subprogress? = nil) async throws -> ReelArchive {
+        try await copyTape(tape, into: folder, exactly: nil, compression: compression, progress: progress)
+    }
+
+    /// As `copyTape(_:to:compression:progress:)`, but to exactly `destination`, which must be free: a taken one
+    /// throws `localFileFailed` before anything is read, and one taken in the meantime fails at the end.
+    func copyTape(_ tape: Tape, toExactly destination: URL, progress: consuming Subprogress? = nil) async throws -> ReelArchive {
+        if FileManager.default.fileExists(atPath: destination.path(percentEncoded: false)) {
+            throw FieldError(.localFileFailed, path: tape.path,
+                             underlying: CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: destination.path]))
+        }
+        return try await copyTape(tape, into: destination.deletingLastPathComponent(), exactly: destination,
+                                  compression: .none, progress: progress)
+    }
+
+    private func copyTape(_ tape: Tape, into folder: URL, exactly exact: URL?, compression: ReelArchive.Compression,
+                          progress: consuming Subprogress?) async throws -> ReelArchive {
         var writer: ReelArchiveWriter?
         do {
             let (before, manifest) = try await soundTape(tape)
@@ -82,6 +98,7 @@ extension FieldDevice {
                 try? FileManager.default.removeItem(at: temporary)
                 throw error
             }
+            if let exact { return archive.moved(to: try Self.moveIntoPlace(temporary, exactly: exact)) }
             return archive.moved(to: try Self.moveIntoPlace(temporary, as: folder.appending(path: "\(before.name.string).reelarchive")))
         } catch {
             writer?.abandon()
@@ -95,6 +112,17 @@ extension FieldDevice {
 
     static func hex(_ digest: SHA256.Digest) -> String {
         digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// Moves `temporary` to `destination`, which must still be free. If it can't, the temporary file is deleted.
+    private static func moveIntoPlace(_ temporary: URL, exactly destination: URL) throws -> URL {
+        do {
+            try FileManager.default.moveItem(at: temporary, to: destination)
+            return destination
+        } catch {
+            try? FileManager.default.removeItem(at: temporary)
+            throw FieldError(.localFileFailed, underlying: error)
+        }
     }
 
     /// Moves `temporary` to `destination`, or the first free numbered name next to it. A move never replaces a file,

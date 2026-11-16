@@ -371,6 +371,8 @@ Decided by the owner for step 18 (2026-11-16), and recorded in ADR 0002's change
 
 **Tag:** `1.0.0-alpha.2`. Tapes go off and back on.
 
+Decided by the owner for step 19 (2026-11-16), and recorded in ADR 0002's change log: a tape is replaced in place, file by file, so its folder and name stay. `.replace(archivingExistingTo:)` takes an exact file URL that must be free. The OP-1 run is a sixth writing check, which restores over the empty scratch tape both ways, archiving first and then with a confirmation.
+
 ## Part 4: The album layer
 
 ### 20. Reading and copying the album

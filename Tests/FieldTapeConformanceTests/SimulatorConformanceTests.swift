@@ -107,6 +107,7 @@ import Testing
     static let restore = "Restoring an archive of the smallest tape makes a tape that matches the archive"
     static let move = "Moving a duplicate of the smallest tape off makes an archive that matches it, and frees its slot"
     static let deleteKeeping = "Deleting a duplicate, keeping the smallest tape as its copy, frees its slot"
+    static let restoreOver = "Restoring over the scratch tape, archiving it first and then with a confirmation, matches each archive"
 
     @Test func theWritingChecksPassAndLeaveNothing() async throws {
         let device = FieldDevice.simulated {
@@ -116,7 +117,7 @@ import Testing
         let before = try await device.tapes()
         let outcomes = try await Self.runWriting(on: device)
         #expect(outcomes == [Self.create: .pass, Self.duplicate: .pass, Self.restore: .pass, Self.move: .pass,
-                             Self.deleteKeeping: .pass])
+                             Self.deleteKeeping: .pass, Self.restoreOver: .pass])
         #expect(try await device.tapes() == before)
     }
 
@@ -128,6 +129,7 @@ import Testing
         #expect(outcomes[Self.restore] == .skipped("There's no sound tape on the OP-1."))
         #expect(outcomes[Self.move] == .skipped("There's no sound tape on the OP-1."))
         #expect(outcomes[Self.deleteKeeping] == .skipped("There's no sound tape on the OP-1."))
+        #expect(outcomes[Self.restoreOver] == .skipped("There's no sound tape on the OP-1."))
         #expect(try await device.tapes().isEmpty)
     }
 
@@ -136,7 +138,8 @@ import Testing
         let outcomes = try await Self.runWriting(on: device)
         let reason = "tapes/conformance is already on the OP-1, from a run that didn't finish. Delete it on the OP-1 first."
         #expect(outcomes == [Self.create: .skipped(reason), Self.duplicate: .skipped(reason), Self.restore: .skipped(reason),
-                             Self.move: .skipped(reason), Self.deleteKeeping: .skipped(reason)])
+                             Self.move: .skipped(reason), Self.deleteKeeping: .skipped(reason),
+                             Self.restoreOver: .skipped(reason)])
         #expect(try await device.tapes().map(\.name.string) == ["conformance"])
     }
 

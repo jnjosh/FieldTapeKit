@@ -269,10 +269,11 @@ public struct TapeType: Sendable, Hashable, RawRepresentable {   // not an enum:
     static let diskMini = TapeType(rawValue: 3)
 }
 
-public enum TapeConflict: Sendable {
-    case fail                              // default: .alreadyExists if the name is taken
-    case replace(archivingExistingTo: URL) // archive and verify the tape that's there, then overwrite
-    case replace(confirmed: TapeDeletion)  // overwrite with no archive, because a person confirmed losing it
+public struct TapeConflict: Sendable, Hashable {   // a struct, as ExistingFile is: two cases named replace
+    static let fail                                    // default: .alreadyExists if the name is taken
+    static func replace(archivingExistingTo: URL)      // archive the tape that's there to exactly this free URL,
+                                                       // verify it, then overwrite
+    static func replace(confirmed: TapeDeletion)       // overwrite with no archive, because a person confirmed losing it
 }
 ```
 
@@ -648,6 +649,16 @@ These are possible later features, deliberately left out for now:
   - **`synth/user/` follows the same rules,** with no cap assumed. Nothing has been written there yet, so level 2 checks it on hardware.
 - **2026-11-15:** FieldCheck's first level 2 run (PROBE-NOTES.md) found that **`synth/user/` keeps 6 seconds**, where `drum/user/` keeps 20, and that **a converted preset keeps the format code it was sent with:** a WAV stored as AIFC is still listed as WAV. Neither changes a decision. A shortened preset was already allowed, and nothing in FieldTapeKit depends on a cap, which only the simulator models. But `FieldFormat` in a preset folder says what was sent, not what's stored, unlike the 2026-11-14 entry's reasoning for reading it from the format code. Its documentation says so now.
   - Also settled while building it: a preset WAV's chunks are walked, so WAVs from other apps with extra chunks are accepted. The read-back would catch the OP-1 handling one differently. A write that reads back wrong now says why in its error.
+- **2026-11-16:** Decided by the owner while building step 19 of the plan, restoring over an existing tape:
+  - **A tape is replaced in place, file by file,** as section 4 says: for each track, the old one is deleted and the new one sent and read back, and a track blank on both sides is left as it is. Then `tape.json`, last. The folder stays, so a name longer than 12 characters, which a new tape couldn't have, survives. Deleting the tape and restoring it as new was rejected: the OP-1 would later cut a long name, and a failure part way would leave no tape at all.
+  - **`.replace(archivingExistingTo:)` takes an exact file URL, which must be free,** as the file layer's `.replace(keepingCopyAt:)` does. A taken one throws `localFileFailed` before anything changes, so the app knows exactly where the old tape's archive is, and `restoreTape` still returns only the `Tape`. The archive is kept even if the restore fails.
+  - **The writing check restores both ways** over an empty scratch tape: the smallest tape's archive over it, archiving it first, then that archive of the empty tape back over the audio, with a confirmation. Each result is matched to its archive by SHA-256.
+  - Also settled while building it:
+    - **`TapeConflict` is a struct,** with `.fail` and two static `replace` functions, as `ExistingFile` is, because Swift can't match two enum cases that share the name `replace`.
+    - Before the first delete, a fresh listing checks the cover again: the tape against its confirmation, or against the archive just made by sizes and `tape.json`. Only the tape's own files, and an optional `readme.txt`, may be in its folder (`notAllowed`), and the archive being restored is read again from disk (`archiveMismatch`).
+    - `.replace(archivingExistingTo:)` with no tape at the name restores a new tape and makes no archive. `.replace(confirmed:)` with no tape is `changedSinceConfirmation`, and a confirmation for another tape is `notAllowed`. A confirmation is used up at the first delete, so one cancelled before that still works.
+    - Once the first file is deleted, cancelling no longer stops the restore, so a tape isn't left half-written for that. A failure lists in `changed` every file already deleted or written, and nothing is rolled back.
+    - The existing tape needs to be sound to be archived. With a confirmation, any tape can be replaced.
 - **2026-11-16:** Decided by the owner while building step 18 of the plan, deleting and moving tapes:
   - **A tape is deleted file by file, then its folder,** not with one DeleteObject on the folder, though that works on 1.7.3 (`delete.folder-with-files`). It works on any firmware, and if a delete fails part way, `changed` lists exactly the files already deleted. It's the same order as `removeItem(_:)` and the half-made-tape cleanup, and costs six requests instead of one.
   - **`deleteTape(_:keeping:)` matches every track by SHA-256** before it deletes anything: each is read from the OP-1, one at a time, and matched to the archive's record, or to the other tape's track, read the same way. Recording over a track on the OP-1 can leave every size and `tape.json` as they were, and an archive may be days old, so sizes alone could delete audio the copy doesn't hold. A full tape takes about 25 s to check, twice that with a tape as the copy, so it takes a `progress`.

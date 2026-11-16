@@ -220,7 +220,7 @@ final class ConnectionLog {
     ///
     /// With `writing`, it runs the writing checks instead, which the person confirms first: each makes the scratch
     /// tape `tapes/conformance` in a free slot, checks it and deletes it. The person's tapes are only read. The
-    /// restore and move checks' archives go in a temporary folder, not Documents.
+    /// archives the checks make go in a temporary folder, not Documents.
     func runConformance(on device: FieldDevice, writing: Bool = false) async {
         guard running == nil else { return }
         running = device.id
@@ -376,6 +376,21 @@ struct ValidateView: View {
     @State private var cleanup: FieldDevice?
     /// The device a level 3 is waiting for the person to confirm on.
     @State private var levelThree: FieldDevice?
+    /// What the writing conformance checks do, for the person to confirm.
+    static let writingConformancePlan: String = {
+        let scratch = "tapes/\(Conformance.scratchTape)"
+        let steps: [String] = [
+            "Makes an empty tape, \(scratch), checks it, and deletes it.",
+            "Duplicates your smallest tape to \(scratch), checks the copy, and deletes it. Your tape is only read.",
+            "Copies that tape into a temporary archive, restores it as \(scratch), checks it against the archive, and deletes both.",
+            "Duplicates that tape again and moves the copy off into a temporary archive, then deletes the archive.",
+            "Duplicates it once more and deletes the copy, keeping your tape as its match.",
+            "Makes an empty \(scratch), restores that tape's archive over it, archiving it first, then restores the empty tape back with a confirmation, and deletes it.",
+            "Needs one free tape slot, and leaves nothing behind.",
+        ]
+        return steps.map { "• " + $0 }.joined(separator: "\n")
+    }()
+
     /// The device the writing conformance checks are waiting for the person to confirm on.
     @State private var writingConformance: FieldDevice?
 
@@ -486,15 +501,7 @@ struct ValidateView: View {
                 Button("Write to the OP-1") { Task { await log.runConformance(on: device, writing: true) } }
                 Button("Cancel", role: .cancel) {}
             } message: { _ in
-                Text("• Makes an empty tape, tapes/\(Conformance.scratchTape), checks it, and deletes it.\n"
-                     + "• Duplicates your smallest tape to tapes/\(Conformance.scratchTape), checks the copy, and deletes "
-                     + "it. Your tape is only read.\n"
-                     + "• Copies that tape into a temporary archive, restores it as tapes/\(Conformance.scratchTape), "
-                     + "checks it against the archive, and deletes both.\n"
-                     + "• Duplicates that tape again and moves the copy off into a temporary archive, then deletes the "
-                     + "archive.\n"
-                     + "• Duplicates it once more and deletes the copy, keeping your tape as its match.\n"
-                     + "• Needs one free tape slot, and leaves nothing behind.")
+                Text(Self.writingConformancePlan)
             }
             .confirmationDialog("Delete FieldCheck's content?", isPresented: Binding(get: { cleanup != nil },
                                                                                       set: { if !$0 { cleanup = nil } }),
