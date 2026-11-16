@@ -251,7 +251,7 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **`side(_:matches:)`** compares the size, then the SHA-256, with an `AlbumSideCopy`, which is `Codable`.
   - **A new reading check** copies the album off, matches each side by SHA-256, checks `side(_:matches:)`, and deletes the copies. It passed in the conformance tests on the simulated OP-1.
   - 382 tests pass on the Mac and 381 on the iOS simulator (280 and 279 FieldTapeKit, 93 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
-- **Step 21 is built, with album writing off on 1.7.3** (2026-11-16). Not committed: the owner found the OP-1 can't empty an album side, and a side deleted over MTP came back after a reconnect (PROBE-NOTES.md). So whether a side written over MTP lasts isn't known, and `restoreSide` depends on it. Decided by the owner, recorded in the plan and the change logs of ADR 0002 and ADR 0003:
+- **Step 21 is done, with album writing off on 1.7.3, and tagged `1.0.0-alpha.3`** (2026-11-16): the owner found the OP-1 can't empty an album side, and a side deleted over MTP came back after a reconnect (PROBE-NOTES.md). So whether a side written over MTP lasts isn't known, and `restoreSide` depends on it. Decided by the owner, recorded in the plan and the change logs of ADR 0002 and ADR 0003:
   - **`restoreSide(_:from:conflict:progress:)`** writes a WAV as side A or B through the file layer's replace, read back byte for byte. An empty or missing side is written freely.
   - **`SideConflict.replace(copyingExistingTo:)`** copies the side to an exact, free URL first, and **`.replace(confirmed:)`** takes a `SideReplacement` from `prepareToReplace(_:)`, which works once, on one connection, while the side is unchanged.
   - **Only the OP-1's own WAV layout and format is restored,** and a side over 6 minutes is `tapeTooLong`, a guess recorded as the new expectation `album.side-limit`.
@@ -272,9 +272,7 @@ Where the project stands, so a new session can pick it up. Update this when the 
 
 ## Next steps
 
-1. Commit step 21, with album writing off on 1.7.3.
-2. Decide whether `1.0.0-alpha.3`, planned for restoring album sides, is tagged with album writing off.
-3. Step 22: FieldCheck comparing with the baseline, and the draft ADR.
+1. Step 22: FieldCheck comparing with the baseline, and the draft ADR.
 
 ## Future improvements
 
