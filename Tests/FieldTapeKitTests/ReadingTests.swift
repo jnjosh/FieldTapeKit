@@ -201,7 +201,7 @@ import Testing
         let simulator = SimulatedMTPDevice()
         let mixdown = await simulator.addFolder("mixdown")
         await simulator.addFile("side_a.wav", data: Data(count: 1_000), in: mixdown)
-        let device = FieldDevice.simulated(simulator, timeout: .milliseconds(100), pingTimeout: .milliseconds(100))
+        let device = FieldDevice.simulated(simulator, timeout: .milliseconds(100), slowAfter: .milliseconds(100))
         await simulator.add(faults: [.silent(fromRequest: 5)])
 
         await #expect { try await device.copyItem(at: "mixdown/side_a.wav", to: folder.appending(path: "a.wav")) } throws: {

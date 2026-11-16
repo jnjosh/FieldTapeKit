@@ -32,7 +32,7 @@ import Testing
 
     @Test func aDisconnectPartwayFailsThatCheckAndSkipsTheRest() async {
         let simulator = await OP1Fixture.device(faults: [.silent(fromRequest: 1)])
-        let device = FieldDevice.simulated(simulator, timeout: .milliseconds(100), pingTimeout: .milliseconds(100))
+        let device = FieldDevice.simulated(simulator, timeout: .milliseconds(100), slowAfter: .milliseconds(100))
         let report = await LevelOne.run(on: device, host: Self.host)
         // device.identity sends nothing, so it still passes.
         #expect(report.results.map(\.outcome) == [.pass, .fail] + Array(repeating: .notRun, count: 16))

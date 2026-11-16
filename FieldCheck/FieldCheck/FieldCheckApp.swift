@@ -189,11 +189,25 @@ final class ConnectionLog {
     }
 
     /// Level 2 writes, so it starts from a plan that a person confirms (ADR 0003, section 3). This only reads.
-    func planLevelTwo(on device: FieldDevice) async -> LevelTwo.Plan {
+    ///
+    /// It counts as running, so the buttons wait for it and a second tap doesn't queue another plan behind it.
+    func planLevelTwo(on device: FieldDevice) async -> LevelTwo.Plan? {
+        guard running == nil else { return nil }
+        running = device.id
+        planning = device.id
+        defer {
+            running = nil
+            planning = nil
+        }
+        record("Level 2: looking at the OP-1 to plan it")
         let plan = await LevelTwo.plan(for: device)
+        logIfStopped(device)
         if let refusal = plan.refusal { record("Level 2: can't run: \(refusal)") }
         return plan
     }
+
+    /// The connection level 2 is being planned on, so its button can say so.
+    private(set) var planning: FieldDevice.ID?
 
     /// Runs a confirmed level 2 plan, with the long check if asked for. Copies it keeps, of the replaced track, an
     /// empty album side and the drum preset, go in a new `level2-<time>` folder in Documents.
@@ -542,8 +556,10 @@ struct ValidateView: View {
                         .disabled(log.running != nil)
                         Button("Run writing conformance (scratch tape)…") { writingConformance = device }
                             .disabled(log.running != nil)
-                        Button("Run level 2 (scratch writes)…") {
-                            Task { plan = (device, await log.planLevelTwo(on: device)) }
+                        Button(log.planning == device.id ? "Planning level 2…" : "Run level 2 (scratch writes)…") {
+                            Task {
+                                if let planned = await log.planLevelTwo(on: device) { plan = (device, planned) }
+                            }
                         }
                         .disabled(log.running != nil)
                         if log.isLevelThreePending(for: device) {

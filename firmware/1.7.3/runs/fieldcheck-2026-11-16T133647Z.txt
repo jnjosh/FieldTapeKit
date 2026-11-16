@@ -1,0 +1,64 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.40] Watching for an OP-1 in MTP mode
+[   6.16] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[   6.16] Storage: 6429185024 bytes, 6281596928 free
+[   9.10] Deleting FieldCheck's content
+[   9.28] delete.files-then-folder pass: Deleted fieldck #1-2's 6 files and fieldck #2-1's 6 files, each tape's files and then its folder, and they're gone.
+[  15.01] Level 1: running
+[  61.41] ⋯ getPartialObject: no answer after 30.0 seconds, waiting up to 90.0 seconds in all
+[  90.42] The last 50 MTP requests, up to the one that got no answer:
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 62 ms
+[  90.42]   → getPartialObject 0x271 0x100000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 163 ms
+[  90.42]   → getPartialObject 0x271 0x200000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 222 ms
+[  90.42]   → getPartialObject 0x271 0x300000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 279 ms
+[  90.42]   → getPartialObject 0x271 0x400000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 335 ms
+[  90.42]   → getPartialObject 0x271 0x500000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 402 ms
+[  90.42]   → getPartialObject 0x271 0x600000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 454 ms
+[  90.42]   → getPartialObject 0x271 0x700000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 509 ms
+[  90.42]   → getPartialObject 0x271 0x800000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 567 ms
+[  90.42]   → getPartialObject 0x271 0x900000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 625 ms
+[  90.42]   → getPartialObject 0x271 0xA00000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 680 ms
+[  90.42]   → getPartialObject 0x271 0xB00000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 741 ms
+[  90.42]   → getPartialObject 0x271 0xC00000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 797 ms
+[  90.42]   → getPartialObject 0x271 0xD00000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 855 ms
+[  90.42]   → getPartialObject 0x271 0xE00000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 912 ms
+[  90.42]   → getPartialObject 0x271 0xF00000 0x100000
+[  90.42]   ← getPartialObject 0x2001, 1048576 bytes in, 967 ms
+[  90.42]   → getPartialObject 0x271 0x3E9 0x4000
+[  90.42]   ← getPartialObject 0x2001, 16384 bytes in, 58 ms
+[  90.43]   → getPartialObject 0x271 0xF8AD0 0x10000
+[  90.43]   ← getPartialObject 0x2001, 65536 bytes in, 119 ms
+[  90.43]   → getPartialObject 0x271 0x1508DD0 0x100000
+[  90.43]   ← getPartialObject 0x2001, 100 bytes in, 1308 ms
+[  90.43]   → getPartialObject 0x271 0xF00000 0x100000
+[  90.43]   ← getPartialObject 0x2001, 1048576 bytes in, 922 ms
+[  90.43]   → getPartialObject 0x271 0xE00000 0x100000
+[  90.43]   ← getPartialObject 0x2001, 1048576 bytes in, 910 ms
+[  90.43]   → getPartialObject 0x271 0xD00000 0x100000
+[  90.43]   ← getPartialObject 0x2001, 1048576 bytes in, 853 ms
+[  90.43]   → getPartialObject 0x271 0xC00000 0x100000
+[  90.43]   ← getPartialObject 0x2001, 1048576 bytes in, 796 ms
+[  90.43]   → getPartialObject 0x271 0xB00000 0x100000
+[  90.43]   ← getPartialObject 0x2001, 1048576 bytes in, 740 ms
+[  90.43]   → getPartialObject 0x271 0xA00000 0x100000
+[  90.43]   ⋯ getPartialObject: no answer after 30.0 seconds, waiting up to 90.0 seconds in all
+[  90.43]   ✕ getPartialObject: unreadable response
+[  90.43] Level 1: compared with the baseline for firmware 1.7.3, level 1, from the run started 2026-11-15T16:15:58Z
+[  90.43] Level 1: read.cost fail: Couldn't check: The OP-1 sent a reply that couldn't be read. (unreadableResponse(FieldTapeKit.PTPOperation.getPartialObject))
+[  90.43] Level 1: 17 pass, 0 changed, 1 fail, 0 not run
+[  90.44] Saved fieldcheck-2026-11-16T133702Z.json and fieldcheck-2026-11-16T133702Z.md, and a draft ADR for its changes and failures, fieldcheck-2026-11-16T133702Z.draft-adr.md
+[ 124.32] ⋯ getObjectHandles: no answer after 30.0 seconds, waiting up to 90.0 seconds in all

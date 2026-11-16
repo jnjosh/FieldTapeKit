@@ -1,0 +1,144 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.61] Watching for an OP-1 in MTP mode
+[  12.18] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  12.18] Storage: 6429185024 bytes, 6287243264 free
+[  28.79] Level 1: running
+[  50.19] Level 1: compared with the baseline for firmware 1.7.3, level 1, from the run started 2026-11-15T16:15:58Z
+[  50.19] Level 1: 18 pass, 0 changed, 0 fail, 0 not run
+[  50.19] Saved fieldcheck-2026-11-16T134244Z.json and fieldcheck-2026-11-16T134244Z.md
+[  59.33] Level 2: looking at the OP-1 to plan it
+[  64.69] Level 2: running, copies go in level2-2026-11-16T134320Z
+[  74.62] Level 2: compared with the baseline for firmware 1.7.3, level 2, from the run started 2026-11-15T16:16:35Z
+[  74.74] Level 3 is waiting: leave MTP mode on the OP-1, then enter it again. You can play the scratch tape on the OP-1 in between.
+[  74.79] Level 2: names.maximum pass: The OP-1 took FIELDCK #1-2, 12 characters, as fieldck #1-2, and FIELDCK #2-13, 13 characters, as fieldck #2-13. What it keeps after a reconnect is level 3.
+[  74.79] Level 2: write.folder pass: SendObjectInfo alone made the tape, a folder (0x3001, association type 1) with 0 items in it.
+[  74.80] Level 2: write.exact pass: 5 files, 2,822,826 bytes, each read back byte for byte, again after the write's own check.
+[  74.80] Level 2: write.refused-name pass: track_5.wav was refused with 0x2002, before any data was sent.
+[  74.80] Level 2: rebuild.tape-json pass: After the tracks were written, tape.json read back different from the one written before them.
+[  74.80] Level 2: rebuild.stale-size pass: The rebuilt tape.json is still listed and read at the 250 bytes written. Then track_1.wav was replaced, keeping a copy, and the generated tape.json replaced the stale one, last. Both read back exactly.
+[  74.80] Level 2: tape.track-limit not run: The long check wasn't asked for.
+[  74.80] Level 2: write.preset-converted pass: Both came back as AIFC under the same name, with the samples sent; of 25 s, drum/user/ kept 20.000 s, synth/user/ kept 6.000 s.
+[  74.80] Level 2: write.speed pass: Sent 2.8 MB in 4 writes in 0.7 s, 4.0 MB/s, timed as each write less a read of the same file. On 1.7.3 the probe saw about 7 MB/s.
+[  74.80] Level 2: device.storage pass: Free space fell 10,237,952 bytes for 10,237,744 written, and after the presets were deleted it was 5,646,336 below the start, for the tapes' 5,645,976.
+[  74.80] Level 2: album.write-exact not run: Album writing is off on firmware 1.7.3, so the album wasn't touched.
+[  74.80] Level 2: 9 pass, 0 changed, 0 fail, 2 not run
+[  74.80] Saved fieldcheck-2026-11-16T134320Z.json and fieldcheck-2026-11-16T134320Z.md
+[  78.84] Disconnected
+[  89.31] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  89.31] Storage: 6429185024 bytes, 6281596928 free
+[  89.32] Level 3 is waiting, and can run now
+[  92.86] Level 3: running, after level 2 at 2026-11-16T13:43:20Z
+[ 123.96] ⋯ getObject: no answer after 30.0 seconds, waiting up to 90.0 seconds in all
+[ 153.44] The last 50 MTP requests, up to the one that got no answer:
+[ 153.44]   ← getObjectInfo 0x2001, 140 bytes in, 0 ms
+[ 153.44]   → getObjectInfo 0x31A
+[ 153.44]   ← getObjectInfo 0x2001, 142 bytes in, 0 ms
+[ 153.44]   → getObjectInfo 0x31B
+[ 153.44]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 153.44]   → getObjectInfo 0x31C
+[ 153.44]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 153.44]   → getObjectInfo 0x31D
+[ 153.44]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 153.44]   → getObjectInfo 0x31E
+[ 153.44]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 153.44]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[ 153.44]   ← getObjectHandles 0x2001, 20 bytes in, 0 ms
+[ 153.44]   → getObjectInfo 0x2E6
+[ 153.44]   ← getObjectInfo 0x2001, 132 bytes in, 0 ms
+[ 153.44]   → getObjectInfo 0x2FB
+[ 153.44]   ← getObjectInfo 0x2001, 130 bytes in, 0 ms
+[ 153.44]   → getObjectInfo 0x310
+[ 153.44]   ← getObjectInfo 0x2001, 132 bytes in, 0 ms
+[ 153.44]   → getObjectInfo 0x334
+[ 153.44]   ← getObjectInfo 0x2001, 136 bytes in, 0 ms
+[ 153.44]   → getObjectHandles 0xFFFFFFFF 0x0 0x310
+[ 153.45]   ← getObjectHandles 0x2001, 24 bytes in, 0 ms
+[ 153.45]   → getObjectInfo 0x311
+[ 153.45]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 153.45]   → getObjectInfo 0x318
+[ 153.45]   ← getObjectInfo 0x2001, 146 bytes in, 0 ms
+[ 153.45]   → getObjectInfo 0x31F
+[ 153.45]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 153.45]   → getObjectInfo 0x326
+[ 153.45]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 153.45]   → getObjectInfo 0x32D
+[ 153.45]   ← getObjectInfo 0x2001, 146 bytes in, 0 ms
+[ 153.45]   → getObjectHandles 0xFFFFFFFF 0x0 0x318
+[ 153.45]   ← getObjectHandles 0x2001, 28 bytes in, 0 ms
+[ 153.45]   → getObjectInfo 0x319
+[ 153.45]   ← getObjectInfo 0x2001, 140 bytes in, 0 ms
+[ 153.45]   → getObjectInfo 0x31A
+[ 153.45]   ← getObjectInfo 0x2001, 142 bytes in, 0 ms
+[ 153.45]   → getObjectInfo 0x31B
+[ 153.45]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 153.45]   → getObjectInfo 0x31C
+[ 153.45]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 153.45]   → getObjectInfo 0x31D
+[ 153.45]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 153.45]   → getObjectInfo 0x31E
+[ 153.45]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 153.45]   → getObject 0x31B
+[ 153.45]   ⋯ getObject: no answer after 30.0 seconds, waiting up to 90.0 seconds in all
+[ 153.45]   ✕ getObject: unreadable response
+[ 153.45] Level 3: compared with the baseline for firmware 1.7.3, level 3, from the run started 2026-11-15T16:17:28Z
+[ 153.45] Level 3: reconnect.handles pass: 6 of the scratch tape's 6 objects have new handles since level 2.
+[ 153.45] Level 3: names.maximum pass: After the reconnect, FIELDCK #1-2, 12 characters, is still listed as fieldck #1-2, and FIELDCK #2-13, 13 characters, was cut to fieldck #2-1.
+[ 153.45] Level 3: reconnect.renamed pass: The tape is listed lowercase, as fieldck #1-2, and the OP-1 added a 104-byte readme.txt.
+[ 153.45] Level 3: reconnect.kept fail: Couldn't check: The OP-1 sent a reply that couldn't be read. (unreadableResponse(FieldTapeKit.PTPOperation.getObject))
+[ 153.45] Level 3: delete.folder-with-files not run: Not run: reconnect.kept failed first, so the run stopped. What it made is left for cleanup.
+[ 153.45] Level 3: delete.files-then-folder not run: Not run: reconnect.kept failed first, so the run stopped. What it made is left for cleanup.
+[ 153.45] Level 3: 3 pass, 0 changed, 1 fail, 2 not run
+[ 153.45] Saved fieldcheck-2026-11-16T134348Z.json and fieldcheck-2026-11-16T134348Z.md, and a draft ADR for its changes and failures, fieldcheck-2026-11-16T134348Z.draft-adr.md
+[ 183.79] ⋯ getObjectHandles: no answer after 30.0 seconds, waiting up to 90.0 seconds in all
+[ 213.83] The last 50 MTP requests, up to the one that got no answer:
+[ 213.83]   → getObjectInfo 0x31B
+[ 213.83]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 213.83]   → getObjectInfo 0x31C
+[ 213.83]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 213.83]   → getObjectInfo 0x31D
+[ 213.83]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 213.83]   → getObjectInfo 0x31E
+[ 213.83]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 213.83]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[ 213.83]   ← getObjectHandles 0x2001, 20 bytes in, 0 ms
+[ 213.83]   → getObjectInfo 0x2E6
+[ 213.83]   ← getObjectInfo 0x2001, 132 bytes in, 0 ms
+[ 213.83]   → getObjectInfo 0x2FB
+[ 213.83]   ← getObjectInfo 0x2001, 130 bytes in, 0 ms
+[ 213.83]   → getObjectInfo 0x310
+[ 213.83]   ← getObjectInfo 0x2001, 132 bytes in, 0 ms
+[ 213.84]   → getObjectInfo 0x334
+[ 213.84]   ← getObjectInfo 0x2001, 136 bytes in, 0 ms
+[ 213.84]   → getObjectHandles 0xFFFFFFFF 0x0 0x310
+[ 213.84]   ← getObjectHandles 0x2001, 24 bytes in, 0 ms
+[ 213.84]   → getObjectInfo 0x311
+[ 213.84]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 213.84]   → getObjectInfo 0x318
+[ 213.84]   ← getObjectInfo 0x2001, 146 bytes in, 0 ms
+[ 213.84]   → getObjectInfo 0x31F
+[ 213.84]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 213.84]   → getObjectInfo 0x326
+[ 213.84]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 213.84]   → getObjectInfo 0x32D
+[ 213.84]   ← getObjectInfo 0x2001, 146 bytes in, 0 ms
+[ 213.84]   → getObjectHandles 0xFFFFFFFF 0x0 0x318
+[ 213.84]   ← getObjectHandles 0x2001, 28 bytes in, 0 ms
+[ 213.84]   → getObjectInfo 0x319
+[ 213.84]   ← getObjectInfo 0x2001, 140 bytes in, 0 ms
+[ 213.84]   → getObjectInfo 0x31A
+[ 213.84]   ← getObjectInfo 0x2001, 142 bytes in, 0 ms
+[ 213.84]   → getObjectInfo 0x31B
+[ 213.84]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 213.84]   → getObjectInfo 0x31C
+[ 213.84]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 213.84]   → getObjectInfo 0x31D
+[ 213.84]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 213.84]   → getObjectInfo 0x31E
+[ 213.84]   ← getObjectInfo 0x2001, 144 bytes in, 0 ms
+[ 213.84]   → getObject 0x31B
+[ 213.84]   ⋯ getObject: no answer after 30.0 seconds, waiting up to 90.0 seconds in all
+[ 213.84]   ✕ getObject: unreadable response
+[ 213.84]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[ 213.84]   ⋯ getObjectHandles: no answer after 30.0 seconds, waiting up to 90.0 seconds in all
+[ 213.84]   ✕ getObjectHandles: unreadable response
+[ 351.92] Disconnected

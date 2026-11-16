@@ -26,7 +26,7 @@ import Testing
 
     @Test func aConnectionsTraceLastsAndTellsEachFailureOnce() async throws {
         let simulator = SimulatedMTPDevice(contents: SimulatedNode.layout173)
-        let device = FieldDevice.simulated(simulator, timeout: .milliseconds(100), pingTimeout: .milliseconds(50))
+        let device = FieldDevice.simulated(simulator, timeout: .milliseconds(100), slowAfter: .milliseconds(50))
         let trace = await RequestTrace.start(on: device, limit: 10)
         _ = try await device.album()
         #expect(trace.all.count == 10 && trace.takeFailure() == nil)
@@ -39,7 +39,7 @@ import Testing
 
     @Test func aLateAnswerIsTraced() async throws {
         let simulator = SimulatedMTPDevice(contents: SimulatedNode.layout173)
-        let device = FieldDevice.simulated(simulator, timeout: .milliseconds(100), pingTimeout: .milliseconds(500))
+        let device = FieldDevice.simulated(simulator, timeout: .milliseconds(100), slowAfter: .milliseconds(500))
         let told = Lines()
         let trace = await RequestTrace.start(on: device) { told.append($0) }
         await simulator.add(faults: [.slowAnswer(request: await simulator.requestCount + 1, after: .milliseconds(300))])
@@ -52,11 +52,12 @@ import Testing
 
     @Test func sawFailureWhenARequestGetsNoAnswer() async throws {
         let simulator = SimulatedMTPDevice(contents: SimulatedNode.layout173)
-        let device = FieldDevice.simulated(simulator, timeout: .milliseconds(100), pingTimeout: .milliseconds(50))
+        let device = FieldDevice.simulated(simulator, timeout: .milliseconds(100), slowAfter: .milliseconds(50))
         await simulator.add(faults: [.silent(fromRequest: await simulator.requestCount + 3)])
         let (_, trace) = await RequestTrace.during(device) { _ = try? await device.album() }
         #expect(trace.sawFailure)
         let failed = try #require(trace.all.firstIndex { $0.hasPrefix("✕ ") })
-        #expect(trace.all[failed - 1].hasPrefix("→ "), "the request that got no answer is named just before")
+        #expect(trace.all[failed - 1].hasPrefix("⋯ "), "noted as slow first")
+        #expect(trace.all[failed - 2].hasPrefix("→ "), "the request that got no answer is named before that")
     }
 }

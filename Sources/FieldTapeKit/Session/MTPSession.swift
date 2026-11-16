@@ -6,9 +6,10 @@ package enum MTPError: Error, Equatable {
     case refused(PTPOperation, responseCode: UInt16)
     /// What came back wasn't a response container.
     case unreadableResponse(PTPOperation)
-    /// No answer in time, but the device answered a ping afterwards, so it's still there.
+    /// No answer in time, but the device is still there. Not thrown since 2026-11-16, when the ping was dropped; kept
+    /// for `FieldError.Code.timedOut`.
     case timedOut(PTPOperation)
-    /// No answer, and no answer to a ping either. Every later request throws this too.
+    /// No answer by the session's timeout, or the device was removed. Every later request throws this too.
     case disconnected
 }
 
@@ -22,12 +23,18 @@ package struct MTPReply: Sendable {
 
 /// Sends one PTP transaction at a time to a device, with a timeout on each.
 ///
+/// A request that hasn't answered in `slowAfter` is noted as slow, and waited for until `timeout`: on 1.7.3 a read
+/// sometimes stalls for about 60 s and then answers (PROBE-NOTES.md, 2026-11-16). Only a request that hasn't
+/// answered by `timeout` makes the session disconnected. There's no ping: ImageCaptureCore sends one request at a
+/// time, so a ping waits behind the stalled request and can't tell it from a dead device. An unplug is noticed at
+/// once anyway, from ImageCaptureCore removing the device.
+///
 /// There's no OpenSession: ImageCaptureCore's session is enough (`session.implicit`), and OpenSession isn't in
 /// ADR 0002's rule 7. A Session Not Open response is reported like any other refusal.
 package actor MTPSession {
     private let transport: any MTPTransport
+    private let slowAfter: Duration
     private let timeout: Duration
-    private let pingTimeout: Duration
     /// ImageCaptureCore replaces transaction IDs with its own (probe logs, 2026-11-08), so these only label
     /// the commands. Replies aren't matched against them.
     private var nextTransactionID: UInt32 = 1
@@ -37,10 +44,10 @@ package actor MTPSession {
     /// Told about every request and how it ended, when set, to find which one a device stops answering.
     private var trace: (@Sendable (String) -> Void)?
 
-    init(transport: any MTPTransport, timeout: Duration = .seconds(30), pingTimeout: Duration = .seconds(5)) {
+    init(transport: any MTPTransport, timeout: Duration = .seconds(90), slowAfter: Duration = .seconds(30)) {
         self.transport = transport
         self.timeout = timeout
-        self.pingTimeout = pingTimeout
+        self.slowAfter = slowAfter
     }
 
     /// Starts or stops telling `trace` about each request: what was sent, then the response code, the bytes that
@@ -67,7 +74,10 @@ package actor MTPSession {
         let transaction: MTPTransaction
         do {
             let trace = trace
-            transaction = try await Self.withTimeout(timeout, late: { succeeded in
+            let (slowAfter, timeout) = (slowAfter, timeout)
+            transaction = try await Self.withTimeout(timeout, slowAfter: slowAfter, slow: {
+                trace?("⋯ \(operation): no answer after \(slowAfter), waiting up to \(timeout) in all")
+            }, late: { succeeded in
                 let elapsed = clock.now - start
                 trace?("← late: \(operation) " + (succeeded ? "answered" : "failed") + " after "
                        + "\(elapsed.formatted(.units(allowed: [.seconds, .milliseconds], width: .narrow))), and was dropped")
@@ -75,12 +85,7 @@ package actor MTPSession {
                 try await transport.transact(command: command, dataOut: dataOut)
             }
         } catch is RequestTimeout {
-            trace?("✕ \(operation): no answer after \(timeout)")
-            if await deviceAnswersPing() {
-                trace?("  a GetDeviceInfo ping was answered")
-                throw MTPError.timedOut(operation)
-            }
-            trace?("  a GetDeviceInfo ping got no answer in \(pingTimeout) either")
+            trace?("✕ \(operation): no answer after \(timeout), so the session is disconnected")
             isDisconnected = true
             throw MTPError.disconnected
         } catch {
@@ -178,15 +183,6 @@ package actor MTPSession {
 
     // MARK: Timeouts
 
-    /// A read-only GetDeviceInfo, to tell a slow request from a device that's gone.
-    private func deviceAnswersPing() async -> Bool {
-        let command = PTPContainer.command(.getDeviceInfo, transactionID: takeTransactionID(), params: [])
-        let reply = try? await Self.withTimeout(pingTimeout) { [transport] in
-            try await transport.transact(command: command, dataOut: nil)
-        }
-        return reply.flatMap { PTPContainer.responseCode($0.response) } != nil
-    }
-
     private struct RequestTimeout: Error {}
 
     /// Runs `body`, or throws `RequestTimeout` after `limit`. A request ImageCaptureCore has taken can't be
@@ -194,13 +190,22 @@ package actor MTPSession {
     ///
     /// `late` is told if the request finishes after it timed out, with whether it succeeded, so a trace can tell a
     /// slow answer from a lost one.
+    ///
+    /// `slow` is told once if it hasn't finished after `slowAfter`, while it's still waited for.
     private static func withTimeout<T: Sendable>(
-        _ limit: Duration, late: (@Sendable (Bool) -> Void)? = nil, _ body: @escaping @Sendable () async throws -> T
+        _ limit: Duration, slowAfter: Duration? = nil, slow: (@Sendable () -> Void)? = nil,
+        late: (@Sendable (Bool) -> Void)? = nil, _ body: @escaping @Sendable () async throws -> T
     ) async throws -> T {
         try await withCheckedThrowingContinuation { continuation in
             let resumer = Resumer(continuation)
             let timer = Task {
-                try await Task.sleep(for: limit)
+                if let slowAfter, slowAfter < limit {
+                    try await Task.sleep(for: slowAfter)
+                    if resumer.isPending { slow?() }
+                    try await Task.sleep(for: limit - slowAfter)
+                } else {
+                    try await Task.sleep(for: limit)
+                }
                 resumer.resume(with: .failure(RequestTimeout()))
             }
             Task {
@@ -224,6 +229,9 @@ private final class Resumer<T: Sendable>: Sendable {
     init(_ continuation: CheckedContinuation<T, any Error>) {
         self.continuation = Mutex(continuation)
     }
+
+    /// Whether nothing has resumed it yet.
+    var isPending: Bool { continuation.withLock { $0 != nil } }
 
     /// Whether this call resumed it, rather than an earlier one.
     @discardableResult

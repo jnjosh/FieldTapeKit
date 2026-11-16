@@ -32,7 +32,7 @@ import Testing
     @Test func aDeviceThatDoesntAnswerIsReportedDisconnected() async {
         let simulator = SimulatedMTPDevice(faults: [.silent(fromRequest: 1)])
         await #expect {
-            try await FieldDevice.connect(over: simulator, timeout: .milliseconds(100), pingTimeout: .milliseconds(100))
+            try await FieldDevice.connect(over: simulator, timeout: .milliseconds(100), slowAfter: .milliseconds(100))
         } throws: { ($0 as? FieldError)?.code == .disconnected }
     }
 
@@ -42,7 +42,7 @@ import Testing
         #expect(await !removed.isConnected)
 
         let silent = FieldDevice.simulated(SimulatedMTPDevice(faults: [.silent(fromRequest: 1)]),
-                                            timeout: .milliseconds(100), pingTimeout: .milliseconds(100))
+                                            timeout: .milliseconds(100), slowAfter: .milliseconds(100))
         _ = try? await silent.session.storageIDs()
         #expect(await !silent.isConnected)
     }

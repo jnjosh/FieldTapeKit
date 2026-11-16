@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 import Testing
 @testable import FieldTapeKit
 
@@ -7,7 +8,7 @@ private let getDeviceInfo = PTPOperation.getDeviceInfo.rawValue
 
 @Suite struct MTPSessionTests {
     private func session(_ transport: ScriptedTransport) -> MTPSession {
-        MTPSession(transport: transport, timeout: .milliseconds(100), pingTimeout: .milliseconds(100))
+        MTPSession(transport: transport, timeout: .milliseconds(100), slowAfter: .milliseconds(100))
     }
 
     @Test func returnsPayloadWithoutContainerAndResponseParams() async throws {
@@ -60,25 +61,31 @@ private let getDeviceInfo = PTPOperation.getDeviceInfo.rawValue
         #expect(await transport.mostInFlight == 1)
     }
 
-    @Test func aSlowRequestThatThePingAnswersIsATimeout() async throws {
+    @Test func aSlowRequestIsWaitedForAndItsAnswerUsed() async throws {
+        // As the OP-1 did on 2026-11-16: a read stalled, then answered.
         let transport = ScriptedTransport { request, _ in
-            request == 1 ? try await ScriptedTransport.hang() : ScriptedTransport.reply(Bytes.le32(0))
+            if request == 1 { try await Task.sleep(for: .milliseconds(150)) }
+            return ScriptedTransport.reply(Bytes.le32(0))
         }
-        let session = session(transport)
-        await #expect(throws: MTPError.timedOut(.getStorageIDs)) { try await session.storageIDs() }
-        #expect(await transport.sent.last?.operation == getDeviceInfo, "the ping is a read-only GetDeviceInfo")
-        #expect(try await session.storageIDs() == [], "the device is still usable")
+        let session = MTPSession(transport: transport, timeout: .milliseconds(400), slowAfter: .milliseconds(50))
+        let lines = Mutex<[String]>([])
+        await session.setTrace { line in lines.withLock { $0.append(line) } }
+        #expect(try await session.storageIDs() == [])
+        #expect(await transport.sent.count == 1, "no ping")
         #expect(await session.isDisconnected == false)
+        let trace = lines.withLock { $0 }
+        #expect(trace.contains { $0.hasPrefix("⋯ getStorageIDs: no answer after 0.05 seconds, waiting up to 0.4 seconds in all") })
+        #expect(trace.last?.hasPrefix("← getStorageIDs 0x2001") == true)
     }
 
-    @Test func noAnswerToTheRequestOrThePingIsADisconnect() async throws {
+    @Test func noAnswerByTheTimeoutIsADisconnect() async throws {
         let transport = ScriptedTransport { _, _ in try await ScriptedTransport.hang() }
         let session = session(transport)
         await #expect(throws: MTPError.disconnected) { try await session.storageIDs() }
         #expect(await session.isDisconnected)
 
         await #expect(throws: MTPError.disconnected) { try await session.storageIDs() }
-        #expect(await transport.sent.count == 2, "nothing more is sent once the device is gone")
+        #expect(await transport.sent.count == 1, "the request, and no ping")
     }
 
     @Test func aCancelledCallerSendsNothing() async {

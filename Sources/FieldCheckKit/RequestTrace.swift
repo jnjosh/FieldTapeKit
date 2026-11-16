@@ -7,8 +7,8 @@ public final class RequestTrace: Sendable {
     private let lines = Mutex<[String]>([])
     private let failed = Mutex(false)
     public let limit: Int
-    /// Told at once about a request that answered after it had timed out, which isn't a failure of its own, so
-    /// `takeFailure()` wouldn't show it.
+    /// Told at once about a request that's slow, still waited for, or that answered after it had timed out. Neither
+    /// is a failure of its own, so `takeFailure()` wouldn't show them.
     let onLate: (@Sendable (String) -> Void)?
 
     public init(limit: Int = 50, onLate: (@Sendable (String) -> Void)? = nil) {
@@ -22,7 +22,7 @@ public final class RequestTrace: Sendable {
             if lines.count > limit { lines.removeFirst(lines.count - limit) }
         }
         if line.hasPrefix("✕") { failed.withLock { $0 = true } }
-        if line.hasPrefix("← late") { onLate?(line) }
+        if line.hasPrefix("← late") || line.hasPrefix("⋯") { onLate?(line) }
     }
 
     /// The requests kept, oldest first.

@@ -1,0 +1,86 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.36] Watching for an OP-1 in MTP mode
+[   7.24] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[   7.24] Storage: 6429185024 bytes, 6281596928 free
+[   8.67] Level 1: running
+[  63.97] The last 50 MTP requests, up to the one that got no answer:
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 741 ms
+[  63.98]   → getPartialObject 0x21F 0xC00000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 799 ms
+[  63.98]   → getPartialObject 0x21F 0xD00000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 855 ms
+[  63.98]   → getPartialObject 0x21F 0xE00000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 910 ms
+[  63.98]   → getPartialObject 0x21F 0xF00000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 969 ms
+[  63.98]   → getPartialObject 0x21F 0x3E9 0x4000
+[  63.98]   ← getPartialObject 0x2001, 16384 bytes in, 55 ms
+[  63.98]   → getPartialObject 0x21F 0xF8AD0 0x10000
+[  63.98]   ← getPartialObject 0x2001, 65536 bytes in, 120 ms
+[  63.98]   → getPartialObject 0x21F 0x1508DD0 0x100000
+[  63.98]   ← getPartialObject 0x2001, 100 bytes in, 1315 ms
+[  63.98]   → getPartialObject 0x21F 0xF00000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 928 ms
+[  63.98]   → getPartialObject 0x21F 0xE00000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 950 ms
+[  63.98]   → getPartialObject 0x21F 0xD00000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 855 ms
+[  63.98]   → getPartialObject 0x21F 0xC00000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 798 ms
+[  63.98]   → getPartialObject 0x21F 0xB00000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 738 ms
+[  63.98]   → getPartialObject 0x21F 0xA00000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 680 ms
+[  63.98]   → getPartialObject 0x21F 0x900000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 625 ms
+[  63.98]   → getPartialObject 0x21F 0x800000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 566 ms
+[  63.98]   → getPartialObject 0x21F 0x700000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 509 ms
+[  63.98]   → getPartialObject 0x21F 0x600000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 457 ms
+[  63.98]   → getPartialObject 0x21F 0x500000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 393 ms
+[  63.98]   → getPartialObject 0x21F 0x400000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 336 ms
+[  63.98]   → getPartialObject 0x21F 0x300000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 279 ms
+[  63.98]   → getPartialObject 0x21F 0x200000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 222 ms
+[  63.98]   → getPartialObject 0x21F 0x100000 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 161 ms
+[  63.98]   → getPartialObject 0x21F 0x0 0x100000
+[  63.98]   ← getPartialObject 0x2001, 1048576 bytes in, 108 ms
+[  63.98]   → getPartialObject 0x21F 0x0 0x1000000
+[  63.98]   ✕ getPartialObject: no answer after 30.0 seconds
+[  63.98]     a GetDeviceInfo ping got no answer in 5.0 seconds either
+[  63.98] Level 1: compared with the baseline for firmware 1.7.3, level 1, from the run started 2026-11-15T16:15:58Z
+[  63.99] Level 1: read.cost fail: The OP-1 disconnected during this check.
+[  63.99] Level 1: 17 pass, 0 changed, 1 fail, 0 not run
+[  63.99] Saved fieldcheck-2026-11-16T132649Z.json and fieldcheck-2026-11-16T132649Z.md
+[  69.61] Deleting FieldCheck's content
+[  69.62] delete.files-then-folder fail: Couldn't delete: The OP-1 is no longer connected. Deleted: nothing.
+[  88.93] ← late: getPartialObject answered after 60s 479ms, and was dropped
+[ 156.19] Level 1: running
+[ 156.20] Level 1: compared with the baseline for firmware 1.7.3, level 1, from the run started 2026-11-15T16:15:58Z
+[ 156.20] Level 1: device.operations fail: The OP-1 disconnected during this check.
+[ 156.20] Level 1: device.storage not run: The OP-1 disconnected.
+[ 156.20] Level 1: session.implicit not run: The OP-1 disconnected.
+[ 156.20] Level 1: session.data-phase not run: The OP-1 disconnected.
+[ 156.20] Level 1: layout.folders not run: The OP-1 disconnected.
+[ 156.20] Level 1: layout.readmes not run: The OP-1 disconnected.
+[ 156.20] Level 1: names.lowercase not run: The OP-1 disconnected.
+[ 156.20] Level 1: tape.files not run: The OP-1 disconnected.
+[ 156.20] Level 1: tape.wav-format not run: The OP-1 disconnected.
+[ 156.21] Level 1: tape.json-keys not run: The OP-1 disconnected.
+[ 156.21] Level 1: tape.json-units not run: The OP-1 disconnected.
+[ 156.21] Level 1: tape.types not run: The OP-1 disconnected.
+[ 156.21] Level 1: album.files not run: The OP-1 disconnected.
+[ 156.21] Level 1: album.wav-format not run: The OP-1 disconnected.
+[ 156.21] Level 1: read.partial not run: The OP-1 disconnected.
+[ 156.21] Level 1: read.speed not run: The OP-1 disconnected.
+[ 156.21] Level 1: read.cost not run: The OP-1 disconnected.
+[ 156.21] Level 1: 1 pass, 0 changed, 1 fail, 16 not run
+[ 156.21] Saved fieldcheck-2026-11-16T132917Z.json and fieldcheck-2026-11-16T132917Z.md
+[ 204.81] Level 2: can't run: Couldn't look at the OP-1: The OP-1 is no longer connected.
+[ 227.59] Disconnected

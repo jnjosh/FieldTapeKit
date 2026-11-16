@@ -22,7 +22,7 @@ import Testing
     }
 
     private func session(_ device: SimulatedMTPDevice) -> MTPSession {
-        MTPSession(transport: device, timeout: .milliseconds(100), pingTimeout: .milliseconds(100))
+        MTPSession(transport: device, timeout: .milliseconds(100), slowAfter: .milliseconds(100))
     }
 
     @Test func deviceInfoLooksLikeFirmware173() async throws {
@@ -120,11 +120,11 @@ import Testing
 
     // MARK: Faults
 
-    @Test func aRequestWithNoAnswerIsATimeoutWhenThePingAnswers() async throws {
-        let (device, handles) = await populated(faults: [.noAnswer(request: 1)])
-        let session = session(device)
-        await #expect(throws: MTPError.timedOut(.getObject)) { try await session.object(handles.track) }
+    @Test func aRequestThatAnswersLateIsWaitedFor() async throws {
+        let (device, handles) = await populated(faults: [.slowAnswer(request: 1, after: .milliseconds(150))])
+        let session = MTPSession(transport: device, timeout: .milliseconds(400), slowAfter: .milliseconds(50))
         #expect(try await session.object(handles.track) == track)
+        #expect(await session.isDisconnected == false)
     }
 
     @Test func aSilentDeviceIsDisconnected() async throws {
@@ -132,9 +132,9 @@ import Testing
         let session = session(device)
         #expect(try await session.object(handles.json) == Data("{}".utf8))
         await #expect(throws: MTPError.disconnected) { try await session.object(handles.track) }
-        #expect(await device.requestCount == 3, "the request, then one ping")
+        #expect(await device.requestCount == 2, "the request, and no ping")
         await #expect(throws: MTPError.disconnected) { try await session.storageIDs() }
-        #expect(await device.requestCount == 3)
+        #expect(await device.requestCount == 2)
     }
 
     @Test func aSessionNotOpenRefusalIsReportedAsIs() async {

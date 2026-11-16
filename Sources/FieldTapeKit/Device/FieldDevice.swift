@@ -64,9 +64,9 @@ public actor FieldDevice: Identifiable {
     }
 
     /// Reads the OP-1's device and storage info over a new session, and makes the device from them.
-    static func connect(over transport: any MTPTransport, usb: USBIdentity? = nil, timeout: Duration = .seconds(30),
-                        pingTimeout: Duration = .seconds(5)) async throws -> FieldDevice {
-        let session = MTPSession(transport: transport, timeout: timeout, pingTimeout: pingTimeout)
+    static func connect(over transport: any MTPTransport, usb: USBIdentity? = nil, timeout: Duration = .seconds(90),
+                        slowAfter: Duration = .seconds(30)) async throws -> FieldDevice {
+        let session = MTPSession(transport: transport, timeout: timeout, slowAfter: slowAfter)
         do {
             let deviceInfo = try await session.deviceInfo()
             // The OP-1 has one storage (`device.storage`). Free space is read from the first.
@@ -130,14 +130,14 @@ public struct FieldStorage: Sendable, Hashable {
 
 extension FieldDevice {
 
-    static func simulated(_ simulator: SimulatedMTPDevice, timeout: Duration = .seconds(30),
-                          pingTimeout: Duration = .seconds(5)) -> FieldDevice {
+    static func simulated(_ simulator: SimulatedMTPDevice, timeout: Duration = .seconds(90),
+                          slowAfter: Duration = .seconds(30)) -> FieldDevice {
         let (profile, isTested) = FirmwareProfile.profile(for: simulator.firmware)
         let info = FieldDeviceInfo(model: "OP-1", firmware: simulator.firmware, isFirmwareTested: isTested,
                                    serialNumber: simulator.serialNumber,
                                    storage: FieldStorage(capacity: Int(clamping: simulator.capacity),
                                                          freeSpace: Int(clamping: simulator.initialFreeSpace)))
-        return FieldDevice(session: MTPSession(transport: simulator, timeout: timeout, pingTimeout: pingTimeout),
+        return FieldDevice(session: MTPSession(transport: simulator, timeout: timeout, slowAfter: slowAfter),
                            info: info, profile: profile, usb: .op1)
     }
 }

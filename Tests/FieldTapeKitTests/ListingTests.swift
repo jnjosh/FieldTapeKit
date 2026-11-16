@@ -100,7 +100,7 @@ import Testing
 
     @Test func aDisconnectIsReported() async {
         let device = FieldDevice.simulated(SimulatedMTPDevice(faults: [.silent(fromRequest: 1)]),
-                                           timeout: .milliseconds(100), pingTimeout: .milliseconds(100))
+                                           timeout: .milliseconds(100), slowAfter: .milliseconds(100))
         await #expect { try await device.contentsOfDirectory(at: .op1Tapes) } throws: { error in
             let error = error as? FieldError
             return error?.code == .disconnected && error?.path == .op1Tapes

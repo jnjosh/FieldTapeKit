@@ -17,7 +17,7 @@ import Testing
         let folder = files.appending(path: "level2-2026-11-16T035851Z")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         try Self.sideB.write(to: folder.appending(path: "side_b before level 2.wav"))
-        return (FieldDevice.simulated(simulator, timeout: timeout, pingTimeout: .milliseconds(100)), simulator, files)
+        return (FieldDevice.simulated(simulator, timeout: timeout, slowAfter: .milliseconds(100)), simulator, files)
     }
 
     final class Lines: Sendable {
@@ -160,9 +160,9 @@ import Testing
                 + "The copy is kept."))
         let lines = try #require(requests.takeFailure())
         let failed = try #require(lines.firstIndex { $0.hasPrefix("✕ ") })
-        #expect(lines[failed].hasSuffix(": no answer after 0.2 seconds"))
-        #expect(lines[failed - 1].hasPrefix("→ "), "the request before it is the one that hung")
-        #expect(lines.last == "  a GetDeviceInfo ping got no answer in 0.1 seconds either")
+        #expect(lines[failed].hasSuffix(": no answer after 0.2 seconds, so the session is disconnected"))
+        #expect(lines[failed - 1].hasPrefix("⋯ ") && lines[failed - 2].hasPrefix("→ "), "the request that hung, noted as slow")
+        #expect(lines.last == lines[failed])
         #expect(requests.takeFailure() == nil, "a failure is told once")
     }
 }

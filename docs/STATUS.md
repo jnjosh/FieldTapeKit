@@ -278,11 +278,12 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **The second run** (log `fieldcheck-2026-11-16T131147Z.txt`): **level 1 passed 18 of 18, twice, with 0 changed against the baseline.** Level 2 hung twice on a GetObject reading back a file just written, a tape track and then the drum preset, but the OP-1 wasn't stuck: a replug was enough. So the request was most likely lost on the iPad's side, in ImageCaptureCore, and the ping queued behind it. The session now traces a timed-out request's late answer, to tell slow from lost. FieldCheck now says why level 3 isn't waiting, and the put-back button no longer reads "Reading Side B…" while a level runs.
   - **The third run** (log `fieldcheck-2026-11-16T132015Z.txt`): **level 1 passed 18 of 18 and level 2 9 of 9, with 0 changed.** Level 3 hung in `reconnect.kept`, on a GetObject of the scratch tape's `track_4.wav`, with the OP-1 not stuck. A late answer to a timed-out request is now logged as soon as it arrives.
   - A check the OP-1 stopped answering during gets no draft ADR, decided by the owner, and the report says the run stopped. The baseline stays as it is.
+  - **The fourth run** (log `fieldcheck-2026-11-16T132641Z.txt`): level 1's 16 MiB read stalled, then **answered after 60.5 s**, with the OP-1 fine. The session had already called itself disconnected after 30 s and a failed ping, and stayed that way until a replug. **Decided by the owner:** a request is now noted as slow after 30 s and waited for until 90 s, with no ping (ADR 0002's change log).
   - 433 tests pass on the Mac and 432 on the iOS simulator (301 and 300 FieldTapeKit, 123 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
 
 ## Next steps
 
-1. **The GetObject hang.** Since the morning of 2026-11-16, a GetObject of a small file sometimes gets no answer, nor does the ping after it, while the OP-1 isn't stuck: a replug is enough (PROBE-NOTES.md). It stopped level 2 twice and level 3 once. FieldCheck now logs a late answer as soon as it arrives, which will tell a slow answer from a lost one. Find the cause, and how FieldTapeKit should recover, before step 23 relies on hardware runs.
+1. **The stall.** A request sometimes gets no answer; after about 60 s it comes back with no response, and the next request stalls too, until a replug (PROBE-NOTES.md, 2026-11-16). FieldTapeKit now waits up to 90 s, with no ping. Restarting the iPad didn't help, and FieldCheck built from step 18, before the album work, stalls the same way, so our changes are ruled out. Next: copy a tape off with the macOS companion app, to tell the OP-1 from the iPad's side.
 2. Step 23: the safety-rule suite.
 
 ## Future improvements

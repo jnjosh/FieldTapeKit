@@ -467,6 +467,34 @@ Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T132015Z.txt`.
 
 The late-answer trace added after the last run didn't show whether an answer came later: it was kept in the trace, but logged only with a failure. FieldCheck now logs a late answer as soon as it arrives.
 
+## The hang is a 60-second stall, and FieldTapeKit gives up on the session too soon (FieldCheck, iPad, 2026-11-16)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T132641Z.txt`.
+
+**Level 1 stopped in `read.cost`**, on its one 16 MiB GetPartialObject, which takes 0.89 s normally. It got no answer in 30 s, nor the ping in 5 s. The owner left the OP-1 connected for a minute: **the read answered after 60.5 s**, and was dropped. The OP-1 wasn't stuck. So today's hangs are most likely **stalls of about 60 s that end on their own**: the same as the probe's one GetPartialObject that "hung for 60 seconds and never recurred" (ADR 0002's table of findings), now recurring. The ping can't help: ImageCaptureCore sends one request at a time, so the ping waits behind the stalled request.
+
+**And FieldTapeKit made it worse.** Once the ping failed, the session marked itself disconnected for good, though the OP-1 was still there. A second level 1, after the read had answered, failed at once ("took 0.0 s"), as did the cleanup and level 2's plan, until the OP-1 was replugged. So every stall today cost a replug, and the earlier ones a restart, when waiting about a minute might have been enough.
+
+Not yet known: what causes the stall, why it's frequent today and rare before, whether the data of a request that answers late is right, and whether 60 s is a limit somewhere, such as in ImageCaptureCore or the OP-1's USB stack.
+
+**Decided by the owner:** FieldTapeKit now notes a request as slow after 30 s and waits for it until 90 s, with no ping (ADR 0002's change log). A stall that ends within that is just a slow request, and its answer is checked as usual.
+
+## A stalled request ends after about 60 s with nothing, and the next one stalls too (FieldCheck, iPad, 2026-11-16)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T133647Z.txt`, with FieldTapeKit waiting up to 90 s.
+
+**Level 1 passed 17 of 18.** In `read.cost`, the 1 MiB GetPartialObject at offset 0xA00000 stalled. FieldTapeKit noted it slow after 30 s and kept waiting. At about 60 s, the request came back, **but with no response container**: FieldTapeKit reported it as an unreadable response. So a stall doesn't end with the OP-1's answer. Most likely ImageCaptureCore gives up on the request itself after about 60 s, and the earlier "answered after 60.5 s" was the same empty give-up, not data.
+
+**Then the next request stalled too.** Level 2's plan, a GetObjectHandles, got no answer for 30 s, with nothing on FieldCheck's screen to say it was waiting, so its button seemed to do nothing. So after one stall the connection stays stuck until a replug. The OP-1 itself seems fine each time.
+
+**What it suggests:** the stuck part is on the iPad's side, in ImageCaptureCore or its background service. The OP-1 was restarted several times today and the stalls kept coming back. The iPad hasn't been restarted. That's the next thing to try.
+
+## The control: FieldCheck from before the album work stalls too (FieldCheck at 21450d5, iPad, 2026-11-16)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T135303Z.txt`.
+
+To tell our changes from the OP-1's state, FieldCheck was built from commit `21450d5` (step 18), from before any album work, with the old 30 s timeout and ping. It's the build that passed every level on 2026-11-15. The iPad had been restarted. **Level 1 stalled in `read.cost` the same way**: "The OP-1 disconnected during this check" after 54.5 s, and level 2 couldn't start. So **the stall isn't caused by anything changed since step 18.** It's in the OP-1's state, the iPad, or the cable, and it began right after side B was written over MTP several times, late on 2026-11-15.
+
 ## Entering MTP mode from the app (paused 2026-11-08: possible, a future feature)
 
 **Status:** paused by the user as too fragile for now, and kept as a possible future feature for the framework. What works: detecting a plugged-in OP-1 over USB MIDI, `greet`, and switching it into MTP mode with `mode`, from both the Mac and the iPad. What doesn't yet: on the iPad, ImageCaptureCore never saw the OP-1 after any switch in that session. Even MTP mode entered with the buttons failed until the OP-1 was restarted. Not tested: Leave MTP mode (closing the session), and a full app-triggered switch on a freshly restarted OP-1. To pick this up, start there, and restart the OP-1 whenever it shows connected but the app sees nothing. **The MIDI code was removed from the probe on 2026-11-08,** at the user's request, so it can't recreate the stuck state. That was `OP1MIDI.swift` (the `TESysEx` encoder and the CoreMIDI client), its tests, and the MIDI toggle and Enter and Leave MTP mode buttons. The format and bytes are kept below, and the Mac tools `tools/op1-midi-listen.swift` and `tools/op1-sysex.swift` remain. They only send when run by hand. The probe still logs each device's USB IDs.

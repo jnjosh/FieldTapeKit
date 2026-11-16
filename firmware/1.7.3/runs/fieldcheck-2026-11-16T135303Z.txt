@@ -1,0 +1,15 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.55] Watching for an OP-1 in MTP mode
+[   5.67] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[   5.67] Storage: 6429185024 bytes, 6281596928 free
+[   9.20] Deleting FieldCheck's content
+[   9.39] delete.files-then-folder pass: Deleted fieldck #1-2's 6 files and fieldck #2-1's 6 files, each tape's files and then its folder, and they're gone.
+[  10.52] Level 1: running
+[  65.06] Level 1: read.cost fail: The OP-1 disconnected during this check.
+[  65.06] Level 1: 17 pass, 1 fail, 0 not run
+[  65.06] Saved fieldcheck-2026-11-16T135313Z.json and fieldcheck-2026-11-16T135313Z.md
+[  68.91] Level 2: can't run: Couldn't look at the OP-1: The OP-1 is no longer connected.
+[ 110.05] Disconnected
+[ 112.28] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[ 112.28] Storage: 6429185024 bytes, 6287243264 free
+[ 116.89] Disconnected
