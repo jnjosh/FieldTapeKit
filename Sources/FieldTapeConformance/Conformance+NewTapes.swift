@@ -9,7 +9,8 @@ extension Conformance {
     public static let scratchTape = "conformance"
 
     /// Checks that write to the OP-1, so an app asks before running them. Each makes the scratch tape in a free
-    /// slot, checks it, and deletes it, so nothing is left behind. The person's own tapes are only read.
+    /// slot, checks it, and deletes it, so nothing is left behind. The person's own tapes are only read. The restore
+    /// check copies a tape into the workspace first, and deletes that archive when it's done.
     public static let writingChecks: [Check] = [
         Check("Creating a tape makes an empty, sound tape, and deleting it frees its slot", copying: { device, _ in
             let name = try TapeName(scratchTape)
@@ -28,12 +29,7 @@ extension Conformance {
         }),
         Check("Duplicating the smallest tape makes a copy that matches it", copying: { device, _ in
             let name = try TapeName(scratchTape)
-            let sound = try await device.tapes().filter(\.isSound)
-            let size = { (tape: Tape) in tape.tracks.reduce(0) { $0 + $1.size } }
-            // The smallest with audio, so a track's bytes are compared, or else any sound tape.
-            guard let source = sound.filter({ !$0.isEmpty }).min(by: { size($0) < size($1) }) ?? sound.first else {
-                throw Skip(reason: "There's no sound tape on the OP-1.")
-            }
+            let source = try await smallestTape(on: device)
             let before = try await scratchSlot(on: device, name)
             return try await withScratch(on: device, slotsBefore: before, make: { try await device.duplicateTape(source, as: name) }) { copy in
                 try expect(copy.isSound, "the copy isn't sound: " + copy.problems.joined(separator: "; "))
@@ -50,7 +46,38 @@ extension Conformance {
                 return "\(source.name) to \(copy.name), \(size(source)) bytes. " + digests.joined(separator: ", ")
             }
         }),
+        Check("Restoring an archive of the smallest tape makes a tape that matches the archive", copying: { device, workspace in
+            let name = try TapeName(scratchTape)
+            let source = try await smallestTape(on: device)
+            let before = try await scratchSlot(on: device, name)
+            let archive = try await device.copyTape(source, to: workspace)
+            defer { try? FileManager.default.removeItem(at: archive.url) }
+            return try await withScratch(on: device, slotsBefore: before, make: { try await device.restoreTape(from: archive, as: name) }) { tape in
+                try expect(tape.isSound, "the restored tape isn't sound: " + tape.problems.joined(separator: "; "))
+                try expect(tape.manifest?.data == archive.manifest.data, "the restored tape.json isn't the archive's")
+                try expect(tape.tracks.map(\.size) == archive.tracks.map(\.size), "the restored tracks aren't the archive's sizes")
+                for (restored, archived) in zip(tape.tracks, archive.tracks) {
+                    let digest = SHA256.hash(data: try await device.contents(of: restored.path, maximumSize: 1 << 30))
+                    try expect(digest.map { String(format: "%02x", $0) }.joined() == archived.sha256,
+                               "track_\(archived.number) on the OP-1 doesn't match the archive")
+                }
+                try expect(try await device.tape(named: source.name) == source, "\(source.name) changed on the OP-1")
+                let tracks = archive.tracks.map { "track_\($0.number) \($0.sha256)" }.joined(separator: ", ")
+                return "\(archive.url.lastPathComponent) to \(tape.path). \(tracks)"
+            }
+        }),
     ]
+
+    private static func size(_ tape: Tape) -> Int { tape.tracks.reduce(0) { $0 + $1.size } }
+
+    /// The smallest sound tape with audio, so a track's bytes are compared, or else any sound tape.
+    private static func smallestTape(on device: FieldDevice) async throws -> Tape {
+        let sound = try await device.tapes().filter(\.isSound)
+        guard let source = sound.filter({ !$0.isEmpty }).min(by: { size($0) < size($1) }) ?? sound.first else {
+            throw Skip(reason: "There's no sound tape on the OP-1.")
+        }
+        return source
+    }
 
     /// The slots before the scratch tape is made. Skips if there's no free slot, or the scratch tape is already
     /// there from a run that didn't finish, which this never deletes.

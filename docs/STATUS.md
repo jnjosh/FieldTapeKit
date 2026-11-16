@@ -225,9 +225,15 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - The simulator records every SendObjectInfo's name, so tests can check the write order.
   - 319 tests pass on the Mac and 318 on the iOS simulator (217 and 216 FieldTapeKit, 93 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
 
+- **Step 17 passed on the OP-1** (iPad Pro, 2026-11-16, log `firmware/1.7.3/runs/fieldcheck-2026-11-16T011230Z.txt`). All three writing checks passed in 4.8 s. The restore check copied 2026-286#01 into a temporary archive and restored it as `tapes/conformance` in 2.0 s. Every track's SHA-256 matched the archive's, and the tape and the archive were deleted. Your tapes were only read. Decided by the owner, recorded in the plan and ADR 0002's change log:
+  - **`restoreTape(from:as:conflict:progress:)`** puts an archive back as a new tape, with `TapeConflict.fail`. It checks the name, a taken name, a free slot and the 6-minute limit first, then writes each track (read from the archive and checked by SHA-256 just before) and `tape.json` last, each read back, and lists the tape again. A half-made tape is removed, as in step 16.
+  - **An archived name longer than 12 characters is refused** for a new tape, with a reason saying to restore it under another name.
+  - **A third writing check** copies the smallest tape with audio into a temporary archive, restores it as `tapes/conformance`, matches it to the archive by SHA-256, and deletes both. All three passed in the iOS simulator on the simulated OP-1.
+  - 328 tests pass on the Mac and 327 on the iOS simulator (226 and 225 FieldTapeKit, 93 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
+
 ## Next steps
 
-1. Step 17: restoring a tape under a new name.
+1. Step 18: deleting and moving tapes, and the open choice of how `deleteTape` deletes a folder.
 2. `album.write-exact` on hardware, whenever an album side is empty.
 
 ## The OP-1 right now

@@ -104,6 +104,7 @@ import Testing
 
     static let create = "Creating a tape makes an empty, sound tape, and deleting it frees its slot"
     static let duplicate = "Duplicating the smallest tape makes a copy that matches it"
+    static let restore = "Restoring an archive of the smallest tape makes a tape that matches the archive"
 
     @Test func theWritingChecksPassAndLeaveNothing() async throws {
         let device = FieldDevice.simulated {
@@ -112,7 +113,7 @@ import Testing
         }
         let before = try await device.tapes()
         let outcomes = try await Self.runWriting(on: device)
-        #expect(outcomes == [Self.create: .pass, Self.duplicate: .pass])
+        #expect(outcomes == [Self.create: .pass, Self.duplicate: .pass, Self.restore: .pass])
         #expect(try await device.tapes() == before)
     }
 
@@ -121,6 +122,7 @@ import Testing
         let outcomes = try await Self.runWriting(on: device)
         #expect(outcomes[Self.create] == .pass)
         #expect(outcomes[Self.duplicate] == .skipped("There's no sound tape on the OP-1."))
+        #expect(outcomes[Self.restore] == .skipped("There's no sound tape on the OP-1."))
         #expect(try await device.tapes().isEmpty)
     }
 
@@ -128,7 +130,7 @@ import Testing
         let device = FieldDevice.simulated { SimulatedTape("conformance", seconds: [1]) }
         let outcomes = try await Self.runWriting(on: device)
         let reason = "tapes/conformance is already on the OP-1, from a run that didn't finish. Delete it on the OP-1 first."
-        #expect(outcomes == [Self.create: .skipped(reason), Self.duplicate: .skipped(reason)])
+        #expect(outcomes == [Self.create: .skipped(reason), Self.duplicate: .skipped(reason), Self.restore: .skipped(reason)])
         #expect(try await device.tapes().map(\.name.string) == ["conformance"])
     }
 

@@ -347,6 +347,8 @@ Decided by the owner for step 16 (2026-11-15), and recorded in ADR 0002's change
 
 **Relies on:** `rebuild.tape-json`, `reconnect.kept`.
 
+Decided by the owner for step 17 (2026-11-15), and recorded in ADR 0002's change log: an archived name longer than the firmware keeps is refused for a new tape, and the OP-1 run is a third writing check, which restores an archive of the smallest tape as `tapes/conformance`, checks it and deletes it.
+
 ### 18. Deleting and moving tapes
 
 **Adds (public):**

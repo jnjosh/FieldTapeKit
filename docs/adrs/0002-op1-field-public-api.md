@@ -279,7 +279,7 @@ public enum TapeConflict: Sendable {
 **Tape names are at most 12 characters, when FieldTapeKit makes them.**
 - The allowed characters are A–Z, 0–9, `#`, `-` and space, stored lowercase.
 - 12 is the most the OP-1 keeps on 1.7.3. It accepts a longer name over MTP, then cuts it to 12 once it leaves MTP mode (2026-11-15), so FieldTapeKit refuses a longer name instead of making a tape that comes back under another name. The limit comes from the firmware profile, so another firmware can have its own.
-- The limit applies only to names for a new tape: `createTape`, `duplicateTape`, and `restoreTape(from:as:)` with a new name. A name that's already on the OP-1, or in an archive, is accepted at any length, so a tape can still be listed, copied off and restored under its own name.
+- The limit applies only to names for a new tape: `createTape`, `duplicateTape`, and `restoreTape(from:as:)` when no tape has the name. A name that's already on the OP-1, or in an archive, is accepted at any length, so a tape can still be listed and copied off. Restoring one as a new tape is refused, with a reason saying to pass a shorter name with `as:` (change log, 2026-11-15).
 - FieldCheck creates its scratch tape with a 12-character name, and a second tape with 13, to confirm the OP-1 keeps 12 and cuts 13 (ADR 0003, `names.maximum`).
 
 **Filtering is left to the app.** `tapes()` returns an array, and Swift's own collection methods already do the job:
@@ -646,6 +646,15 @@ These are possible later features, deliberately left out for now:
   - **`synth/user/` follows the same rules,** with no cap assumed. Nothing has been written there yet, so level 2 checks it on hardware.
 - **2026-11-15:** FieldCheck's first level 2 run (PROBE-NOTES.md) found that **`synth/user/` keeps 6 seconds**, where `drum/user/` keeps 20, and that **a converted preset keeps the format code it was sent with:** a WAV stored as AIFC is still listed as WAV. Neither changes a decision. A shortened preset was already allowed, and nothing in FieldTapeKit depends on a cap, which only the simulator models. But `FieldFormat` in a preset folder says what was sent, not what's stored, unlike the 2026-11-14 entry's reasoning for reading it from the format code. Its documentation says so now.
   - Also settled while building it: a preset WAV's chunks are walked, so WAVs from other apps with extra chunks are accepted. The read-back would catch the OP-1 handling one differently. A write that reads back wrong now says why in its error.
+- **2026-11-15:** Decided by the owner while building step 17 of the plan, restoring a tape under a new name:
+  - **An archived name longer than this firmware keeps is refused** when it would make a new tape, with `invalidName` and a reason saying to restore it under another name. The OP-1 would cut it to 12 once it left MTP mode, and the tape would come back under another name, perhaps one already taken. Names already on the OP-1 or in an archive are still accepted at any length for listing and copying off.
+  - **It's checked on the OP-1 by a third writing check:** the smallest tape with audio is copied into an archive in a temporary folder, restored as `tapes/conformance`, matched to the archive file by file by SHA-256, and deleted with the archive.
+  - Also settled while building it:
+    - `restoreTape` shares `createTape`'s path: check, make the folder, write the tracks and then `tape.json`, list the tape again, and remove a half-made tape file by file.
+    - Each track is read whole from the archive and checked against its SHA-256 just before it's written, so an archive changed on disk since it was opened is `archiveMismatch`, and only one track is in memory.
+    - Every track is checked against the 6-minute limit before anything changes. On 1.7.3 an archive that opens can't fail this, since its `tape.json` would already be refused, but a firmware with a shorter limit could.
+    - All four tracks are written, blank ones too, since a new tape has nothing to skip. Skipping a track that's blank on both sides is for step 19's replace.
+    - `TapeConflict` has only `.fail` until step 19 adds the two kinds of replace, before 1.0.
 - **2026-11-15:** Decided by the owner while building step 16 of the plan, creating and duplicating tapes:
   - **A half-made tape is removed file by file, then its folder,** as the probe proved on 2026-11-08, not with one DeleteObject on the folder. It works whether or not a firmware deletes a folder's contents (`delete.folder-with-files`), and a failure part way leaves the tape listed in `changed`. Whether `deleteTape` does the same is still step 18's choice.
   - **`duplicateTape` refuses a source that changes while it's copied,** as `copyTape` does: the source is read fresh at the start and listed again after its tracks are copied, before `tape.json` is written. If anything changed, it's `verificationFailed`, and the half-made copy is removed.

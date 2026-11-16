@@ -219,7 +219,8 @@ final class ConnectionLog {
     /// is its record, with each copy's SHA-256.
     ///
     /// With `writing`, it runs the writing checks instead, which the person confirms first: each makes the scratch
-    /// tape `tapes/conformance` in a free slot, checks it and deletes it. The person's tapes are only read.
+    /// tape `tapes/conformance` in a free slot, checks it and deletes it. The person's tapes are only read. The
+    /// restore check's archive goes in a temporary folder, not Documents.
     func runConformance(on device: FieldDevice, writing: Bool = false) async {
         guard running == nil else { return }
         running = device.id
@@ -488,6 +489,8 @@ struct ValidateView: View {
                 Text("• Makes an empty tape, tapes/\(Conformance.scratchTape), checks it, and deletes it.\n"
                      + "• Duplicates your smallest tape to tapes/\(Conformance.scratchTape), checks the copy, and deletes "
                      + "it. Your tape is only read.\n"
+                     + "• Copies that tape into a temporary archive, restores it as tapes/\(Conformance.scratchTape), "
+                     + "checks it against the archive, and deletes both.\n"
                      + "• Needs one free tape slot, and leaves nothing behind.")
             }
             .confirmationDialog("Delete FieldCheck's content?", isPresented: Binding(get: { cleanup != nil },

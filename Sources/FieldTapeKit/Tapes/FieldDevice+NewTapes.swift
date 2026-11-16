@@ -106,7 +106,7 @@ extension FieldDevice {
 
     /// Refuses a name this firmware won't keep, a name that's taken, or a full set of slots, from a fresh listing.
     /// Nothing on the OP-1 changes here.
-    private func checkNewTape(_ name: TapeName) async throws {
+    func checkNewTape(_ name: TapeName) async throws {
         let path = FilePath.op1Tapes.appending(name.string)
         if let problem = TapeName.problem(with: name.string, maximumLength: profile.maximumTapeNameLength) {
             throw FieldError(.invalidName, path: path, reason: problem)
@@ -123,7 +123,7 @@ extension FieldDevice {
     /// Makes `tapes/<name>` and writes `files` into it in order, each read back, then reads the tape again and
     /// checks it holds what was written. Each file's data is made just before it's written, so only one is held at
     /// a time. If anything fails after the folder is made, the tape is deleted (ADR 0002, section 6).
-    private func makeTape(named name: TapeName, files: [(String, () async throws -> Data)],
+    func makeTape(named name: TapeName, files: [(String, () async throws -> Data)],
                           progress: ProgressManager?) async throws -> Tape {
         let folder = try await createDirectory(at: FilePath.op1Tapes.appending(name.string))
         do {

@@ -73,9 +73,9 @@ public struct ReelArchive: Sendable, Hashable {
         public let sha256: String
 
         public var isBlank: Bool { size <= WAVHeader.size }
-        public var duration: Duration {
-            Tape.duration(frames: max(size - WAVHeader.size, 0) / FirmwareProfile.v1_7_3.trackFormat.frameBytes)
-        }
+        public var duration: Duration { Tape.duration(frames: frames) }
+        /// Its length in frames, from its size.
+        var frames: Int { max(size - WAVHeader.size, 0) / FirmwareProfile.v1_7_3.trackFormat.frameBytes }
     }
 
     public internal(set) var url: URL
@@ -213,6 +213,25 @@ public struct ReelArchive: Sendable, Hashable {
             try? FileManager.default.removeItem(at: destination)
             throw FieldError.local(error)
         }
+    }
+
+    /// One track's file, read whole and checked against its SHA-256, for writing it back to the OP-1.
+    ///
+    /// - Throws: `FieldError` with `.archiveMismatch` if it no longer matches what was checked when the archive was
+    ///   opened, `.invalidArchive`, or `.localFileFailed`.
+    func trackData(_ number: Int) throws(FieldError) -> Data {
+        let track = tracks[number - 1]
+        let name = "track_\(number).wav"
+        var data = Data(capacity: track.size)
+        try Self.read(url) { entry, _, chunks in
+            guard entry == name else { return false }
+            try chunks { data.append($0) }
+            return true
+        }
+        guard data.count == track.size, SHA256.hash(data: data).map({ String(format: "%02x", $0) }).joined() == track.sha256 else {
+            throw FieldError(.archiveMismatch, reason: "\(name) no longer matches what was checked when the archive was opened")
+        }
+        return data
     }
 
     // MARK: Reading
