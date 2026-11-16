@@ -45,16 +45,20 @@ import Testing
         let copy = try #require(SideRestore.copies(in: files).first)
         #expect(try await SideRestore.holdsTone(.b, on: device))
 
+        // FieldCheck traces the connection, and the put-back tells its steps.
+        let requests = await RequestTrace.start(on: device, limit: 500)
         let lines = Lines()
         let outcome = await SideRestore.putBack(copy, on: device) { lines.append($0) }
+        #expect(lines.all.first == "Reading mixdown/side_b.wav" && lines.all.contains("Reading mixdown/side_b.wav back"))
         #expect(outcome.succeeded, "\(outcome.summary)")
         #expect(outcome.summary == "mixdown/side_b.wav was put back from level2-2026-11-16T035851Z/side_b before level 2.wav, "
                 + "176,444 bytes, and reads back byte for byte.")
         #expect(try await device.contents(of: "mixdown/side_b.wav") == Self.sideB)
         #expect(await simulator.deleted == ["side_b.wav"])
-        #expect(lines.all.contains { $0.hasPrefix("→ deleteObject 0x") })
-        #expect(lines.all.contains("→ sendObject, 176444 bytes out"))
-        #expect(lines.all.contains { $0.hasPrefix("← sendObject 0x2001, 0 bytes in, ") && $0.hasSuffix(" ms") })
+        #expect(requests.all.contains { $0.hasPrefix("→ deleteObject 0x") })
+        #expect(requests.all.contains("→ sendObject, 176444 bytes out"))
+        #expect(requests.all.contains { $0.hasPrefix("← sendObject 0x2001, 0 bytes in, ") && $0.hasSuffix(" ms") })
+        #expect(requests.takeFailure() == nil)
         #expect(try await !SideRestore.holdsTone(.b, on: device))
     }
 
@@ -66,10 +70,10 @@ import Testing
         let outcome = await SideRestore.putBack(copy, on: device, warmUp: true) { lines.append($0) }
         #expect(outcome.succeeded, "\(outcome.summary)")
         #expect(await simulator.deleted == ["fieldcheck.wav", "side_b.wav"])
+        // The preset is deleted before the side.
         let warmUp = try #require(lines.all.firstIndex(of: "Warm-up done"))
-        // The preset's delete comes before the warm-up ends, and the side's after it.
-        let sideDelete = try #require(lines.all.lastIndex { $0.hasPrefix("→ deleteObject ") })
-        #expect(warmUp < sideDelete)
+        let restoring = try #require(lines.all.firstIndex { $0.hasPrefix("Restoring mixdown/side_b.wav") })
+        #expect(warmUp < restoring)
         #expect(try await !device.fileExists(at: "drum/user/fieldcheck.wav"))
         #expect(try await device.contents(of: "mixdown/side_b.wav") == Self.sideB)
     }
@@ -149,14 +153,16 @@ import Testing
         let copy = try #require(SideRestore.copies(in: files).first)
         // The OP-1 stops answering a few requests in.
         await simulator.add(faults: [.silent(fromRequest: await simulator.requestCount + 8)])
-        let lines = Lines()
-        let outcome = await SideRestore.putBack(copy, on: device) { lines.append($0) }
+        let requests = await RequestTrace.start(on: device)
+        let outcome = await SideRestore.putBack(copy, on: device) { _ in }
         #expect(!outcome.succeeded)
         #expect(outcome.summary.hasSuffix("Whether the last request took effect isn't known: the trace shows which one got no answer. "
                 + "The copy is kept."))
-        let failed = try #require(lines.all.firstIndex { $0.hasPrefix("✕ ") })
-        #expect(lines.all[failed].hasSuffix(": no answer after 0.2 seconds"))
-        #expect(lines.all[failed - 1].hasPrefix("→ "), "the request before it is the one that hung")
-        #expect(lines.all.last == "  a GetDeviceInfo ping got no answer in 0.1 seconds either")
+        let lines = try #require(requests.takeFailure())
+        let failed = try #require(lines.firstIndex { $0.hasPrefix("✕ ") })
+        #expect(lines[failed].hasSuffix(": no answer after 0.2 seconds"))
+        #expect(lines[failed - 1].hasPrefix("→ "), "the request before it is the one that hung")
+        #expect(lines.last == "  a GetDeviceInfo ping got no answer in 0.1 seconds either")
+        #expect(requests.takeFailure() == nil, "a failure is told once")
     }
 }

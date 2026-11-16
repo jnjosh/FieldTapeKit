@@ -1,0 +1,97 @@
+{
+  "comparison" : {
+    "firmware" : "1.7.3",
+    "isExact" : true,
+    "levelStarted" : "2026-11-15T16:17:28Z"
+  },
+  "device" : {
+    "firmware" : "1.7.3",
+    "isFirmwareTested" : true,
+    "model" : "OP-1",
+    "serialNumber" : "L1PXE14W"
+  },
+  "durationMilliseconds" : 36409,
+  "finished" : "2026-11-16T13:21:42Z",
+  "format" : 1,
+  "host" : {
+    "app" : "1.0",
+    "model" : "iPad",
+    "system" : "iPadOS 27.2.1"
+  },
+  "level" : 3,
+  "results" : [
+    {
+      "expectation" : "reconnect.handles",
+      "observed" : {
+        "changed" : 6,
+        "compared" : 6
+      },
+      "outcome" : "pass",
+      "summary" : "6 of the scratch tape's 6 objects have new handles since level 2.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "names.maximum",
+      "observed" : {
+        "length" : 12,
+        "listedAs" : "fieldck #1-2",
+        "longLength" : 13,
+        "longListedAs" : "fieldck #2-1",
+        "longName" : "FIELDCK #2-13",
+        "name" : "FIELDCK #1-2"
+      },
+      "outcome" : "pass",
+      "summary" : "After the reconnect, FIELDCK #1-2, 12 characters, is still listed as fieldck #1-2, and FIELDCK #2-13, 13 characters, was cut to fieldck #2-1.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "reconnect.renamed",
+      "observed" : {
+        "files" : [
+          "readme.txt",
+          "tape.json",
+          "track_1.wav",
+          "track_2.wav",
+          "track_3.wav",
+          "track_4.wav"
+        ],
+        "listedAs" : "fieldck #1-2",
+        "readmeBytes" : 104
+      },
+      "outcome" : "pass",
+      "summary" : "The tape is listed lowercase, as fieldck #1-2, and the OP-1 added a 104-byte readme.txt.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "reconnect.kept",
+      "outcome" : "fail",
+      "summary" : "The OP-1 disconnected during this check.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "delete.folder-with-files",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "delete.files-then-folder",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    }
+  ],
+  "started" : "2026-11-16T13:21:06Z"
+}

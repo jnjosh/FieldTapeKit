@@ -96,7 +96,8 @@ public struct Baseline: Sendable, Hashable, Codable {
         levels = reports.sorted { $0.level < $1.level }.map { report in
             Level(source: Source(started: report.started, level: report.level, model: report.device.model, host: report.host),
                   expectations: Dictionary(uniqueKeysWithValues: report.results.map { result in
-                      (result.expectation, result.outcome == .pass
+                      // A changed result is what this firmware does now, once a person has reviewed it.
+                      (result.expectation, result.outcome == .pass || result.outcome == .changed
                           ? Entry(observed: result.observed, varies: result.varies, notObserved: nil)
                           : Entry(observed: nil, varies: [], notObserved: result.summary))
                   }))

@@ -1,0 +1,174 @@
+{
+  "comparison" : {
+    "firmware" : "1.7.3",
+    "isExact" : true,
+    "levelStarted" : "2026-11-15T16:15:58Z"
+  },
+  "device" : {
+    "firmware" : "1.7.3",
+    "isFirmwareTested" : true,
+    "model" : "OP-1",
+    "serialNumber" : "L1PXE14W"
+  },
+  "durationMilliseconds" : 31379,
+  "finished" : "2026-11-16T13:03:21Z",
+  "format" : 1,
+  "host" : {
+    "app" : "1.0",
+    "model" : "iPad",
+    "system" : "iPadOS 27.2.1"
+  },
+  "level" : 1,
+  "results" : [
+    {
+      "expectation" : "device.identity",
+      "observed" : {
+        "name" : "OP-1",
+        "productID" : "0x0102",
+        "vendorID" : "0x2367"
+      },
+      "outcome" : "pass",
+      "summary" : "USB vendor 0x2367, product 0x0102, named \"OP-1\".",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "device.operations",
+      "outcome" : "fail",
+      "summary" : "The OP-1 disconnected during this check.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "device.storage",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "session.implicit",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "session.data-phase",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "layout.folders",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "layout.readmes",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "names.lowercase",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "tape.files",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "tape.wav-format",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "tape.json-keys",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "tape.json-units",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "tape.types",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "album.files",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "album.wav-format",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "read.partial",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "read.speed",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "read.cost",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    }
+  ],
+  "started" : "2026-11-16T13:02:49Z"
+}

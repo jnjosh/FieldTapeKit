@@ -54,8 +54,12 @@ final class ConnectionLog {
     private(set) var pendingLevelThree: LevelThree.Pending?
     /// FieldCheck's own content found on each connection, from a run that didn't finish.
     private(set) var leftovers: [FieldDevice.ID: [FilePath]] = [:]
-    /// A copy level 2 kept of an album side that isn't back yet, on each connection, and what the side holds now.
-    private(set) var sideToPutBack: [FieldDevice.ID: (copy: SideRestore.Copy, current: SideRestore.Current)] = [:]
+    /// A copy level 2 kept of an album side that isn't back yet, found in Documents without reading the OP-1.
+    private(set) var sideCopy: SideRestore.Copy?
+    /// The connection whose album side is being read to put it back, so only that shows as reading.
+    private(set) var readingSide: FieldDevice.ID?
+    /// Each connection's trace of its MTP requests, from the moment it connected.
+    private var traces: [FieldDevice.ID: RequestTrace] = [:]
     private let pendingURL = URL.documentsDirectory.appending(path: "level3-pending.json")
     private let started = Date()
     private let fileURL: URL
@@ -103,29 +107,40 @@ final class ConnectionLog {
         pendingLevelThree?.connection == device.id
     }
 
-    /// Looks for FieldCheck's own content on the OP-1: its tapes and presets, and a copy level 2 kept of an album
-    /// side that isn't back yet, while level 3 isn't waiting to put it back. It only reads.
+    /// Looks for FieldCheck's own content on the OP-1: its tapes and presets. It only reads, and it doesn't read the
+    /// album: album writing is off (`album.write-again`), so a level 2 copy of a side is found in Documents, and the
+    /// side is read only when a person asks to put it back.
     private func findLeftovers(on device: FieldDevice) async {
         leftovers[device.id] = await LevelTwo.plan(for: device).leftovers
-        sideToPutBack[device.id] = nil
-        guard pendingLevelThree?.album == nil || !isLevelThreePending(for: device) else { return }
-        for copy in SideRestore.copies(in: .documentsDirectory) {
-            let name = "\(copy.folder)/\(copy.url.lastPathComponent), \(copy.size.formatted()) bytes, SHA-256 \(copy.sha256)"
-            switch try? await SideRestore.current(copy, on: device) {
-            case .matches:
+        logIfStopped(device)
+        sideCopy = pendingLevelThree?.album == nil ? SideRestore.copies(in: .documentsDirectory).first : nil
+    }
+
+    /// Reads the side `copy` is of, for a person to confirm putting it back, and returns what it holds now, or nil if
+    /// it's back already or couldn't be read.
+    func readSide(for copy: SideRestore.Copy, on device: FieldDevice) async -> SideRestore.Current? {
+        guard running == nil else { return nil }
+        running = device.id
+        readingSide = device.id
+        defer {
+            running = nil
+            readingSide = nil
+        }
+        record("Reading \(copy.side), to put it back from \(copy.folder)/\(copy.url.lastPathComponent)")
+        do {
+            let current = try await SideRestore.current(copy, on: device)
+            logIfStopped(device)
+            if current == .matches {
                 SideRestore.markPutBack(copy.url)
-                record("\(copy.side) matches level 2's copy \(name), so it's back")
-            case .tone:
-                sideToPutBack[device.id] = (copy, .tone)
-                record("\(copy.side) holds FieldCheck's tone. Level 2's copy is \(name)")
-                return
-            case .other(let side):
-                sideToPutBack[device.id] = (copy, .other(side))
-                record("\(copy.side) holds \(side.size.formatted()) bytes that aren't level 2's copy, \(name)")
-                return
-            case nil:
-                continue
+                sideCopy = nil
+                record("\(copy.side) already holds level 2's copy, so it's back")
+                return nil
             }
+            return current
+        } catch {
+            logIfStopped(device)
+            record("Couldn't read \(copy.side): \(error.localizedDescription)")
+            return nil
         }
     }
 
@@ -144,6 +159,7 @@ final class ConnectionLog {
         let lines = TraceLines()
         let outcome = await SideRestore.putBack(copy, on: device, copyingReplacedTo: replaced) { lines.append($0) }
         for line in lines.all { record("  " + line) }
+        logIfStopped(device)
         record((outcome.succeeded ? "Put back: " : "Not put back: ") + outcome.summary)
         await findLeftovers(on: device)
     }
@@ -154,17 +170,19 @@ final class ConnectionLog {
         running = device.id
         defer { running = nil }
         record("Level 1: running")
-        let (report, trace) = await RequestTrace.during(device) { await LevelOne.run(on: device, host: host) }
-        logIfStopped(trace)
+        let run = await LevelOne.run(on: device, host: host)
+        logIfStopped(device)
+        let report = compared(run)
         reports[device.id] = report
         latestByLevel[report.level] = report
         for result in report.results where result.outcome != .pass {
             record("Level 1: \(result.expectation) \(result.outcome.rawValue): \(result.summary)")
         }
-        record("Level 1: \(report.count(.pass)) pass, \(report.count(.fail)) fail, \(report.count(.notRun)) not run")
+        record("Level 1: \(report.countsDescription)")
         do {
             let saved = try report.save(in: .documentsDirectory)
-            record("Saved \(saved.json.lastPathComponent) and \(saved.markdown.lastPathComponent)")
+            record("Saved \(saved.json.lastPathComponent) and \(saved.markdown.lastPathComponent)"
+                   + (saved.draftADR.map { ", and a draft ADR for its changes and failures, \($0.lastPathComponent)" } ?? ""))
         } catch {
             record("Couldn't save the report: \(error.localizedDescription)")
         }
@@ -191,10 +209,9 @@ final class ConnectionLog {
             return
         }
         record("Level 2: running\(longCheck ? " with the long check" : ""), copies go in \(workspace.lastPathComponent)")
-        let (report, trace) = await RequestTrace.during(device) {
-            await LevelTwo.run(on: device, plan: plan, longCheck: longCheck, workspace: workspace, host: host)
-        }
-        logIfStopped(trace)
+        let run = await LevelTwo.run(on: device, plan: plan, longCheck: longCheck, workspace: workspace, host: host)
+        logIfStopped(device)
+        let report = compared(run)
         reports[device.id] = report
         latestByLevel[report.level] = report
         if let pending = await LevelThree.pending(after: report, on: device, workspace: workspace) {
@@ -204,15 +221,20 @@ final class ConnectionLog {
             if let album = pending.album {
                 record("\(album.side) holds FieldCheck's tone until level 3 puts it back from \(album.folder)/\(album.file).")
             }
+        } else {
+            let failed = report.results.filter { $0.outcome == .fail }.map(\.expectation)
+            record("Level 3 isn't waiting: it runs only after a level 2 with no failures"
+                   + (failed.isEmpty ? "." : ", and \(failed.joined(separator: ", ")) failed. Delete FieldCheck's content, then run level 2 again."))
         }
         await findLeftovers(on: device)
         for result in report.results {
             record("Level 2: \(result.expectation) \(result.outcome.rawValue): \(result.summary)")
         }
-        record("Level 2: \(report.count(.pass)) pass, \(report.count(.fail)) fail, \(report.count(.notRun)) not run")
+        record("Level 2: \(report.countsDescription)")
         do {
             let saved = try report.save(in: .documentsDirectory)
-            record("Saved \(saved.json.lastPathComponent) and \(saved.markdown.lastPathComponent)")
+            record("Saved \(saved.json.lastPathComponent) and \(saved.markdown.lastPathComponent)"
+                   + (saved.draftADR.map { ", and a draft ADR for its changes and failures, \($0.lastPathComponent)" } ?? ""))
         } catch {
             record("Couldn't save the report: \(error.localizedDescription)")
         }
@@ -224,8 +246,8 @@ final class ConnectionLog {
         running = device.id
         defer { running = nil }
         record("Deleting FieldCheck's content")
-        let (result, trace) = await RequestTrace.during(device) { await LevelTwo.deleteLeftovers(on: device) }
-        logIfStopped(trace)
+        let result = await LevelTwo.deleteLeftovers(on: device)
+        logIfStopped(device)
         record("\(result.expectation) \(result.outcome.rawValue): \(result.summary)")
         if isLevelThreePending(for: device) {
             if let album = pendingLevelThree?.album {
@@ -255,19 +277,19 @@ final class ConnectionLog {
             return
         }
         record("Level 3: running, after level 2 at \(pending.levelTwoStarted.formatted(.iso8601))")
-        let (report, trace) = await RequestTrace.during(device) {
-            await LevelThree.run(on: device, pending: pending, files: .documentsDirectory, host: host)
-        }
-        logIfStopped(trace)
+        let run = await LevelThree.run(on: device, pending: pending, files: .documentsDirectory, host: host)
+        logIfStopped(device)
+        let report = compared(run)
         reports[device.id] = report
         latestByLevel[report.level] = report
         for result in report.results {
             record("Level 3: \(result.expectation) \(result.outcome.rawValue): \(result.summary)")
         }
-        record("Level 3: \(report.count(.pass)) pass, \(report.count(.fail)) fail, \(report.count(.notRun)) not run")
+        record("Level 3: \(report.countsDescription)")
         do {
             let saved = try report.save(in: .documentsDirectory)
-            record("Saved \(saved.json.lastPathComponent) and \(saved.markdown.lastPathComponent)")
+            record("Saved \(saved.json.lastPathComponent) and \(saved.markdown.lastPathComponent)"
+                   + (saved.draftADR.map { ", and a draft ADR for its changes and failures, \($0.lastPathComponent)" } ?? ""))
         } catch {
             record("Couldn't save the report: \(error.localizedDescription)")
         }
@@ -306,8 +328,8 @@ final class ConnectionLog {
         // One check at a time, so the memory each one takes shows in the log.
         var results: [Conformance.Result] = []
         for check in writing ? Conformance.writingChecks : Conformance.checks {
-            let (result, trace) = await RequestTrace.during(device) { await check.run(on: device, workspace: workspace) }
-            logIfStopped(trace)
+            let result = await check.run(on: device, workspace: workspace)
+            logIfStopped(device)
             results.append(result)
             switch result.outcome {
             case .pass: record("Conformance: pass: \(result.name)\(result.detail.map { ". \($0)" } ?? "")")
@@ -387,6 +409,9 @@ final class ConnectionLog {
                 switch event {
                 case .connected(let device):
                     devices.append(device)
+                    traces[device.id] = await RequestTrace.start(on: device) { [weak self] line in
+                        Task { @MainActor in self?.record(line) }
+                    }
                     let info = device.info
                     record("Connected: \(info.model), firmware \(info.firmware)\(info.isFirmwareTested ? "" : " (untested)"), "
                         + "serial \(info.serialNumber)")
@@ -396,6 +421,8 @@ final class ConnectionLog {
                     }
                     await findLeftovers(on: device)
                 case .disconnected(let id):
+                    logIfStopped(id)
+                    traces[id] = nil
                     devices.removeAll { $0.id == id }
                     reports[id] = nil
                     conformance[id] = nil
@@ -409,11 +436,32 @@ final class ConnectionLog {
         }
     }
 
-    /// Logs the last MTP requests if one got no answer, so the log says where the OP-1 stopped.
-    private func logIfStopped(_ trace: RequestTrace) {
-        guard trace.sawFailure else { return }
-        record("The last \(trace.all.count) MTP requests, up to the one that got no answer:")
-        for line in trace.all { record("  " + line) }
+    /// The run compared with the built-in baseline for its firmware, or the closest one (ADR 0003, section 4), and
+    /// what it was compared with logged.
+    private func compared(_ run: CheckReport) -> CheckReport {
+        guard let (baseline, isExact) = Baseline.for(firmware: run.device.firmware) else {
+            record("Level \(run.level): there's no built-in baseline, so nothing was compared")
+            return run
+        }
+        let report = run.compared(with: baseline, isExact: isExact)
+        record("Level \(run.level): compared with \(report.comparisonDescription)")
+        for result in report.results where result.outcome == .changed {
+            for difference in result.differences {
+                record("Level \(run.level): \(result.expectation) changed at \(difference.path.isEmpty ? "the whole value" : difference.path) "
+                       + "(\(difference.suggested.rawValue), to confirm)")
+            }
+        }
+        return report
+    }
+
+    /// Logs the connection's last MTP requests if one got no answer since they were last logged, so the log says
+    /// where the OP-1 stopped, whatever sent the request.
+    private func logIfStopped(_ device: FieldDevice) { logIfStopped(device.id) }
+
+    private func logIfStopped(_ id: FieldDevice.ID) {
+        guard let lines = traces[id]?.takeFailure() else { return }
+        record("The last \(lines.count) MTP requests, up to the one that got no answer:")
+        for line in lines { record("  " + line) }
     }
 
     func record(_ message: String) {
@@ -517,18 +565,13 @@ struct ValidateView: View {
                             Button("Delete FieldCheck's content…", role: .destructive) { cleanup = device }
                                 .disabled(log.running != nil)
                         }
-                        if let offer = log.sideToPutBack[device.id] {
-                            let copy = offer.copy
-                            Group {
-                                if case .other(let side) = offer.current {
-                                    Text("\(copy.side) holds \(Self.duration(side.duration)) that isn't level 2's copy of it, in \(copy.folder).")
-                                } else {
-                                    Text("\(copy.side) holds FieldCheck's 2-second tone. Level 2's copy of it is in \(copy.folder).")
+                        if let copy = log.sideCopy {
+                            Text("Level 2's copy of \(copy.side) is in \(copy.folder). FieldCheck reads \(copy.side) only if you put it back.")
+                                .foregroundStyle(.secondary)
+                            Button(log.readingSide == device.id ? "Reading \(copy.side)…" : "Put \(copy.side) back from level 2's copy…") {
+                                Task {
+                                    if let current = await log.readSide(for: copy, on: device) { putBack = (device, copy, current) }
                                 }
-                            }
-                            .foregroundStyle(.secondary)
-                            Button(log.running == device.id ? "Putting \(copy.side) back…" : "Put \(copy.side) back from level 2's copy…") {
-                                putBack = (device, copy, offer.current)
                             }
                             .disabled(log.running != nil)
                         }
@@ -539,8 +582,7 @@ struct ValidateView: View {
                         Section {
                             ForEach(report.results, id: \.expectation) { ResultRow(result: $0) }
                         } header: {
-                            Text("Level \(report.level): \(report.count(.pass)) pass, \(report.count(.fail)) fail, "
-                                + "\(report.count(.notRun)) not run")
+                            Text("Level \(report.level): \(report.countsDescription)")
                         }
                     }
                 }
@@ -640,8 +682,7 @@ struct BaselineSection: View {
         Section {
             ForEach(1...3, id: \.self) { level in
                 if let report = log.latestByLevel[level] {
-                    LabeledContent("Level \(level)", value: "\(report.count(.pass)) pass, \(report.count(.fail)) fail, "
-                        + "\(report.count(.notRun)) not run\(included.contains(level) ? "" : ", left out")")
+                    LabeledContent("Level \(level)", value: report.countsDescription + (included.contains(level) ? "" : ", left out"))
                 } else {
                     LabeledContent("Level \(level)", value: "not run yet")
                 }
@@ -696,12 +737,21 @@ struct ResultRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
+            ForEach(result.differences, id: \.self) { difference in
+                Text("Changed: \(difference.path.isEmpty ? "the whole value" : difference.path), \(difference.suggested.rawValue)")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+            if let note = result.baselineNote {
+                Text(note).font(.caption).foregroundStyle(.secondary)
+            }
         }
     }
 
     private var color: Color {
         switch result.outcome {
         case .pass: .green
+        case .changed: .orange
         case .fail: .red
         case .notRun: .secondary
         }

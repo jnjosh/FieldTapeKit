@@ -3,12 +3,34 @@ import Foundation
 
 /// The result of checking one expectation on a connected OP-1 (ADR 0003, section 4).
 public struct CheckResult: Sendable, Hashable, Codable {
-    /// Until baselines exist, a check judges the behavior FieldTapeKit relies on, as its expectation states it.
-    /// Comparing with a baseline, and the `changed` result that comes with it, is step 22 of the plan.
+    /// A check judges the behavior FieldTapeKit relies on, as its expectation states it: pass, fail or not run.
+    /// Comparing the report with a baseline turns a pass that observed something else into `changed`
+    /// (ADR 0003, section 4).
     public enum Outcome: String, Sendable, Hashable, Codable {
         case pass
+        /// It works, but differs from the baseline: `differences` says how.
+        case changed
         case fail
         case notRun = "not run"
+    }
+
+    /// One way a result differs from its baseline, with the compatibility class FieldCheck suggests for it
+    /// (ADR 0003, section 5).
+    public struct Difference: Sendable, Hashable, Codable {
+        public enum Class: String, Sendable, Hashable, Codable {
+            /// Something new appeared alongside what was there.
+            case additive
+            /// A value changed or disappeared.
+            case divergent
+        }
+
+        /// Keys separated by dots, with `[]` for a list's elements, as in `varies`. Empty for the whole value.
+        public let path: String
+        /// Nil if the baseline didn't have it.
+        public let old: CheckValue?
+        /// Nil if this run didn't have it.
+        public let new: CheckValue?
+        public let suggested: Class
     }
 
     /// The expectation's stable ID, such as `device.operations`.
@@ -22,18 +44,32 @@ public struct CheckResult: Sendable, Hashable, Codable {
     /// comparison with a baseline leaves their values out. Each is a path of keys, with `[]` for every element of
     /// a list, such as `storages[].freeSpace`. Ranges for them come with the comparison, in step 22 of the plan.
     public let varies: [String]
+    /// The summary of a check the OP-1 stopped answering during. It fails, since the check couldn't see the
+    /// behavior, but it says nothing about the firmware, so it gets no draft ADR.
+    public static let disconnected = "The OP-1 disconnected during this check."
+
+    /// Whether the check failed only because the OP-1 stopped answering.
+    public var stoppedAnswering: Bool { outcome == .fail && summary == Self.disconnected }
+
+    /// How a `changed` result differs from its baseline. Empty otherwise.
+    public let differences: [Difference]
+    /// What the comparison found worth saying about a result that isn't changed, such as a check the baseline
+    /// doesn't have.
+    public let baselineNote: String?
 
     public init(expectation: String, outcome: Outcome, summary: String, observed: CheckValue? = nil,
-                varies: [String] = []) {
+                varies: [String] = [], differences: [Difference] = [], baselineNote: String? = nil) {
         self.expectation = expectation
         self.outcome = outcome
         self.summary = summary
         self.observed = observed
         self.varies = varies
+        self.differences = differences
+        self.baselineNote = baselineNote
     }
 
     private enum CodingKeys: String, CodingKey {
-        case expectation, outcome, summary, observed, varies
+        case expectation, outcome, summary, observed, varies, differences, baselineNote
     }
 
     /// Reports from before `varies` existed have none.
@@ -44,6 +80,20 @@ public struct CheckResult: Sendable, Hashable, Codable {
         summary = try container.decode(String.self, forKey: .summary)
         observed = try container.decodeIfPresent(CheckValue.self, forKey: .observed)
         varies = try container.decodeIfPresent([String].self, forKey: .varies) ?? []
+        differences = try container.decodeIfPresent([Difference].self, forKey: .differences) ?? []
+        baselineNote = try container.decodeIfPresent(String.self, forKey: .baselineNote)
+    }
+
+    /// Leaves out the comparison's fields when they're empty, so a report that wasn't compared reads as before.
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(expectation, forKey: .expectation)
+        try container.encode(outcome, forKey: .outcome)
+        try container.encode(summary, forKey: .summary)
+        try container.encodeIfPresent(observed, forKey: .observed)
+        try container.encode(varies, forKey: .varies)
+        if !differences.isEmpty { try container.encode(differences, forKey: .differences) }
+        try container.encodeIfPresent(baselineNote, forKey: .baselineNote)
     }
 }
 
@@ -108,7 +158,7 @@ enum CheckRunner {
                     finding = .notRun(cancelled)
                 case let error as FieldError where error.code == .disconnected:
                     stopped = "The OP-1 disconnected."
-                    finding = .fail("The OP-1 disconnected during this check.")
+                    finding = .fail(CheckResult.disconnected)
                 case let error:
                     finding = .fail(Self.describe(error))
                 }

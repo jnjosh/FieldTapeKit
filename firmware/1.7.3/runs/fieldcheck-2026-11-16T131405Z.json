@@ -1,0 +1,166 @@
+{
+  "comparison" : {
+    "firmware" : "1.7.3",
+    "isExact" : true,
+    "levelStarted" : "2026-11-15T16:16:35Z"
+  },
+  "device" : {
+    "firmware" : "1.7.3",
+    "isFirmwareTested" : true,
+    "model" : "OP-1",
+    "serialNumber" : "L1PXE14W"
+  },
+  "durationMilliseconds" : 44892,
+  "finished" : "2026-11-16T13:14:50Z",
+  "format" : 1,
+  "host" : {
+    "app" : "1.0",
+    "model" : "iPad",
+    "system" : "iPadOS 27.2.1"
+  },
+  "level" : 2,
+  "results" : [
+    {
+      "expectation" : "names.maximum",
+      "observed" : {
+        "length" : 12,
+        "listedAs" : "fieldck #1-2",
+        "longLength" : 13,
+        "longListedAs" : "fieldck #2-13",
+        "longName" : "FIELDCK #2-13",
+        "name" : "FIELDCK #1-2"
+      },
+      "outcome" : "pass",
+      "summary" : "The OP-1 took FIELDCK #1-2, 12 characters, as fieldck #1-2, and FIELDCK #2-13, 13 characters, as fieldck #2-13. What it keeps after a reconnect is level 3.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.folder",
+      "observed" : {
+        "associationType" : 1,
+        "contents" : 0,
+        "format" : "0x3001"
+      },
+      "outcome" : "pass",
+      "summary" : "SendObjectInfo alone made the tape, a folder (0x3001, association type 1) with 0 items in it.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.exact",
+      "observed" : {
+        "files" : [
+          {
+            "name" : "tape.json",
+            "sha256" : "4c460fb8882c4c59f69ea553108d396dc86d6226027ab9a6543f70ff9e021518",
+            "size" : 250
+          },
+          {
+            "name" : "track_1.wav",
+            "sha256" : "0b22dc9e0086ab3c87e3767fb8a025da508056fa61d64b4e1ec829aef5513f49",
+            "size" : 705644
+          },
+          {
+            "name" : "track_2.wav",
+            "sha256" : "df9a6d64f8cf0699b23df2adf68fcf33b74dae9cbbb0e50811befca87fd7ceb8",
+            "size" : 705644
+          },
+          {
+            "name" : "track_3.wav",
+            "sha256" : "f1381b66af6efed67efff5269c395b2084fbcda18a64c8a33cffb39d3844e89b",
+            "size" : 705644
+          },
+          {
+            "name" : "track_4.wav",
+            "sha256" : "bcc2373f584dc0ad41533d7dab84c145d91645b6e46903f73ff7a6d37194656d",
+            "size" : 705644
+          }
+        ]
+      },
+      "outcome" : "pass",
+      "summary" : "5 files, 2,822,826 bytes, each read back byte for byte, again after the write's own check.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.refused-name",
+      "observed" : {
+        "responseCode" : "0x2002"
+      },
+      "outcome" : "pass",
+      "summary" : "track_5.wav was refused with 0x2002, before any data was sent.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "rebuild.tape-json",
+      "observed" : {
+        "changed" : true
+      },
+      "outcome" : "pass",
+      "summary" : "After the tracks were written, tape.json read back different from the one written before them.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "rebuild.stale-size",
+      "observed" : {
+        "listed" : 250,
+        "read" : 250,
+        "written" : 250
+      },
+      "outcome" : "pass",
+      "summary" : "The rebuilt tape.json is still listed and read at the 250 bytes written. Then track_1.wav was replaced, keeping a copy, and the generated tape.json replaced the stale one, last. Both read back exactly.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "tape.track-limit",
+      "outcome" : "not run",
+      "summary" : "The long check wasn't asked for.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.preset-converted",
+      "outcome" : "fail",
+      "summary" : "The OP-1 disconnected during this check.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.speed",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "device.storage",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "album.write-exact",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    }
+  ],
+  "started" : "2026-11-16T13:14:05Z"
+}

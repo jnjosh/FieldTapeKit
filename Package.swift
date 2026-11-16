@@ -16,7 +16,9 @@ let package = Package(
     ],
     targets: [
         .target(name: "FieldTapeKit"),
-        .target(name: "FieldCheckKit", dependencies: ["FieldTapeKit"]),
+        // Baselines/ holds a copy of each firmware/<version>/baseline.json, so FieldCheck can compare a run on the
+        // iPad. A test keeps the copies the same as the repository's (ADR 0003, section 4).
+        .target(name: "FieldCheckKit", dependencies: ["FieldTapeKit"], resources: [.copy("Baselines")]),
         // Uses only FieldTapeKit's public API, so it checks what apps see.
         .target(name: "FieldTapeConformance", dependencies: ["FieldTapeKit"]),
         .testTarget(name: "FieldTapeKitTests", dependencies: ["FieldTapeKit"]),

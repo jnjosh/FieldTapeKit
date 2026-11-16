@@ -269,10 +269,21 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - FieldCheck's put-back now also works over a side the owner recorded: it copies that off first with `.replace(copyingExistingTo:)`, and refuses, writing nothing, if the side is shorter than the copy. A copy that's back is marked and offered no more.
   - **A fourth hang, away from the album** (log `fieldcheck-2026-11-16T042721Z.txt`): level 2 stopped in `write.preset-converted`, after both presets were written, with no trace. Side B wasn't touched, since the album check is last. FieldCheck now keeps the last 50 MTP requests during every level, cleanup and conformance run, and logs them when one gets no answer.
   - 422 tests pass on the Mac and 421 on the iOS simulator (301 and 300 FieldTapeKit, 112 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
+- **Step 22 is done** (2026-11-16): levels 1 and 2 match the 1.7.3 baseline on the OP-1 with 0 changed. Level 3 didn't finish, because of the GetObject hang below. Decided by the owner, recorded in the plan and ADR 0003's change log:
+  - **The baselines are built into FieldCheckKit,** a copy of `firmware/1.7.3/baseline.json` that a test keeps identical, and FieldCheck compares each level's report with its firmware's baseline, or the closest one, as soon as it runs.
+  - **A pass that observed something else is `changed`,** with each difference's old and new values and a suggested class: additive, divergent, or incompatible for a fail. Fields that vary are left out, with no ranges.
+  - **The report lists failures, then changes,** and says what it was compared with. **A draft ADR,** `fieldcheck-<time>.draft-adr.md`, is saved beside any report with a change or a failure, following the ADR template with a compatibility table for each.
+  - Comparing the real runs with the baseline found one false change: `write.speed`'s bytes and writes depend on whether the long check ran. They're now marked as varying.
+  - **The first run on the OP-1 crashed it** (log `firmware/1.7.3/runs/fieldcheck-2026-11-16T130232Z.txt`): the owner had just recorded on side B, and FieldCheck's own check, reading the sides' headers as the OP-1 connected, got no answer, and the OP-1 showed a crash stack. Level 1 queued behind it. FieldCheck now doesn't read the album when an OP-1 connects (it reads a side only when a person asks to put it back), and traces every MTP request from the moment an OP-1 connects.
+  - **The second run** (log `fieldcheck-2026-11-16T131147Z.txt`): **level 1 passed 18 of 18, twice, with 0 changed against the baseline.** Level 2 hung twice on a GetObject reading back a file just written, a tape track and then the drum preset, but the OP-1 wasn't stuck: a replug was enough. So the request was most likely lost on the iPad's side, in ImageCaptureCore, and the ping queued behind it. The session now traces a timed-out request's late answer, to tell slow from lost. FieldCheck now says why level 3 isn't waiting, and the put-back button no longer reads "Reading Side B…" while a level runs.
+  - **The third run** (log `fieldcheck-2026-11-16T132015Z.txt`): **level 1 passed 18 of 18 and level 2 9 of 9, with 0 changed.** Level 3 hung in `reconnect.kept`, on a GetObject of the scratch tape's `track_4.wav`, with the OP-1 not stuck. A late answer to a timed-out request is now logged as soon as it arrives.
+  - A check the OP-1 stopped answering during gets no draft ADR, decided by the owner, and the report says the run stopped. The baseline stays as it is.
+  - 433 tests pass on the Mac and 432 on the iOS simulator (301 and 300 FieldTapeKit, 123 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
 
 ## Next steps
 
-1. Step 22: FieldCheck comparing with the baseline, and the draft ADR.
+1. **The GetObject hang.** Since the morning of 2026-11-16, a GetObject of a small file sometimes gets no answer, nor does the ping after it, while the OP-1 isn't stuck: a replug is enough (PROBE-NOTES.md). It stopped level 2 twice and level 3 once. FieldCheck now logs a late answer as soon as it arrives, which will tell a slow answer from a lost one. Find the cause, and how FieldTapeKit should recover, before step 23 relies on hardware runs.
+2. Step 23: the safety-rule suite.
 
 ## Future improvements
 

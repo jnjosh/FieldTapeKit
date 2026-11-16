@@ -7,9 +7,13 @@ public final class RequestTrace: Sendable {
     private let lines = Mutex<[String]>([])
     private let failed = Mutex(false)
     public let limit: Int
+    /// Told at once about a request that answered after it had timed out, which isn't a failure of its own, so
+    /// `takeFailure()` wouldn't show it.
+    let onLate: (@Sendable (String) -> Void)?
 
-    public init(limit: Int = 50) {
+    public init(limit: Int = 50, onLate: (@Sendable (String) -> Void)? = nil) {
         self.limit = limit
+        self.onLate = onLate
     }
 
     func append(_ line: String) {
@@ -18,6 +22,7 @@ public final class RequestTrace: Sendable {
             if lines.count > limit { lines.removeFirst(lines.count - limit) }
         }
         if line.hasPrefix("✕") { failed.withLock { $0 = true } }
+        if line.hasPrefix("← late") { onLate?(line) }
     }
 
     /// The requests kept, oldest first.
@@ -26,7 +31,26 @@ public final class RequestTrace: Sendable {
     /// Whether a request got no answer, or failed in the transport, while it ran.
     public var sawFailure: Bool { failed.withLock { $0 } }
 
-    /// Runs `body` with every MTP request on `device` traced, and returns its result with the trace.
+    /// Traces every MTP request on `device` from now on, for as long as the connection lasts. FieldCheck starts one as
+    /// soon as an OP-1 connects, so its own checks are traced too, not only the levels.
+    public static func start(on device: FieldDevice, limit: Int = 50,
+                             onLate: (@Sendable (String) -> Void)? = nil) async -> RequestTrace {
+        let trace = RequestTrace(limit: limit, onLate: onLate)
+        await device.session.setTrace { trace.append($0) }
+        return trace
+    }
+
+    /// The requests kept, if one got no answer since the last call, and nil otherwise. Each failure is told once.
+    public func takeFailure() -> [String]? {
+        let failed = failed.withLock { failed in
+            defer { failed = false }
+            return failed
+        }
+        return failed ? all : nil
+    }
+
+    /// Runs `body` with every MTP request on `device` traced, and returns its result with the trace. It replaces any
+    /// trace already set, and stops tracing after, so it's for tests and one-off runs, not a connection's trace.
     public static func during<T: Sendable>(_ device: FieldDevice, limit: Int = 50,
                                            isolation: isolated (any Actor)? = #isolation,
                                            _ body: () async -> T) async -> (T, RequestTrace) {

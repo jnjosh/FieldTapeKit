@@ -1,0 +1,34 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.43] Watching for an OP-1 in MTP mode
+[  12.44] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  12.44] Storage: 6429185024 bytes, 6287243264 free
+[  17.63] Level 1: running
+[  49.03] The last 2 MTP requests, up to the one that got no answer:
+[  49.03]   ✕ getPartialObject: no answer after 30.0 seconds
+[  49.03]     a GetDeviceInfo ping got no answer in 5.0 seconds either
+[  49.04] Level 1: compared with the baseline for firmware 1.7.3, level 1, from the run started 2026-11-15T16:15:58Z
+[  49.04] Level 1: device.operations fail: The OP-1 disconnected during this check.
+[  49.04] Level 1: device.storage not run: The OP-1 disconnected.
+[  49.04] Level 1: session.implicit not run: The OP-1 disconnected.
+[  49.04] Level 1: session.data-phase not run: The OP-1 disconnected.
+[  49.04] Level 1: layout.folders not run: The OP-1 disconnected.
+[  49.04] Level 1: layout.readmes not run: The OP-1 disconnected.
+[  49.04] Level 1: names.lowercase not run: The OP-1 disconnected.
+[  49.04] Level 1: tape.files not run: The OP-1 disconnected.
+[  49.04] Level 1: tape.wav-format not run: The OP-1 disconnected.
+[  49.04] Level 1: tape.json-keys not run: The OP-1 disconnected.
+[  49.04] Level 1: tape.json-units not run: The OP-1 disconnected.
+[  49.04] Level 1: tape.types not run: The OP-1 disconnected.
+[  49.04] Level 1: album.files not run: The OP-1 disconnected.
+[  49.04] Level 1: album.wav-format not run: The OP-1 disconnected.
+[  49.04] Level 1: read.partial not run: The OP-1 disconnected.
+[  49.04] Level 1: read.speed not run: The OP-1 disconnected.
+[  49.04] Level 1: read.cost not run: The OP-1 disconnected.
+[  49.04] Level 1: 1 pass, 0 changed, 1 fail, 16 not run
+[  49.04] Saved fieldcheck-2026-11-16T130249Z.json and fieldcheck-2026-11-16T130249Z.md, and a draft ADR for its changes and failures, fieldcheck-2026-11-16T130249Z.draft-adr.md
+[  53.93] Level 2: can't run: Couldn't look at the OP-1: The OP-1 is no longer connected.
+[  72.18] Disconnected
+[  86.29] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  86.29] Storage: 6429185024 bytes, 6287243264 free
+[  86.64] Side B holds 2,435,116 bytes that aren't level 2's copy, level2-2026-11-16T043329Z/side_b before level 2.wav, 3,992,876 bytes, SHA-256 9204518b5ef84a37dcf171ed29082a1261933c625d355ea925b7ab5f361a97aa
+[ 126.23] Disconnected

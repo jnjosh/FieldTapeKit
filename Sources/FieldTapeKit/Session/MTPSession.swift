@@ -66,7 +66,12 @@ package actor MTPSession {
                + (dataOut.map { ", \($0.count) bytes out" } ?? ""))
         let transaction: MTPTransaction
         do {
-            transaction = try await Self.withTimeout(timeout) { [transport] in
+            let trace = trace
+            transaction = try await Self.withTimeout(timeout, late: { succeeded in
+                let elapsed = clock.now - start
+                trace?("← late: \(operation) " + (succeeded ? "answered" : "failed") + " after "
+                       + "\(elapsed.formatted(.units(allowed: [.seconds, .milliseconds], width: .narrow))), and was dropped")
+            }) { [transport] in
                 try await transport.transact(command: command, dataOut: dataOut)
             }
         } catch is RequestTimeout {
@@ -186,8 +191,11 @@ package actor MTPSession {
 
     /// Runs `body`, or throws `RequestTimeout` after `limit`. A request ImageCaptureCore has taken can't be
     /// cancelled, so on a timeout it's left to finish on its own, and its result is dropped.
+    ///
+    /// `late` is told if the request finishes after it timed out, with whether it succeeded, so a trace can tell a
+    /// slow answer from a lost one.
     private static func withTimeout<T: Sendable>(
-        _ limit: Duration, _ body: @escaping @Sendable () async throws -> T
+        _ limit: Duration, late: (@Sendable (Bool) -> Void)? = nil, _ body: @escaping @Sendable () async throws -> T
     ) async throws -> T {
         try await withCheckedThrowingContinuation { continuation in
             let resumer = Resumer(continuation)
@@ -199,10 +207,10 @@ package actor MTPSession {
                 do {
                     let value = try await body()
                     timer.cancel()
-                    resumer.resume(with: .success(value))
+                    if !resumer.resume(with: .success(value)) { late?(true) }
                 } catch {
                     timer.cancel()
-                    resumer.resume(with: .failure(error))
+                    if !resumer.resume(with: .failure(error)) { late?(false) }
                 }
             }
         }
@@ -217,10 +225,14 @@ private final class Resumer<T: Sendable>: Sendable {
         self.continuation = Mutex(continuation)
     }
 
-    func resume(with result: Result<T, any Error>) {
+    /// Whether this call resumed it, rather than an earlier one.
+    @discardableResult
+    func resume(with result: Result<T, any Error>) -> Bool {
         continuation.withLock { pending in
-            pending?.resume(with: result)
+            guard let continuation = pending else { return false }
+            continuation.resume(with: result)
             pending = nil
+            return true
         }
     }
 }

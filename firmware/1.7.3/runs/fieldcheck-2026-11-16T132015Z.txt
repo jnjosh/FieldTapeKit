@@ -1,0 +1,91 @@
+[   0.00] FieldCheck 1.0 on iPad, iPadOS 27.2.1
+[   0.28] Watching for an OP-1 in MTP mode
+[   4.74] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[   4.74] Storage: 6429185024 bytes, 6282651648 free
+[   5.92] Level 1: running
+[  27.30] Level 1: compared with the baseline for firmware 1.7.3, level 1, from the run started 2026-11-15T16:15:58Z
+[  27.30] Level 1: 18 pass, 0 changed, 0 fail, 0 not run
+[  27.30] Saved fieldcheck-2026-11-16T132021Z.json and fieldcheck-2026-11-16T132021Z.md
+[  31.27] Level 2: running, copies go in level2-2026-11-16T132047Z
+[  40.89] Level 2: compared with the baseline for firmware 1.7.3, level 2, from the run started 2026-11-15T16:16:35Z
+[  41.00] Level 3 is waiting: leave MTP mode on the OP-1, then enter it again. You can play the scratch tape on the OP-1 in between.
+[  41.05] Level 2: names.maximum pass: The OP-1 took FIELDCK #1-2, 12 characters, as fieldck #1-2, and FIELDCK #2-13, 13 characters, as fieldck #2-13. What it keeps after a reconnect is level 3.
+[  41.05] Level 2: write.folder pass: SendObjectInfo alone made the tape, a folder (0x3001, association type 1) with 0 items in it.
+[  41.05] Level 2: write.exact pass: 5 files, 2,822,826 bytes, each read back byte for byte, again after the write's own check.
+[  41.05] Level 2: write.refused-name pass: track_5.wav was refused with 0x2002, before any data was sent.
+[  41.05] Level 2: rebuild.tape-json pass: After the tracks were written, tape.json read back different from the one written before them.
+[  41.05] Level 2: rebuild.stale-size pass: The rebuilt tape.json is still listed and read at the 250 bytes written. Then track_1.wav was replaced, keeping a copy, and the generated tape.json replaced the stale one, last. Both read back exactly.
+[  41.05] Level 2: tape.track-limit not run: The long check wasn't asked for.
+[  41.05] Level 2: write.preset-converted pass: Both came back as AIFC under the same name, with the samples sent; of 25 s, drum/user/ kept 20.000 s, synth/user/ kept 6.000 s.
+[  41.05] Level 2: write.speed pass: Sent 2.8 MB in 4 writes in 0.7 s, 4.0 MB/s, timed as each write less a read of the same file. On 1.7.3 the probe saw about 7 MB/s.
+[  41.05] Level 2: device.storage pass: Free space fell 10,237,952 bytes for 10,237,744 written, and after the presets were deleted it was 1,054,720 below the start, for the tapes' 5,645,976.
+[  41.05] Level 2: album.write-exact not run: Album writing is off on firmware 1.7.3, so the album wasn't touched.
+[  41.05] Level 2: 9 pass, 0 changed, 0 fail, 2 not run
+[  41.05] Saved fieldcheck-2026-11-16T132047Z.json and fieldcheck-2026-11-16T132047Z.md
+[  44.33] Disconnected
+[  47.21] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  47.21] Storage: 6429185024 bytes, 6281596928 free
+[  47.22] Level 3 is waiting, and can run now
+[  50.64] Level 3: running, after level 2 at 2026-11-16T13:20:47Z
+[  87.05] The last 50 MTP requests, up to the one that got no answer:
+[  87.05]   ← getObjectInfo 0x2001, 140 bytes in, 1 ms
+[  87.05]   → getObjectInfo 0x1D0
+[  87.05]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  87.05]   → getObjectInfo 0x1D1
+[  87.06]   ← getObjectInfo 0x2001, 144 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1D2
+[  87.06]   ← getObjectInfo 0x2001, 144 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1D3
+[  87.06]   ← getObjectInfo 0x2001, 144 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1D4
+[  87.06]   ← getObjectInfo 0x2001, 144 bytes in, 1 ms
+[  87.06]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[  87.06]   ← getObjectHandles 0x2001, 20 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x19C
+[  87.06]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1B1
+[  87.06]   ← getObjectInfo 0x2001, 130 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1C6
+[  87.06]   ← getObjectInfo 0x2001, 132 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1EA
+[  87.06]   ← getObjectInfo 0x2001, 136 bytes in, 1 ms
+[  87.06]   → getObjectHandles 0xFFFFFFFF 0x0 0x1C6
+[  87.06]   ← getObjectHandles 0x2001, 24 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1C7
+[  87.06]   ← getObjectInfo 0x2001, 144 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1CE
+[  87.06]   ← getObjectInfo 0x2001, 146 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1D5
+[  87.06]   ← getObjectInfo 0x2001, 144 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1DC
+[  87.06]   ← getObjectInfo 0x2001, 144 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1E3
+[  87.06]   ← getObjectInfo 0x2001, 146 bytes in, 1 ms
+[  87.06]   → getObjectHandles 0xFFFFFFFF 0x0 0x1CE
+[  87.06]   ← getObjectHandles 0x2001, 28 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1CF
+[  87.06]   ← getObjectInfo 0x2001, 140 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1D0
+[  87.06]   ← getObjectInfo 0x2001, 142 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1D1
+[  87.06]   ← getObjectInfo 0x2001, 144 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1D2
+[  87.06]   ← getObjectInfo 0x2001, 144 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1D3
+[  87.06]   ← getObjectInfo 0x2001, 144 bytes in, 1 ms
+[  87.06]   → getObjectInfo 0x1D4
+[  87.06]   ← getObjectInfo 0x2001, 144 bytes in, 1 ms
+[  87.06]   → getObject 0x1D4
+[  87.06]   ✕ getObject: no answer after 30.0 seconds
+[  87.06]     a GetDeviceInfo ping got no answer in 5.0 seconds either
+[  87.06] Level 3: compared with the baseline for firmware 1.7.3, level 3, from the run started 2026-11-15T16:17:28Z
+[  87.06] Level 3: reconnect.handles pass: 6 of the scratch tape's 6 objects have new handles since level 2.
+[  87.06] Level 3: names.maximum pass: After the reconnect, FIELDCK #1-2, 12 characters, is still listed as fieldck #1-2, and FIELDCK #2-13, 13 characters, was cut to fieldck #2-1.
+[  87.06] Level 3: reconnect.renamed pass: The tape is listed lowercase, as fieldck #1-2, and the OP-1 added a 104-byte readme.txt.
+[  87.06] Level 3: reconnect.kept fail: The OP-1 disconnected during this check.
+[  87.06] Level 3: delete.folder-with-files not run: The OP-1 disconnected.
+[  87.06] Level 3: delete.files-then-folder not run: The OP-1 disconnected.
+[  87.06] Level 3: 3 pass, 0 changed, 1 fail, 2 not run
+[  87.07] Saved fieldcheck-2026-11-16T132106Z.json and fieldcheck-2026-11-16T132106Z.md, and a draft ADR for its changes and failures, fieldcheck-2026-11-16T132106Z.draft-adr.md
+[ 104.50] Saved baseline-1.7.3.json, with levels 1, 2. Copy it into the repository as firmware/1.7.3/baseline.json.
+[ 110.65] Disconnected

@@ -6,8 +6,8 @@ import System
 /// Puts an album side back from the copy level 2 kept of it, when the side still holds FieldCheck's tone: after a
 /// level 3 that didn't finish putting it back (FieldCheck, 2026-11-16).
 ///
-/// It writes only over FieldCheck's own tone, so nothing of the person's can be lost, and only after they confirm.
-/// Every MTP request is traced while it runs, so if the OP-1 stops answering, the trace says which request.
+/// It writes only over FieldCheck's own tone, or over a side the person recorded once that's copied off, and only
+/// after they confirm. FieldCheck reads the side only when a person asks to put it back, never on its own.
 public enum SideRestore {
     /// A copy of a side that level 2 kept, in its run folder.
     public struct Copy: Sendable, Hashable, Identifiable {
@@ -83,8 +83,8 @@ public enum SideRestore {
     /// The file a warm-up writes and deletes: level 2's drum preset, FieldCheck's own (ADR 0003, section 3).
     static let warmUpFile = LevelTwo.presets[0]
 
-    /// Puts `copy` back as its side with `restoreSide`, as an app would, then reads it back. `trace` is told about
-    /// every MTP request in between. Once it's back, the copy is marked, and offered no more.
+    /// Puts `copy` back as its side with `restoreSide`, as an app would, then reads it back. `trace` is told each step,
+    /// and FieldCheck's connection trace has the MTP requests. Once it's back, the copy is marked, and offered no more.
     ///
     /// - Over FieldCheck's tone, the side is replaced with a confirmation, since nothing of the person's is lost.
     /// - Over anything else, only with `copyingReplacedTo`, a free file URL: the side is copied there and verified
@@ -97,9 +97,7 @@ public enum SideRestore {
         // Album writing is off on 1.7.3 (`album.write-again`). This puts back a side FieldCheck overwrote, from its own
         // copy, after a person confirms, so it's let through for this call only.
         await device.overrideAlbumWrites(true)
-        await device.session.setTrace(trace)
         let outcome = await writeBack(copy, on: device, warmUp: warmUp, copyingReplacedTo: replaced, trace: trace)
-        await device.session.setTrace(nil)
         await device.overrideAlbumWrites(false)
         return outcome
     }

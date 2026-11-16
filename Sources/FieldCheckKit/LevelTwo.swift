@@ -503,11 +503,11 @@ public enum LevelTwo {
         // The long track is most of what's sent when it runs, and its speed alone is the clearest figure.
         let detail = writes.count > 1 && largest.bytes * 10 > bytes * 9
             ? " \(largest.name) alone: \(rate(largest.bytes, largest.send)) MB/s." : ""
-        // How big a drop is reported, against a baseline, is step 22 of the plan.
+        // Timings vary from run to run, and what was written depends on whether the long check ran, so a comparison
+        // with a baseline leaves both out (ADR 0003, section 4).
         return .pass("Sent \(megabytes(bytes)) MB in \(writes.count) writes in \(seconds(send)) s, \(rate(bytes, send)) MB/s, timed as each "
                      + "write less a read of the same file.\(detail) On 1.7.3 the probe saw about 7 MB/s.", observed: observed,
-                     varies: ["sendMilliseconds", "kilobytesPerSecond", "writes[].writeMilliseconds", "writes[].readMilliseconds",
-                              "writes[].sendMilliseconds"])
+                     varies: ["bytes", "sendMilliseconds", "kilobytesPerSecond", "writes"])
     }
 
     static func milliseconds(_ duration: Duration) -> Int {

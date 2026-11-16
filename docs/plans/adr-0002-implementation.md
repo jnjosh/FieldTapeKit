@@ -415,6 +415,8 @@ Decided by the owner for step 21 (2026-11-16), and recorded in ADR 0002's change
 
 **On the OP-1 (reads, plus scratch writes):** a full run on 1.7.3. It should come back all pass.
 
+Decided by the owner for step 22 (2026-11-16), and recorded in ADR 0003's change log: the baselines are built into FieldCheckKit, as a copy of each `firmware/<version>/baseline.json` that a test keeps identical, and fields that vary between runs are left out of the comparison, with no ranges for now.
+
 ### 23. The safety-rule suite
 
 **Adds:**

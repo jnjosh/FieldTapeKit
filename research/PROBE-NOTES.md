@@ -437,6 +437,36 @@ So the likely rule is: **once the OP-1 leaves MTP mode, a side written over MTP 
 
 **Decided by the owner: album writing is off on 1.7.3, as a future improvement** (ADR 0002's change log). The owner's app needs only to read and copy the album. Side B is left holding FieldCheck's 22.6-second tone for now. The verified copy is in `level2-2026-11-16T043329Z`, and putting it back means recording over side B on the OP-1 first, then FieldCheck's put-back.
 
+## The OP-1 crashed on a side header read, right after connecting (FieldCheck, iPad, 2026-11-16)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T130232Z.txt`, level 1 report `fieldcheck-2026-11-16T130249Z`.
+
+**The owner recorded about 13.8 s onto side B on the OP-1, then entered MTP mode.** As it connected, FieldCheck's own check for a side to put back started reading: the album listing, then each side's 44-byte header with GetPartialObject. That check never finished. Level 1 started about 5 s later, and its first request queued behind it. **The GetPartialObject got no answer in 30 s, nor a ping in 5 s, and the OP-1 showed a crash stack on its screen.** It's the first crash, not just a hang. After a restart, the same check read side B, 2,435,116 bytes, without trouble.
+
+**What it suggests, not shown:** reading a side right after recording it, as the OP-1 enters MTP mode, may catch the OP-1 while it's still finishing the album. Every hang today but one involved an album side.
+
+**What changed in FieldCheck:** it no longer reads the album when an OP-1 connects, since album writing is off and the put-back offer was the only reason. It traces every MTP request from the moment an OP-1 connects, so a hang in its own checks names its request too. Before, only requests during a level or the cleanup were traced, so this one showed only as the `✕` line.
+
+## Level 1 matches the baseline; level 2 hangs reading back a write (FieldCheck, iPad, 2026-11-16)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T131147Z.txt`, with every MTP request traced from connect.
+
+**Level 1 passed 18 of 18, twice, with 0 changed** against the built-in 1.7.3 baseline, so step 22's comparison finds no false change on hardware.
+
+**Level 2 hung twice, each time on a GetObject reading back a file it had just written.** **The OP-1 wasn't stuck either time,** the owner says: unplugging and plugging it back in, with no restart, was enough, and the next connection worked at once.
+- First run, in `names.maximum`: the 13-character tape's tracks were being written. `SendObject` of 705,644 bytes answered OK in 166 ms, then `GetObject 0x8F`, the read-back, got no answer in 30 s, nor a ping.
+- Second run, in `write.preset-converted`: `GetObject 0xF0`, the drum preset just written, got no answer, the same way.
+
+Neither involves the album. Both checks passed in every level 2 on 2026-11-15 and in two of today's. **Since the OP-1 was fine, the request was most likely lost or stuck on the iPad's side, in ImageCaptureCore,** which sends one request at a time: the ping queued behind the stuck GetObject, so it can't tell a lost reply from a dead OP-1. FieldTapeKit's session now logs when an abandoned request's answer arrives late, and how late, to tell slow from lost. Not yet known: which of today's earlier "stuck" hangs were the iPad's, since the OP-1 was restarted each time without checking whether a replug alone would do.
+
+## Levels 1 and 2 match the baseline; level 3 hangs on a read (FieldCheck, iPad, 2026-11-16)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T132015Z.txt`.
+
+**Level 1 passed 18 of 18 and level 2 9 of 9, with 0 changed** against the built-in baseline, and 2 not run as expected: the long check, and the album, with album writing off. Level 3 ran after a reconnect, passed `reconnect.handles`, `names.maximum` and `reconnect.renamed`, then hung in `reconnect.kept`: `GetObject 0x1D4`, the scratch tape's `track_4.wav`, got no answer in 30 s, nor a ping. **The OP-1 wasn't stuck.** It's the third hang in a row on a GetObject of a small file, after its listing answered in about 1 ms.
+
+The late-answer trace added after the last run didn't show whether an answer came later: it was kept in the trace, but logged only with a failure. FieldCheck now logs a late answer as soon as it arrives.
+
 ## Entering MTP mode from the app (paused 2026-11-08: possible, a future feature)
 
 **Status:** paused by the user as too fragile for now, and kept as a possible future feature for the framework. What works: detecting a plugged-in OP-1 over USB MIDI, `greet`, and switching it into MTP mode with `mode`, from both the Mac and the iPad. What doesn't yet: on the iPad, ImageCaptureCore never saw the OP-1 after any switch in that session. Even MTP mode entered with the buttons failed until the OP-1 was restarted. Not tested: Leave MTP mode (closing the session), and a full app-triggered switch on a freshly restarted OP-1. To pick this up, start there, and restart the OP-1 whenever it shows connected but the app sees nothing. **The MIDI code was removed from the probe on 2026-11-08,** at the user's request, so it can't recreate the stuck state. That was `OP1MIDI.swift` (the `TESysEx` encoder and the CoreMIDI client), its tests, and the MIDI toggle and Enter and Leave MTP mode buttons. The format and bytes are kept below, and the Mac tools `tools/op1-midi-listen.swift` and `tools/op1-sysex.swift` remain. They only send when run by hand. The probe still logs each device's USB IDs.

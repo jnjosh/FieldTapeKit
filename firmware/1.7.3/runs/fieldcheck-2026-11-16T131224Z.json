@@ -1,0 +1,113 @@
+{
+  "comparison" : {
+    "firmware" : "1.7.3",
+    "isExact" : true,
+    "levelStarted" : "2026-11-15T16:16:35Z"
+  },
+  "device" : {
+    "firmware" : "1.7.3",
+    "isFirmwareTested" : true,
+    "model" : "OP-1",
+    "serialNumber" : "L1PXE14W"
+  },
+  "durationMilliseconds" : 36619,
+  "finished" : "2026-11-16T13:13:00Z",
+  "format" : 1,
+  "host" : {
+    "app" : "1.0",
+    "model" : "iPad",
+    "system" : "iPadOS 27.2.1"
+  },
+  "level" : 2,
+  "results" : [
+    {
+      "expectation" : "names.maximum",
+      "outcome" : "fail",
+      "summary" : "The OP-1 disconnected during this check.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.folder",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.exact",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.refused-name",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "rebuild.tape-json",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "rebuild.stale-size",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "tape.track-limit",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.preset-converted",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "write.speed",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "device.storage",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    },
+    {
+      "expectation" : "album.write-exact",
+      "outcome" : "not run",
+      "summary" : "The OP-1 disconnected.",
+      "varies" : [
+
+      ]
+    }
+  ],
+  "started" : "2026-11-16T13:12:24Z"
+}

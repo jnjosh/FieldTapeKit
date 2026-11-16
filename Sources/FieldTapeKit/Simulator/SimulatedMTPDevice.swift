@@ -28,6 +28,8 @@ actor SimulatedMTPDevice: MTPTransport {
         case changeAfterReading(name: String, to: Data, reads: Int = 1)
         /// GetObject for the file with this name comes back a byte short, once.
         case shortRead(name: String)
+        /// The request is answered, but only after this long.
+        case slowAnswer(request: Int, after: Duration)
         /// After a reconnect, both album sides are the OP-1's own again, whatever was written to them over MTP. It's
         /// one answer to `album.write-kept`, which isn't known yet. Without it, a written side lasts.
         case albumKeepsItsOwn
@@ -245,6 +247,8 @@ actor SimulatedMTPDevice: MTPTransport {
                 try await Self.neverAnswer()
             case .silent(let from) where request >= from:
                 try await Self.neverAnswer()
+            case .slowAnswer(let number, let delay) where number == request:
+                try await Task.sleep(for: delay)
             case .refuse(let number, let responseCode) where number == request:
                 return MTPTransaction(data: Data(), response: Self.response(responseCode, transactionID: transactionID))
             case .shortData(let number, let keeping) where number == request:
