@@ -238,7 +238,7 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **Every tape delete goes file by file, then the folder,** and a failure part way lists the files already deleted in `changed`.
   - **Two more writing checks,** on a duplicate of the smallest tape: moving it off, and deleting it keeping the source. The scratch tape is now deleted through a confirmation. All five passed in the conformance tests on the simulated OP-1.
   - 348 tests pass on the Mac and 347 on the iOS simulator (246 and 245 FieldTapeKit, 93 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
-- **Step 19 passed on the OP-1** (iPad Pro, 2026-11-16, log `firmware/1.7.3/runs/fieldcheck-2026-11-16T032208Z.txt`). All six writing checks passed in 13.0 s. The new check archived the empty scratch tape, restored 2026-286#01's archive (3,036,280 bytes) over it, then put the empty tape back with a confirmation, in 3.1 s, and each result matched its archive by SHA-256. Your tapes were only read. Decided by the owner, recorded in the plan and ADR 0002's change log:
+- **Step 19 passed on the OP-1** (iPad Pro, 2026-11-16, log `firmware/1.7.3/runs/fieldcheck-2026-11-16T032208Z.txt`). All six writing checks passed in 13.0 s. The new check archived the empty scratch tape, restored 2026-286#01's archive (3,036,280 bytes) over it, then put the empty tape back with a confirmation, in 3.1 s, and each result matched its archive by SHA-256. Your tapes were only read. Tagged `1.0.0-alpha.2`: tapes go off and back on. Decided by the owner, recorded in the plan and ADR 0002's change log:
   - **`TapeConflict.replace(archivingExistingTo:)`** archives the tape that's there to an exact, free file URL and verifies it, then replaces the tape. The archive is kept even if the restore fails.
   - **`TapeConflict.replace(confirmed:)`** replaces a tape a person confirmed losing, from `prepareToDelete`.
   - **A tape is replaced in place, file by file,** skipping a track blank on both sides, with `tape.json` last, so its folder and a long name stay. From the first delete it runs to the end, and a failure lists what changed, with no rollback.
@@ -248,9 +248,8 @@ Where the project stands, so a new session can pick it up. Update this when the 
 
 ## Next steps
 
-1. Tag `1.0.0-alpha.2`, when the owner says so.
-2. Step 20: reading and copying the album.
-3. `album.write-exact` on hardware, whenever an album side is empty.
+1. Step 20: reading and copying the album.
+2. `album.write-exact` on hardware, whenever an album side is empty.
 
 ## The OP-1 right now
 
