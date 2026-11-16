@@ -32,6 +32,33 @@ extension Conformance {
         Check("Copying album side A off matches the OP-1", copying: { device, workspace in
             try await copyAndCompare("mixdown/side_a.wav", from: device, to: workspace.appending(path: "side_a.wav"))
         }),
+        Check("Copying the album off makes WAVs that match the OP-1, and each matches its side", copying: { device, workspace in
+            let album = try await device.album()
+            let recorded = album.sides.filter { !$0.isEmpty }
+            guard !recorded.isEmpty else { throw Skip(reason: "Both album sides are empty.") }
+            for side in recorded { try expect(side.isSound, "\(side.path) isn't sound: \(side.problems.joined(separator: "; "))") }
+            for side in album.sides where side.isEmpty {
+                try await expectError(.notFound, path: side.path) { _ = try await device.copySide(side.side, to: workspace) }
+            }
+
+            let copies = try await device.copyAlbum(to: workspace)
+            defer { for copy in copies { try? FileManager.default.removeItem(at: copy.url) } }
+            try expect(copies.map(\.side) == recorded.map(\.side),
+                       "copied \(copies.map(\.side.description)), not the sides with audio, \(recorded.map(\.side.description))")
+            var details: [String] = []
+            for (side, copy) in zip(recorded, copies) {
+                let data = try Data(contentsOf: copy.url)
+                let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+                try expect(data.count == side.size && copy.size == side.size,
+                           "the copy of \(side.path) is \(data.count) bytes, but it lists \(side.size)")
+                try expect(digest == copy.sha256, "the copy of \(side.path) doesn't hold the SHA-256 it records")
+                let header = try await device.contents(of: side.path, range: 0..<44)
+                try expect(data.prefix(44) == header, "the copy of \(side.path) starts differently from the OP-1's")
+                try expect(try await device.side(side.side, matches: copy), "\(side.path) doesn't match its own copy")
+                details.append("\(side.side) \(side.size) bytes, \(side.duration.formatted(.units(allowed: [.minutes, .seconds], width: .narrow))), SHA-256 \(digest)")
+            }
+            return details.joined(separator: "; ")
+        }),
         Check("Copying the largest tape track off matches the OP-1", copying: { device, workspace in
             var largest: FieldItem?
             for tape in try await device.contentsOfDirectory(at: .op1Tapes) where tape.isDirectory {

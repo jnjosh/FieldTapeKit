@@ -127,7 +127,7 @@ extension FieldDevice {
 
     /// Moves `temporary` to `destination`, or the first free numbered name next to it. A move never replaces a file,
     /// so a name taken in between is skipped too. If nothing can be moved, the temporary file is deleted.
-    private static func moveIntoPlace(_ temporary: URL, as destination: URL) throws -> URL {
+    static func moveIntoPlace(_ temporary: URL, as destination: URL) throws -> URL {
         var number = 1
         while true {
             let url = number == 1 ? destination : numbered(destination, number)

@@ -388,6 +388,8 @@ Decided by the owner for step 19 (2026-11-16), and recorded in ADR 0002's change
 
 **Relies on:** `album.files`, `album.wav-format`.
 
+Decided by the owner for step 20 (2026-11-16), and recorded in ADR 0002's change log: a copy is named for the day it was copied, a side that isn't sound is listed with its problems and can't be copied, and the OP-1 run is a reading conformance check, which copies the album off, matches each side by SHA-256 and deletes the copies.
+
 ### 21. Restoring album sides → `1.0.0-alpha.3`
 
 **Adds (public):** `restoreSide(_:from:conflict:progress:)`, `SideConflict`, `prepareToReplace(_:)` and `SideReplacement`, plus the 44.1 kHz WAV check before sending.

@@ -22,10 +22,11 @@ import Testing
         Directory("mixdown") { File("side_a.wav", seconds: 1) }
     }
 
-    /// Checks that need a tape, or a tape track with audio, skip on the empty OP-1.
+    /// Checks that need a tape, a tape track with audio, or an album side with audio skip on the empty OP-1.
     static let needTapes: Set = ["A tape's tape.json is JSON and its tracks are WAV files", "A tape's details agree with its files",
                                  "Copying the largest tape off makes an archive that matches the OP-1",
-                                 "Copying the largest tape track off matches the OP-1"]
+                                 "Copying the largest tape track off matches the OP-1",
+                                 "Copying the album off makes WAVs that match the OP-1, and each matches its side"]
 
     static func workspace() throws -> URL {
         let url = FileManager.default.temporaryDirectory.appending(path: "Conformance-\(UUID())")

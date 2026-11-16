@@ -245,10 +245,16 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - `TapeConflict` is now a struct, as `ExistingFile` is.
   - **A sixth writing check** restores the smallest tape's archive over the empty scratch tape, archiving it first, then the empty tape back with a confirmation. All six passed in the conformance tests on the simulated OP-1.
   - 361 tests pass on the Mac and 360 on the iOS simulator (259 and 258 FieldTapeKit, 93 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
+- **Step 20 passed on the OP-1** (iPad Pro, 2026-11-16, log `firmware/1.7.3/runs/fieldcheck-2026-11-16T033319Z.txt`). The conformance suite passed 19 of 19. `copyAlbum` copied both sides in 1.8 s: side A, 12,235,308 bytes (1:09), and side B, 3,992,876 bytes (0:23). Each matched the OP-1 by SHA-256 and `side(_:matches:)`, and side A's SHA-256 is the same as `copyItem`'s copy in the same run, which `shasum` on the Mac confirmed. The album copies were deleted, and the OP-1 was only read. Decided by the owner, recorded in the plan and ADR 0002's change log:
+  - **`album()`** lists both sides, reading each one's WAV header, with `AudioFormat`, `duration`, and `problems` for a side that isn't sound.
+  - **`copySide(_:to:progress:)` and `copyAlbum(to:progress:)`** copy a side into a WAV named for the day, such as `Side A 2026-11-16.wav`, checked by SHA-256 before it's moved into place. An empty side is `notFound`, and `copyAlbum` skips it. A side that isn't sound is `notAllowed`.
+  - **`side(_:matches:)`** compares the size, then the SHA-256, with an `AlbumSideCopy`, which is `Codable`.
+  - **A new reading check** copies the album off, matches each side by SHA-256, checks `side(_:matches:)`, and deletes the copies. It passed in the conformance tests on the simulated OP-1.
+  - 382 tests pass on the Mac and 381 on the iOS simulator (280 and 279 FieldTapeKit, 93 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
 
 ## Next steps
 
-1. Step 20: reading and copying the album.
+1. Step 21: restoring album sides, `1.0.0-alpha.3`.
 2. `album.write-exact` on hardware, whenever an album side is empty.
 
 ## The OP-1 right now

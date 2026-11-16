@@ -377,11 +377,12 @@ extension FieldDevice {
     func prepareToReplace(_ side: Album.Side) async throws -> SideReplacement   // for a person to confirm
 }
 
-public struct Album: Sendable {
-    enum Side: Sendable, Hashable, CaseIterable { case a, b }
+public struct Album: Sendable, Hashable {
+    enum Side: String, Sendable, Hashable, CaseIterable, Codable { case a, b }   // "Side A", "Side B"
     var a: AlbumSide
     var b: AlbumSide
     subscript(side: Side) -> AlbumSide
+    var sides: [AlbumSide]             // A first
 }
 
 public struct AlbumSide: Sendable, Hashable {
@@ -390,7 +391,9 @@ public struct AlbumSide: Sendable, Hashable {
     var isEmpty: Bool                  // the 44-byte header only
     var duration: Duration
     var size: Int
-    var format: AudioFormat            // sample rate, bit depth, channels, from the WAV header
+    var format: AudioFormat?           // sample rate, bit depth, channels, from the WAV header; nil if it can't be read
+    var problems: [String]             // why it isn't sound, as Tape has
+    var isSound: Bool
 }
 
 public struct AlbumSideCopy: Sendable, Hashable, Codable {   // an app can store it
@@ -649,6 +652,16 @@ These are possible later features, deliberately left out for now:
   - **`synth/user/` follows the same rules,** with no cap assumed. Nothing has been written there yet, so level 2 checks it on hardware.
 - **2026-11-15:** FieldCheck's first level 2 run (PROBE-NOTES.md) found that **`synth/user/` keeps 6 seconds**, where `drum/user/` keeps 20, and that **a converted preset keeps the format code it was sent with:** a WAV stored as AIFC is still listed as WAV. Neither changes a decision. A shortened preset was already allowed, and nothing in FieldTapeKit depends on a cap, which only the simulator models. But `FieldFormat` in a preset folder says what was sent, not what's stored, unlike the 2026-11-14 entry's reasoning for reading it from the format code. Its documentation says so now.
   - Also settled while building it: a preset WAV's chunks are walked, so WAVs from other apps with extra chunks are accepted. The read-back would catch the OP-1 handling one differently. A write that reads back wrong now says why in its error.
+- **2026-11-16:** Decided by the owner while building step 20 of the plan, reading and copying the album:
+  - **A side's copy is named for the day it was copied,** in the device's time zone, such as `Side A 2026-11-16.wav`, and a taken name gets a number. The date the OP-1 reports for the file was rejected for now: whether its clock and MTP dates can be trusted isn't checked.
+  - **A side that isn't sound is listed with its `problems`,** as a tape is: a missing file, a header that can't be read or doesn't match the file's size, or another format than 16-bit stereo PCM at 44.1 kHz. `album()` still lists both sides, and `copySide` refuses that side with `notAllowed`. So `AlbumSide.format` is optional, nil when the header can't be read.
+  - **The OP-1 run is a reading conformance check:** `copyAlbum` copies every side with audio, each is matched by SHA-256 and by its header against the OP-1, `side(_:matches:)` must be true, and the copies are deleted. An empty side must be `notFound`. With both sides empty it's skipped.
+  - Also settled while building it:
+    - `album()` lists `mixdown/` and reads each side's 44-byte header with one GetPartialObject. A side is copied with one GetObject, so all of it is in memory, about 10 MB a minute.
+    - A copy is written to a hidden temporary file, read back and matched by SHA-256, then moved into place, so nothing is left unless it succeeds.
+    - `copyAlbum` checks both sides before copying anything, and if a copy fails it deletes the copies it already made.
+    - `side(_:matches:)` compares with the side it names, even for a copy of the other side, and a missing side matches nothing.
+    - `AudioFormat` has `isPCM`, `sampleRate`, `bitDepth` and `channels`.
 - **2026-11-16:** Decided by the owner while building step 19 of the plan, restoring over an existing tape:
   - **A tape is replaced in place, file by file,** as section 4 says: for each track, the old one is deleted and the new one sent and read back, and a track blank on both sides is left as it is. Then `tape.json`, last. The folder stays, so a name longer than 12 characters, which a new tape couldn't have, survives. Deleting the tape and restoring it as new was rejected: the OP-1 would later cut a long name, and a failure part way would leave no tape at all.
   - **`.replace(archivingExistingTo:)` takes an exact file URL, which must be free,** as the file layer's `.replace(keepingCopyAt:)` does. A taken one throws `localFileFailed` before anything changes, so the app knows exactly where the old tape's archive is, and `restoreTape` still returns only the `Tape`. The archive is kept even if the restore fails.
