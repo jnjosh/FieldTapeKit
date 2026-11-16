@@ -86,15 +86,21 @@ extension FieldDevice {
             }
             let contents = try await everything(in: found)
             guard contents.map(\.item) == deletion.contents else { throw FieldError(.changedSinceConfirmation, path: path) }
-            // Deepest first, so every folder is empty when its turn comes (`delete.files-then-folder`).
-            targets = contents.sorted { $0.item.path.components.count > $1.item.path.components.count }
-                + [(found.handle, deletion.item)]
+            targets = Self.deletionOrder((found.handle, deletion.item), contents: contents)
             try Task.checkCancellation()
         } catch {
             throw FieldError.wrapping(error, path: path)
         }
 
         usedConfirmations.insert(deletion.id)
+        try await deleteInOrder(targets)
+    }
+
+    // MARK: Helpers
+
+    /// Sends a DeleteObject for each target in order, and stops at the first that fails. Its error's `changed` lists
+    /// what was already deleted, and nothing more is tried (ADR 0002, safety rule 6).
+    func deleteInOrder(_ targets: [(handle: UInt32, item: FieldItem)]) async throws {
         var deleted: [FilePath] = []
         for target in targets {
             do {
@@ -107,10 +113,15 @@ extension FieldDevice {
         }
     }
 
-    // MARK: Helpers
+    /// A folder's contents, deepest first, then the folder, so every folder is empty when its turn comes
+    /// (`delete.files-then-folder`).
+    static func deletionOrder(_ folder: (handle: UInt32, item: FieldItem),
+                              contents: [(handle: UInt32, item: FieldItem)]) -> [(handle: UInt32, item: FieldItem)] {
+        contents.sorted { $0.item.path.components.count > $1.item.path.components.count } + [folder]
+    }
 
     /// Everything inside `folder` at every depth, in listing order, with fresh info. Empty for a file.
-    private func everything(in folder: Located) async throws -> [(handle: UInt32, item: FieldItem)] {
+    func everything(in folder: Located) async throws -> [(handle: UInt32, item: FieldItem)] {
         guard folder.isDirectory else { return [] }
         var found: [(handle: UInt32, item: FieldItem)] = []
         for child in try await children(of: folder) {

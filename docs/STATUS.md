@@ -231,9 +231,17 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **A third writing check** copies the smallest tape with audio into a temporary archive, restores it as `tapes/conformance`, matches it to the archive by SHA-256, and deletes both. All three passed in the iOS simulator on the simulated OP-1.
   - 328 tests pass on the Mac and 327 on the iOS simulator (226 and 225 FieldTapeKit, 93 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
 
+- **Step 18 passed on the OP-1** (iPad Pro, 2026-11-16, log `firmware/1.7.3/runs/fieldcheck-2026-11-16T020235Z.txt`). All five writing checks passed in 10.1 s. `moveTape` moved a duplicate of 2026-286#01 (3,036,280 bytes) off into an archive whose SHA-256s matched the source, and freed its slot. `deleteTape(_:keeping:)` deleted another duplicate, keeping 2026-286#01 as its copy, after matching both tapes by SHA-256 in 0.8 s. The scratch tape was deleted through a confirmation each time. Your tapes were only read. Decided by the owner, recorded in the plan and ADR 0002's change log:
+  - **`moveTape(_:to:progress:)`** copies a tape into an archive, checks the tape still matches it by sizes and `tape.json`, then deletes the tape. If anything fails after the copy, the archive is kept.
+  - **`deleteTape(_:keeping:progress:)`** takes an archive or another tape as the copy, and matches every track by SHA-256 before deleting, since recording over a track can leave its size as it was. An archive is reopened from disk first. A tape that isn't sound needs a person.
+  - **`prepareToDelete(_:)` and `deleteTape(_:)`** are the confirmed path, for any tape, sound or not. A confirmation works once, on one connection, and only while the tape is unchanged. `losesNothing` is true for a sound, empty tape.
+  - **Every tape delete goes file by file, then the folder,** and a failure part way lists the files already deleted in `changed`.
+  - **Two more writing checks,** on a duplicate of the smallest tape: moving it off, and deleting it keeping the source. The scratch tape is now deleted through a confirmation. All five passed in the conformance tests on the simulated OP-1.
+  - 348 tests pass on the Mac and 347 on the iOS simulator (246 and 245 FieldTapeKit, 93 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
+
 ## Next steps
 
-1. Step 18: deleting and moving tapes, and the open choice of how `deleteTape` deletes a folder.
+1. Step 19: restoring over an existing tape, then tag `1.0.0-alpha.2`.
 2. `album.write-exact` on hardware, whenever an album side is empty.
 
 ## The OP-1 right now

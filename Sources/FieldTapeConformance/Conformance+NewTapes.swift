@@ -10,7 +10,7 @@ extension Conformance {
 
     /// Checks that write to the OP-1, so an app asks before running them. Each makes the scratch tape in a free
     /// slot, checks it, and deletes it, so nothing is left behind. The person's own tapes are only read. The restore
-    /// check copies a tape into the workspace first, and deletes that archive when it's done.
+    /// and move checks make an archive in the workspace, and delete it when they're done.
     public static let writingChecks: [Check] = [
         Check("Creating a tape makes an empty, sound tape, and deleting it frees its slot", copying: { device, _ in
             let name = try TapeName(scratchTape)
@@ -24,6 +24,7 @@ extension Conformance {
                 try expect(try await device.tape(named: TapeName(scratchTape.uppercased())) == tape,
                            "looking it up in capitals didn't find the same tape")
                 try expect(try await device.tapeSlots().used == before.used + 1, "it doesn't take a slot")
+                try expect(try await device.prepareToDelete(tape).losesNothing, "deleting it would lose something")
                 return "\(tape.path): \(tape.type?.description ?? "no type"), 4 blank tracks, tape.json \(tape.manifest?.data.count ?? 0) bytes"
             }
         }),
@@ -66,7 +67,46 @@ extension Conformance {
                 return "\(archive.url.lastPathComponent) to \(tape.path). \(tracks)"
             }
         }),
+        Check("Moving a duplicate of the smallest tape off makes an archive that matches it, and frees its slot", copying: { device, workspace in
+            let name = try TapeName(scratchTape)
+            let source = try await smallestTape(on: device)
+            let before = try await scratchSlot(on: device, name)
+            return try await withScratch(on: device, slotsBefore: before, make: { try await device.duplicateTape(source, as: name) }) { copy in
+                let archive = try await device.moveTape(copy, to: workspace)
+                defer { try? FileManager.default.removeItem(at: archive.url) }
+                try expect(try await device.tape(named: name) == nil, "\(copy.path) is still there after it was moved")
+                try expect(try await device.tapeSlots().used == before.used, "moving it didn't free its slot")
+                try expect(archive.manifest.data == source.manifest?.data, "the archive's tape.json isn't the source's")
+                for (original, archived) in zip(source.tracks, archive.tracks) {
+                    try expect(try await digest(of: original, on: device) == archived.sha256,
+                               "track_\(archived.number) in the archive doesn't match the source")
+                }
+                try expect(try await device.tape(named: source.name) == source, "\(source.name) changed on the OP-1")
+                let tracks = archive.tracks.map { "track_\($0.number) \($0.sha256)" }.joined(separator: ", ")
+                return "\(copy.path) to \(archive.url.lastPathComponent), \(size(copy)) bytes. \(tracks)"
+            }
+        }),
+        Check("Deleting a duplicate, keeping the smallest tape as its copy, frees its slot", copying: { device, _ in
+            let name = try TapeName(scratchTape)
+            let source = try await smallestTape(on: device)
+            let before = try await scratchSlot(on: device, name)
+            return try await withScratch(on: device, slotsBefore: before, make: { try await device.duplicateTape(source, as: name) }) { copy in
+                let started = ContinuousClock.now
+                try await device.deleteTape(copy, keeping: .tape(source))
+                let took = ContinuousClock.now - started
+                try expect(try await device.tape(named: name) == nil, "\(copy.path) is still there after it was deleted")
+                try expect(try await device.tapeSlots().used == before.used, "deleting it didn't free its slot")
+                try expect(try await device.tape(named: source.name) == source, "\(source.name) changed on the OP-1")
+                let seconds = Double(took.components.attoseconds) / 1e18 + Double(took.components.seconds)
+                return "\(copy.path), keeping \(source.path): \(size(copy)) bytes matched by SHA-256 in "
+                    + String(format: "%.1f s", seconds)
+            }
+        }),
     ]
+
+    private static func digest(of track: TapeTrack, on device: FieldDevice) async throws -> String {
+        SHA256.hash(data: try await device.contents(of: track.path, maximumSize: 1 << 30)).map { String(format: "%02x", $0) }.joined()
+    }
 
     private static func size(_ tape: Tape) -> Int { tape.tracks.reduce(0) { $0 + $1.size } }
 
@@ -91,8 +131,9 @@ extension Conformance {
         return slots
     }
 
-    /// Makes the scratch tape, runs `body` on it, and deletes it whatever `body` found. Making it either succeeds
-    /// or leaves nothing, as FieldTapeKit removes a half-made tape itself.
+    /// Makes the scratch tape, runs `body` on it, and deletes it whatever `body` found, unless `body` already did,
+    /// with a confirmation as an app would ask a person for. Making it either succeeds or leaves nothing, as
+    /// FieldTapeKit removes a half-made tape itself.
     private static func withScratch(on device: FieldDevice, slotsBefore: TapeSlots, make: () async throws -> Tape,
                                     _ body: (Tape) async throws -> String) async throws -> String {
         let tape = try await make()
@@ -102,8 +143,9 @@ extension Conformance {
         } catch {
             outcome = .failure(error)
         }
-        let deletion = try await device.prepareToRemove(at: tape.path)
-        try await device.removeItem(deletion)
+        if try await device.tape(named: tape.name) != nil {
+            try await device.deleteTape(try await device.prepareToDelete(tape))
+        }
         let detail = try outcome.get()
         try expect(try await device.tape(named: tape.name) == nil, "\(tape.path) is still there after it was deleted")
         try expect(try await device.tapeSlots().used == slotsBefore.used, "deleting it didn't free its slot")

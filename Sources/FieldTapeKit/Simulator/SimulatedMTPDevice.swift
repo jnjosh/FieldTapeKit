@@ -141,6 +141,14 @@ actor SimulatedMTPDevice: MTPTransport {
         objects[handle]?.staleSize = nil
     }
 
+    /// Replaces the contents of the file with this name in the folder with that name, as if the OP-1 changed it
+    /// outside MTP mode, such as by recording over a track.
+    func overwrite(_ name: String, in folder: String, with data: Data) {
+        guard let handle = objects.first(where: { $0.value.name == name && objects[$0.value.parent]?.name == folder })?.key
+        else { return }
+        replace(handle, with: data)
+    }
+
     func add(faults more: [Fault]) {
         faults += more
     }

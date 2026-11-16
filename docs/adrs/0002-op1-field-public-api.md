@@ -213,8 +213,9 @@ extension FieldDevice {
     func duplicateTape(_ tape: Tape, as name: TapeName,
                        progress: consuming Subprogress? = nil) async throws -> Tape
 
-    // Delete with a verified copy: no prompt needed
-    func deleteTape(_ tape: Tape, keeping copy: TapeCopy) async throws
+    // Delete with a verified copy, matched by SHA-256: no prompt needed
+    func deleteTape(_ tape: Tape, keeping copy: TapeCopy,
+                    progress: consuming Subprogress? = nil) async throws
 
     // Delete with no copy: describe it, a person confirms, then delete (section 6)
     func prepareToDelete(_ tape: Tape) async throws -> TapeDeletion
@@ -223,10 +224,11 @@ extension FieldDevice {
 
 public struct TapeDeletion: Sendable, Identifiable {
     let id: UUID
-    let tape: Tape                     // as read fresh by prepareToDelete
+    let tape: Tape                     // as read fresh by prepareToDelete; it needn't be sound
+    let contents: [FieldItem]          // everything in its folder
     var audio: Duration                // how much audio would be lost
     var clipCount: Int
-    var losesNothing: Bool             // every track blank and no clips: safe to skip the prompt
+    var losesNothing: Bool             // a sound tape, every track blank and no clips: safe to skip the prompt
     // Internal: a fingerprint of the track sizes and tape.json, and the device it belongs to
 }
 
@@ -553,7 +555,7 @@ These are possible later features, deliberately left out for now:
 
 **What the OP-1 can't do**
 - **`moveItem` and an atomic replace.** Not possible: the OP-1 doesn't list MoveObject or CopyObject. Replacing is delete, then send, guarded by a verified copy.
-- **Deleting a folder with one DeleteObject.** Not relied on, because it's untested. FieldCheck tries it (`delete.folder-with-files`, ADR 0003). If it works, `deleteTape` can get simpler.
+- **Deleting a folder with one DeleteObject.** It works on 1.7.3 (`delete.folder-with-files`, ADR 0003, 2026-11-15), but isn't relied on. Deleting the files first works on any firmware, and a failure part way says exactly which files went (change log, step 18).
 
 **Backups**
 - **Zip or tar archives.** Rejected: zip has no public API on iOS, and tar's (libarchive) is macOS-only, so either would mean owning a format or adding a dependency.
@@ -646,6 +648,15 @@ These are possible later features, deliberately left out for now:
   - **`synth/user/` follows the same rules,** with no cap assumed. Nothing has been written there yet, so level 2 checks it on hardware.
 - **2026-11-15:** FieldCheck's first level 2 run (PROBE-NOTES.md) found that **`synth/user/` keeps 6 seconds**, where `drum/user/` keeps 20, and that **a converted preset keeps the format code it was sent with:** a WAV stored as AIFC is still listed as WAV. Neither changes a decision. A shortened preset was already allowed, and nothing in FieldTapeKit depends on a cap, which only the simulator models. But `FieldFormat` in a preset folder says what was sent, not what's stored, unlike the 2026-11-14 entry's reasoning for reading it from the format code. Its documentation says so now.
   - Also settled while building it: a preset WAV's chunks are walked, so WAVs from other apps with extra chunks are accepted. The read-back would catch the OP-1 handling one differently. A write that reads back wrong now says why in its error.
+- **2026-11-16:** Decided by the owner while building step 18 of the plan, deleting and moving tapes:
+  - **A tape is deleted file by file, then its folder,** not with one DeleteObject on the folder, though that works on 1.7.3 (`delete.folder-with-files`). It works on any firmware, and if a delete fails part way, `changed` lists exactly the files already deleted. It's the same order as `removeItem(_:)` and the half-made-tape cleanup, and costs six requests instead of one.
+  - **`deleteTape(_:keeping:)` matches every track by SHA-256** before it deletes anything: each is read from the OP-1, one at a time, and matched to the archive's record, or to the other tape's track, read the same way. Recording over a track on the OP-1 can leave every size and `tape.json` as they were, and an archive may be days old, so sizes alone could delete audio the copy doesn't hold. A full tape takes about 25 s to check, twice that with a tape as the copy, so it takes a `progress`.
+  - **The writing checks gain two,** run on a duplicate of the smallest tape with audio: moving it off, matched by SHA-256 to the source, and deleting it keeping the source as its copy. The scratch tape is now deleted with `prepareToDelete` and `deleteTape(_:)`, so the confirmed path runs on the OP-1 every time.
+  - Also settled while building it:
+    - `moveTape` checks the tape against the archive it just made by sizes and `tape.json`, as section 4 says, since the copy read every byte a moment before. If the tape changed, or a delete fails, or the task is cancelled after the copy, the archive is kept in the folder.
+    - `deleteTape(_:keeping:)` needs a sound tape. With an archive, the archive is opened from disk again after the tracks are matched, and refused with `archiveMismatch` if it no longer holds what it held when it was opened. A tape can't be its own copy (`notAllowed`).
+    - Just before deleting, the tape is listed one last time, and only the files it lists, at the sizes it lists, and an optional `readme.txt` are deleted.
+    - `prepareToDelete` works on a tape that isn't sound, so a broken tape can still be deleted. `TapeDeletion` keeps everything in the folder, and `losesNothing` is only ever true for a sound tape.
 - **2026-11-15:** Decided by the owner while building step 17 of the plan, restoring a tape under a new name:
   - **An archived name longer than this firmware keeps is refused** when it would make a new tape, with `invalidName` and a reason saying to restore it under another name. The OP-1 would cut it to 12 once it left MTP mode, and the tape would come back under another name, perhaps one already taken. Names already on the OP-1 or in an archive are still accepted at any length for listing and copying off.
   - **It's checked on the OP-1 by a third writing check:** the smallest tape with audio is copied into an archive in a temporary folder, restored as `tapes/conformance`, matched to the archive file by file by SHA-256, and deleted with the archive.

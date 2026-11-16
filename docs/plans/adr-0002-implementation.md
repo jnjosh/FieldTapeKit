@@ -359,7 +359,7 @@ Decided by the owner for step 17 (2026-11-15), and recorded in ADR 0002's change
 
 **On the OP-1 (scratch writes):** move the scratch tape off, then delete what's left.
 
-**To decide first:** on 1.7.3, one DeleteObject on a tape's folder deletes its files too (`delete.folder-with-files`, 2026-11-15). Whether `deleteTape` uses that, or keeps deleting files first so a failure part way is easier to report, is an open choice.
+Decided by the owner for step 18 (2026-11-16), and recorded in ADR 0002's change log: a tape is deleted file by file, then its folder, not with one DeleteObject, though that works on 1.7.3 (`delete.folder-with-files`). `deleteTape(_:keeping:)` matches every track by SHA-256 before deleting. The OP-1 run is two more writing checks, on a duplicate of the smallest tape: moving it off, and deleting it keeping the source. The scratch tape is now deleted with a confirmation.
 
 ### 19. Restoring over an existing tape → `1.0.0-alpha.2`
 
