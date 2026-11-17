@@ -289,10 +289,20 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - 469 tests pass on the Mac and 468 on the iOS simulator (337 and 336 FieldTapeKit, 123 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
 - **Step 23 passed on the OP-1** (iPhone, 2026-11-17, log `firmware/1.7.3/runs/fieldcheck-2026-11-17T032616Z.txt`, built from `2905747`). The writing conformance covers `moveTape` and the archiving restore, and it passed 6 of 6. Level 2 covers `keepingCopyAt:`, and it passed 9 of 9 with 0 changed. Level 3 passed 6 of 6 with 0 changed. So the second read agrees with the copy on hardware, with no false mismatch, and no request was slow. Both copies level 2 kept match what was written. A real mismatch is tested only in the simulator.
 
+- **Step 24a is built** (2026-11-17), not yet run on the Mac. Decided by the owner, recorded in the plan and ADR 0002's change log: macOS is a nice-to-have, so step 24 is split, and FieldCheck on the Mac isn't sandboxed for now.
+  - **`FieldDevice.ConnectionEvent.couldNotOpen(FieldError)`** reports an OP-1 that ImageCaptureCore found but couldn't open, which was dropped before. Its code is `.deviceRefused`, with ImageCaptureCore's error as `underlying`, until step 24b maps another app holding it to `.deviceInUse`. Watching goes on. `diagnose-api-breaking-changes` against `1.0.0-alpha.3` reports the new case as the one break, which the beta's release notes list.
+  - **FieldCheck is one target for iOS and macOS,** native on the Mac. There it keeps its files in `~/Documents/FieldCheck`, and logs ImageCaptureCore's error in full when an OP-1 can't be opened.
+  - FieldTapeKit asks for ImageCaptureCore authorization only on iOS, as before. Whether the Mac needs it is for the run to show.
+  - 470 tests pass on the Mac and 469 on the iOS simulator (338 and 337 FieldTapeKit, 123 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS and macOS.
+  - **On the Mac** (macOS 27.0.1, 2026-11-17, logs `fieldcheck-2026-11-17T125328Z.txt` and `T130419Z.txt`), ImageCaptureCore opened the OP-1 with no authorization request.
+    - **The read-only conformance suite passed 19 of 19.** Its copies have the SHA-256s of every earlier run.
+    - **Level 1 stalled both times,** in a run of chunked GetPartialObject reads: once at 8 MiB and once on the 16 MiB read. Each stalled request came back empty after about 60 s, and so did every request after it until a replug. It's the iPad's stall, and the iPhone hasn't shown it (PROBE-NOTES.md).
+    - Levels 2 and 3, the writing conformance and the Image Capture test haven't run on the Mac.
+
 ## Next steps
 
 1. **The stall is this iPad's.** On the iPhone, with the same OP-1, cable and build, all three levels passed with 0 changed (log `fieldcheck-2026-11-16T140744Z.txt`). The iPad Pro still stalls after a restart. Run hardware checks on the iPhone for now, and try the iPad again later, or with another port or cable adapter, to see whether it clears.
-2. Step 24: macOS, then `1.0.0-beta.1`.
+2. Step 24a's run on the Mac (below), then step 24b: `deviceInUse`, and `1.0.0-beta.1`.
 
 ## Future improvements
 

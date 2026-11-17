@@ -520,6 +520,46 @@ Log `firmware/1.7.3/runs/fieldcheck-2026-11-17T032616Z.txt`, FieldCheck built fr
 
 The log doesn't list each request, so it can't show the second GetObject itself. What the passes show is that the second read agrees with the copy on real hardware, with no false mismatch. A real mismatch is tested only in the simulator.
 
+## The Mac stalls the way the iPad does (FieldCheck, Mac, macOS 27.0.1, 2026-11-17)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-17T125328Z.txt`, the first FieldTapeKit run on a Mac (step 24a, unsandboxed). ImageCaptureCore found the OP-1 and opened a session with no authorization request.
+
+- **Level 1 passed 17 of 18,** with every pass matching the baseline. 1 MiB chunks cost about 59 ms more per MiB of offset, as on iOS.
+- **`read.cost` failed on its one 16 MiB GetPartialObject,** the request the iPad stalled on (2026-11-16):
+  - It was noted slow at 30 s.
+  - At about 60 s, ImageCaptureCore called back with no error and no response container, so FieldTapeKit reported an unreadable response.
+- **The next request stalled the same way.** Level 2's planning sent GetObjectHandles, which came back empty after about 60 s, so level 2 didn't start. Nothing was written.
+- **A replug cleared it.**
+
+So **the stall isn't only the iPad's.** Two hosts show it: the iPad and this Mac. The iPhone 17 Pro, also USB-C, has passed every run with the same OP-1 and cable.
+
+The empty answer at about 60 s, with no error, looks like ImageCaptureCore giving up on the request. On the Mac, the companion app, FieldKit (Teenage Engineering's Mac app, confirmed by the owner), copied 100 MB cleanly with the same cable (2026-11-16). That copy didn't go through ImageCaptureCore. FieldKit bundles and links `libmtp` and `libusb`, and IOKit, not ImageCaptureCore (`otool -L`, 2026-11-17).
+
+So the OP-1, the cable and the Mac's USB port carry 100 MB without a stall. That points the stall at ImageCaptureCore, on the Mac and the iPad, or at the requests we send through it. libmtp's requests may differ from ours, such as in how much each read asks for, so that isn't proven.
+
+FieldCheck wrote a draft ADR calling `read.cost` incompatible. Its rule of no draft ADR for a check the OP-1 stopped answering during (2026-11-16) doesn't catch a stall that ends in an empty answer, so the draft is wrong and isn't kept.
+
+### The second Mac run: whole-file copies work, chunked reads stall (2026-11-17)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-17T130419Z.txt`, after a replug. The conformance suite ran first, then level 1.
+
+- **The conformance suite passed 19 of 19** in 10 s.
+  - `copyTape` copied 2026-276#01, 78 MB, in 4.3 s, and every track has the SHA-256 recorded on the iPad.
+  - `side_a.wav` (`65c9af35…`) and `tapes/2026-220#01/track_4.wav` (`9aecf102…`) have the SHA-256s of every earlier run. `shasum` on the Mac's copies agrees.
+  - So **FieldTapeKit's copy path, one GetObject per file, works on the Mac:** about 120 MB with no stall.
+- **Level 1 stalled in `read.speed`.** It was on a 1 MiB GetPartialObject at offset 8 MiB, the 9th chunk of the 22 MB track, not on a 16 MiB read.
+  - The request came back empty after about 60 s.
+  - The next two requests, each a 1 MiB read at offset 0, came back empty after about 60 s too.
+  - So `read.partial`, `read.speed` and `read.cost` failed, and level 1 took 184 s.
+
+What the stalls on the iPad and the Mac have in common, so far:
+- **Where they hit:** in a run of back-to-back GetPartialObject chunks of a large file. That was at offset 8 MiB here, on the 16 MiB read in the first Mac run, and at 0xA00000 on the iPad. The point varies, so **the size of the read isn't the cause.**
+- **After a stall,** every request comes back empty after about 60 s until a replug, even a small read at offset 0.
+- **Chunked reads are costly for the OP-1:** a chunk takes about 59 ms longer per MiB of offset, as if the OP-1 reads from the file's start each time. Whether that load is what trips the stall isn't known.
+- **Whole-file GetObject:** on the Mac, it hasn't stalled yet. On the iPad, GetObject reads did stall (2026-11-16), so it isn't immune.
+
+FieldCheck wrote a second wrong draft ADR, calling three reads incompatible. It isn't kept.
+
 ## Entering MTP mode from the app (paused 2026-11-08: possible, a future feature)
 
 **Status:** paused by the user as too fragile for now, and kept as a possible future feature for the framework. What works: detecting a plugged-in OP-1 over USB MIDI, `greet`, and switching it into MTP mode with `mode`, from both the Mac and the iPad. What doesn't yet: on the iPad, ImageCaptureCore never saw the OP-1 after any switch in that session. Even MTP mode entered with the buttons failed until the OP-1 was restarted. Not tested: Leave MTP mode (closing the session), and a full app-triggered switch on a freshly restarted OP-1. To pick this up, start there, and restart the OP-1 whenever it shows connected but the app sees nothing. **The MIDI code was removed from the probe on 2026-11-08,** at the user's request, so it can't recreate the stuck state. That was `OP1MIDI.swift` (the `TESysEx` encoder and the CoreMIDI client), its tests, and the MIDI toggle and Enter and Leave MTP mode buttons. The format and bytes are kept below, and the Mac tools `tools/op1-midi-listen.swift` and `tools/op1-sysex.swift` remain. They only send when run by hand. The probe still logs each device's USB IDs.

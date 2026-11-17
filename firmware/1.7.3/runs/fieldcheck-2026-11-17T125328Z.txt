@@ -1,0 +1,118 @@
+[   0.00] FieldCheck 1.0 on Mac, macOS 27.0.1
+[   0.07] Watching for an OP-1 in MTP mode
+[  22.80] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  22.80] Storage: 6429185024 bytes, 6287243264 free
+[  28.82] Level 1: running
+[  78.83] ⋯ getPartialObject: no answer after 30.0 seconds, waiting up to 90.0 seconds in all
+[ 108.65] The last 50 MTP requests, up to the one that got no answer:
+[ 108.65]   ← getPartialObject 0x2001, 1048576 bytes in, 736 ms
+[ 108.65]   → getPartialObject 0x32 0xC00000 0x100000
+[ 108.65]   ← getPartialObject 0x2001, 1048576 bytes in, 796 ms
+[ 108.65]   → getPartialObject 0x32 0xD00000 0x100000
+[ 108.65]   ← getPartialObject 0x2001, 1048576 bytes in, 852 ms
+[ 108.65]   → getPartialObject 0x32 0xE00000 0x100000
+[ 108.65]   ← getPartialObject 0x2001, 1048576 bytes in, 910 ms
+[ 108.65]   → getPartialObject 0x32 0xF00000 0x100000
+[ 108.65]   ← getPartialObject 0x2001, 1048576 bytes in, 966 ms
+[ 108.65]   → getPartialObject 0x32 0x3E9 0x4000
+[ 108.65]   ← getPartialObject 0x2001, 16384 bytes in, 56 ms
+[ 108.65]   → getPartialObject 0x32 0xF8AD0 0x10000
+[ 108.65]   ← getPartialObject 0x2001, 65536 bytes in, 116 ms
+[ 108.65]   → getPartialObject 0x32 0x1508DD0 0x100000
+[ 108.65]   ← getPartialObject 0x2001, 100 bytes in, 1311 ms
+[ 108.65]   → getPartialObject 0x32 0xF00000 0x100000
+[ 108.65]   ← getPartialObject 0x2001, 1048576 bytes in, 924 ms
+[ 108.65]   → getPartialObject 0x32 0xE00000 0x100000
+[ 108.65]   ← getPartialObject 0x2001, 1048576 bytes in, 909 ms
+[ 108.65]   → getPartialObject 0x32 0xD00000 0x100000
+[ 108.65]   ← getPartialObject 0x2001, 1048576 bytes in, 850 ms
+[ 108.65]   → getPartialObject 0x32 0xC00000 0x100000
+[ 108.65]   ← getPartialObject 0x2001, 1048576 bytes in, 793 ms
+[ 108.66]   → getPartialObject 0x32 0xB00000 0x100000
+[ 108.66]   ← getPartialObject 0x2001, 1048576 bytes in, 737 ms
+[ 108.66]   → getPartialObject 0x32 0xA00000 0x100000
+[ 108.66]   ← getPartialObject 0x2001, 1048576 bytes in, 679 ms
+[ 108.66]   → getPartialObject 0x32 0x900000 0x100000
+[ 108.66]   ← getPartialObject 0x2001, 1048576 bytes in, 625 ms
+[ 108.66]   → getPartialObject 0x32 0x800000 0x100000
+[ 108.66]   ← getPartialObject 0x2001, 1048576 bytes in, 564 ms
+[ 108.66]   → getPartialObject 0x32 0x700000 0x100000
+[ 108.66]   ← getPartialObject 0x2001, 1048576 bytes in, 505 ms
+[ 108.66]   → getPartialObject 0x32 0x600000 0x100000
+[ 108.66]   ← getPartialObject 0x2001, 1048576 bytes in, 448 ms
+[ 108.66]   → getPartialObject 0x32 0x500000 0x100000
+[ 108.66]   ← getPartialObject 0x2001, 1048576 bytes in, 389 ms
+[ 108.66]   → getPartialObject 0x32 0x400000 0x100000
+[ 108.66]   ← getPartialObject 0x2001, 1048576 bytes in, 333 ms
+[ 108.66]   → getPartialObject 0x32 0x300000 0x100000
+[ 108.66]   ← getPartialObject 0x2001, 1048576 bytes in, 279 ms
+[ 108.66]   → getPartialObject 0x32 0x200000 0x100000
+[ 108.66]   ← getPartialObject 0x2001, 1048576 bytes in, 218 ms
+[ 108.66]   → getPartialObject 0x32 0x100000 0x100000
+[ 108.66]   ← getPartialObject 0x2001, 1048576 bytes in, 171 ms
+[ 108.66]   → getPartialObject 0x32 0x0 0x100000
+[ 108.66]   ← getPartialObject 0x2001, 1048576 bytes in, 102 ms
+[ 108.66]   → getPartialObject 0x32 0x0 0x1000000
+[ 108.66]   ⋯ getPartialObject: no answer after 30.0 seconds, waiting up to 90.0 seconds in all
+[ 108.66]   ✕ getPartialObject: unreadable response
+[ 108.67] Level 1: compared with the baseline for firmware 1.7.3, level 1, from the run started 2026-11-15T16:15:58Z
+[ 108.67] Level 1: read.cost fail: Couldn't check: The OP-1 sent a reply that couldn't be read. (unreadableResponse(FieldTapeKit.PTPOperation.getPartialObject))
+[ 108.67] Level 1: 17 pass, 0 changed, 1 fail, 0 not run
+[ 108.67] Saved fieldcheck-2026-11-17T125357Z.json and fieldcheck-2026-11-17T125357Z.md, and a draft ADR for its changes and failures, fieldcheck-2026-11-17T125357Z.draft-adr.md
+[ 122.31] Level 2: looking at the OP-1 to plan it
+[ 154.04] ⋯ getObjectHandles: no answer after 30.0 seconds, waiting up to 90.0 seconds in all
+[ 182.79] The last 50 MTP requests, up to the one that got no answer:
+[ 182.80]   → getPartialObject 0x32 0xD00000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 852 ms
+[ 182.80]   → getPartialObject 0x32 0xE00000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 910 ms
+[ 182.80]   → getPartialObject 0x32 0xF00000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 966 ms
+[ 182.80]   → getPartialObject 0x32 0x3E9 0x4000
+[ 182.80]   ← getPartialObject 0x2001, 16384 bytes in, 56 ms
+[ 182.80]   → getPartialObject 0x32 0xF8AD0 0x10000
+[ 182.80]   ← getPartialObject 0x2001, 65536 bytes in, 116 ms
+[ 182.80]   → getPartialObject 0x32 0x1508DD0 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 100 bytes in, 1311 ms
+[ 182.80]   → getPartialObject 0x32 0xF00000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 924 ms
+[ 182.80]   → getPartialObject 0x32 0xE00000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 909 ms
+[ 182.80]   → getPartialObject 0x32 0xD00000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 850 ms
+[ 182.80]   → getPartialObject 0x32 0xC00000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 793 ms
+[ 182.80]   → getPartialObject 0x32 0xB00000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 737 ms
+[ 182.80]   → getPartialObject 0x32 0xA00000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 679 ms
+[ 182.80]   → getPartialObject 0x32 0x900000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 625 ms
+[ 182.80]   → getPartialObject 0x32 0x800000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 564 ms
+[ 182.80]   → getPartialObject 0x32 0x700000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 505 ms
+[ 182.80]   → getPartialObject 0x32 0x600000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 448 ms
+[ 182.80]   → getPartialObject 0x32 0x500000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 389 ms
+[ 182.80]   → getPartialObject 0x32 0x400000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 333 ms
+[ 182.80]   → getPartialObject 0x32 0x300000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 279 ms
+[ 182.80]   → getPartialObject 0x32 0x200000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 218 ms
+[ 182.80]   → getPartialObject 0x32 0x100000 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 171 ms
+[ 182.80]   → getPartialObject 0x32 0x0 0x100000
+[ 182.80]   ← getPartialObject 0x2001, 1048576 bytes in, 102 ms
+[ 182.80]   → getPartialObject 0x32 0x0 0x1000000
+[ 182.80]   ⋯ getPartialObject: no answer after 30.0 seconds, waiting up to 90.0 seconds in all
+[ 182.80]   ✕ getPartialObject: unreadable response
+[ 182.80]   → getObjectHandles 0xFFFFFFFF 0x0 0xFFFFFFFF
+[ 182.80]   ⋯ getObjectHandles: no answer after 30.0 seconds, waiting up to 90.0 seconds in all
+[ 182.80]   ✕ getObjectHandles: unreadable response
+[ 182.80] Level 2: can't run: Couldn't look at the OP-1: The OP-1 sent a reply that couldn't be read.
+[ 199.18] Disconnected
+[ 203.07] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[ 203.07] Storage: 6429185024 bytes, 6287243264 free
