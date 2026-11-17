@@ -9,6 +9,9 @@ extension FieldDevice {
     /// something iterates and stops when the last iterating task is cancelled. Several listeners share one
     /// `ICDeviceBrowser`. The first use asks for ImageCaptureCore authorization on iOS.
     ///
+    /// An OP-1 that's found but can't be opened, such as when another app holds it, is a `.couldNotOpen` event
+    /// with `.deviceRefused` and ImageCaptureCore's error as `underlying`, and watching goes on.
+    ///
     /// - Throws: `FieldError` with `.notAuthorized` if the person denies access. The iOS simulator has no
     ///   USB devices, so there it never yields anything.
     public static var connections: some AsyncSequence<ConnectionEvent, any Error> {
@@ -127,6 +130,7 @@ final class DeviceMonitor: NSObject {
         if let error {
             log.error("Session failed: \(String(describing: error), privacy: .public)")
             opening.remove(key)
+            hub.couldNotOpen(FieldError(.deviceRefused, underlying: error))
             return
         }
         Task {
@@ -154,6 +158,7 @@ final class DeviceMonitor: NSObject {
             hub.connected(device)
         } catch {
             log.error("Couldn't read the OP-1's info: \(String(describing: error), privacy: .public)")
+            hub.couldNotOpen(FieldError.wrapping(error) as? FieldError ?? FieldError(.deviceRefused, underlying: error))
         }
     }
 

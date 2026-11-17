@@ -155,7 +155,7 @@ struct TapeSection: View {
         progress = manager
         defer { progress = nil }
         do {
-            let folder = URL.documentsDirectory.appending(path: "explore")
+            let folder = URL.fieldCheckFiles.appending(path: "explore")
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let copy = try await device.copyTape(tape, to: folder, progress: manager.subprogress(assigningCount: 1))
             archive = copy
@@ -223,7 +223,7 @@ struct ItemView: View {
         copying = true
         defer { copying = false }
         do {
-            let folder = URL.documentsDirectory.appending(path: "explore")
+            let folder = URL.fieldCheckFiles.appending(path: "explore")
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let url = try await device.copyItem(at: item.path, to: folder.appending(path: item.name))
             copy = url

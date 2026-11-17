@@ -14,7 +14,9 @@ import FieldTapeKit
 import Synchronization
 import SwiftUI
 import System
+#if os(iOS)
 import UIKit
+#endif
 
 @main
 struct FieldCheckApp: App {
@@ -23,6 +25,20 @@ struct FieldCheckApp: App {
             RootView()
         }
     }
+}
+
+extension URL {
+    /// Where FieldCheck keeps its logs, reports, copies and pending level 3: Documents, which the Files app shows on
+    /// iOS, and a FieldCheck folder in Documents on the Mac, where the app isn't sandboxed yet.
+    static let fieldCheckFiles: URL = {
+        #if os(macOS)
+        let folder = URL.documentsDirectory.appending(path: "FieldCheck")
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        return folder
+        #else
+        return URL.documentsDirectory
+        #endif
+    }()
 }
 
 /// Trace lines from the MTP session, collected in order and logged once the work is done.
@@ -60,7 +76,7 @@ final class ConnectionLog {
     private(set) var readingSide: FieldDevice.ID?
     /// Each connection's trace of its MTP requests, from the moment it connected.
     private var traces: [FieldDevice.ID: RequestTrace] = [:]
-    private let pendingURL = URL.documentsDirectory.appending(path: "level3-pending.json")
+    private let pendingURL = URL.fieldCheckFiles.appending(path: "level3-pending.json")
     private let started = Date()
     private let fileURL: URL
     private let host: CheckReport.Host
@@ -68,11 +84,16 @@ final class ConnectionLog {
     init() {
         let stamp = Date.now.formatted(.iso8601.year().month().day().timeZone(separator: .omitted)
             .time(includingFractionalSeconds: false).timeSeparator(.omitted))
-        fileURL = URL.documentsDirectory.appending(path: "fieldcheck-\(stamp).txt")
-        let device = UIDevice.current
+        fileURL = URL.fieldCheckFiles.appending(path: "fieldcheck-\(stamp).txt")
         let app = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
-        host = CheckReport.Host(app: app, model: device.model, system: "\(device.systemName) \(device.systemVersion)")
-        record("FieldCheck \(app) on \(device.model), \(device.systemName) \(device.systemVersion)")
+        #if os(iOS)
+        let model = UIDevice.current.model, system = "\(UIDevice.current.systemName) \(UIDevice.current.systemVersion)"
+        #else
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        let model = "Mac", system = "macOS \(version.majorVersion).\(version.minorVersion).\(version.patchVersion)"
+        #endif
+        host = CheckReport.Host(app: app, model: model, system: system)
+        record("FieldCheck \(app) on \(model), \(system)")
         if let data = try? Data(contentsOf: pendingURL) {
             do {
                 pendingLevelThree = try LevelThree.Pending(json: data)
@@ -113,7 +134,7 @@ final class ConnectionLog {
     private func findLeftovers(on device: FieldDevice) async {
         leftovers[device.id] = await LevelTwo.plan(for: device).leftovers
         logIfStopped(device)
-        sideCopy = pendingLevelThree?.album == nil ? SideRestore.copies(in: .documentsDirectory).first : nil
+        sideCopy = pendingLevelThree?.album == nil ? SideRestore.copies(in: .fieldCheckFiles).first : nil
     }
 
     /// Reads the side `copy` is of, for a person to confirm putting it back, and returns what it holds now, or nil if
@@ -180,7 +201,7 @@ final class ConnectionLog {
         }
         record("Level 1: \(report.countsDescription)")
         do {
-            let saved = try report.save(in: .documentsDirectory)
+            let saved = try report.save(in: .fieldCheckFiles)
             record("Saved \(saved.json.lastPathComponent) and \(saved.markdown.lastPathComponent)"
                    + (saved.draftADR.map { ", and a draft ADR for its changes and failures, \($0.lastPathComponent)" } ?? ""))
         } catch {
@@ -215,7 +236,7 @@ final class ConnectionLog {
         guard running == nil else { return }
         running = device.id
         defer { running = nil }
-        let workspace = URL.documentsDirectory.appending(path: "level2-\(Self.stamp())")
+        let workspace = URL.fieldCheckFiles.appending(path: "level2-\(Self.stamp())")
         do {
             try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: false)
         } catch {
@@ -246,7 +267,7 @@ final class ConnectionLog {
         }
         record("Level 2: \(report.countsDescription)")
         do {
-            let saved = try report.save(in: .documentsDirectory)
+            let saved = try report.save(in: .fieldCheckFiles)
             record("Saved \(saved.json.lastPathComponent) and \(saved.markdown.lastPathComponent)"
                    + (saved.draftADR.map { ", and a draft ADR for its changes and failures, \($0.lastPathComponent)" } ?? ""))
         } catch {
@@ -291,7 +312,7 @@ final class ConnectionLog {
             return
         }
         record("Level 3: running, after level 2 at \(pending.levelTwoStarted.formatted(.iso8601))")
-        let run = await LevelThree.run(on: device, pending: pending, files: .documentsDirectory, host: host)
+        let run = await LevelThree.run(on: device, pending: pending, files: .fieldCheckFiles, host: host)
         logIfStopped(device)
         let report = compared(run)
         reports[device.id] = report
@@ -301,7 +322,7 @@ final class ConnectionLog {
         }
         record("Level 3: \(report.countsDescription)")
         do {
-            let saved = try report.save(in: .documentsDirectory)
+            let saved = try report.save(in: .fieldCheckFiles)
             record("Saved \(saved.json.lastPathComponent) and \(saved.markdown.lastPathComponent)"
                    + (saved.draftADR.map { ", and a draft ADR for its changes and failures, \($0.lastPathComponent)" } ?? ""))
         } catch {
@@ -309,6 +330,13 @@ final class ConnectionLog {
         }
         setPendingLevelThree(nil)
         await findLeftovers(on: device)
+    }
+
+    /// ImageCaptureCore's error in full, so a run shows how it reports an OP-1 it couldn't open (step 24).
+    private static func describe(_ underlying: (any Error)?) -> String {
+        guard let underlying else { return "" }
+        let error = underlying as NSError
+        return " ImageCaptureCore said: \(error.domain) \(error.code), \(error.localizedDescription), \(error.userInfo)"
     }
 
     private static func stamp() -> String {
@@ -330,7 +358,7 @@ final class ConnectionLog {
         let stamp = Date.now.formatted(.iso8601.year().month().day().timeZone(separator: .omitted)
             .time(includingFractionalSeconds: false).timeSeparator(.omitted))
         // The writing checks copy nothing, so they don't leave an empty folder in Documents.
-        let workspace = (writing ? URL.temporaryDirectory : URL.documentsDirectory).appending(path: "conformance-\(stamp)")
+        let workspace = (writing ? URL.temporaryDirectory : .fieldCheckFiles).appending(path: "conformance-\(stamp)")
         do {
             try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: false)
         } catch {
@@ -378,7 +406,7 @@ final class ConnectionLog {
         let reports = baselineReports
         do {
             let baseline = try Baseline(reports: reports)
-            let url = try baseline.save(in: .documentsDirectory)
+            let url = try baseline.save(in: .fieldCheckFiles)
             let levels = baseline.levels.map { "\($0.source.level)" }.joined(separator: ", ")
             savedBaseline = SavedBaseline(file: url.lastPathComponent, from: reports.map(\.started), problem: nil)
             record("Saved \(url.lastPathComponent), with levels \(levels). Copy it into the repository as "
@@ -442,6 +470,9 @@ final class ConnectionLog {
                     conformance[id] = nil
                     leftovers[id] = nil
                     record("Disconnected")
+                case .couldNotOpen(let error):
+                    record("Couldn't open an OP-1: \(error.localizedDescription) "
+                        + "\(error.recoverySuggestion ?? "")\(Self.describe(error.underlying))")
                 }
             }
             record("Stopped watching")

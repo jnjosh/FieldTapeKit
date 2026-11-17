@@ -52,6 +52,31 @@ import Testing
         #expect(hub.devices.isEmpty, "a disconnected device isn't announced to later listeners")
     }
 
+    @Test func anOP1ThatCouldNotBeOpenedIsReportedAndWatchingGoesOn() async throws {
+        let hub = ConnectionHub()
+        var changes: [Bool] = []
+        hub.onWatchingChanged = { changes.append($0) }
+        var events = try await listen(hub)
+        let underlying = NSError(domain: "com.apple.ImageCaptureCore", code: -9922)
+        hub.couldNotOpen(FieldError(.deviceRefused, underlying: underlying))
+        let device = FieldDevice.simulated()
+        hub.connected(device)
+
+        guard case .couldNotOpen(let error) = try await events.next(isolation: MainActor.shared) else {
+            Issue.record("expected couldNotOpen")
+            return
+        }
+        #expect(error.code == .deviceRefused)
+        #expect((error.underlying as? NSError)?.code == -9922)
+        #expect(connectedID(try await events.next(isolation: MainActor.shared)) == device.id,
+                "another OP-1 still connects")
+        #expect(changes == [true], "watching doesn't stop")
+
+        var later = try await listen(hub)
+        #expect(connectedID(try await later.next(isolation: MainActor.shared)) == device.id,
+                "a later listener hears only about connected devices")
+    }
+
     @Test func watchingStartsWithTheFirstListenerAndStopsAfterTheLast() async throws {
         let hub = ConnectionHub()
         var changes: [Bool] = []

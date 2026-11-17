@@ -15,6 +15,9 @@ public actor FieldDevice: Identifiable {
     public enum ConnectionEvent: Sendable {
         case connected(FieldDevice)
         case disconnected(FieldDevice.ID)
+        /// An OP-1 was found, but ImageCaptureCore couldn't open a session with it, or its device info couldn't be
+        /// read, such as when another app holds it. Watching goes on, and it can be connected again.
+        case couldNotOpen(FieldError)
     }
 
     public nonisolated let id = ID()

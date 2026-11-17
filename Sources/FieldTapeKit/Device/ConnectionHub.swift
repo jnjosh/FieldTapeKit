@@ -60,6 +60,12 @@ final class ConnectionHub {
         for listener in listeners.values { listener.yield(.disconnected(id)) }
     }
 
+    /// Tells every listener an OP-1 couldn't be opened. Watching goes on, and a later listener doesn't hear it,
+    /// since there's no device to report.
+    func couldNotOpen(_ error: FieldError) {
+        for listener in listeners.values { listener.yield(.couldNotOpen(error)) }
+    }
+
     /// Ends every listener's stream with this error, and every later one's straight away, such as when the app
     /// isn't authorized.
     func fail(_ error: FieldError) {

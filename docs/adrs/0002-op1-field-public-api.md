@@ -56,6 +56,7 @@ for try await event in FieldDevice.connections { // requests ImageCaptureCore au
     switch event {
     case .connected(let device):    await show(device)
     case .disconnected(let id):     forget(id)
+    case .couldNotOpen(let error):  show(error)    // such as another app holding it; watching goes on
     }
 }
 ```
@@ -758,3 +759,8 @@ These are possible later features, deliberately left out for now:
   - **If the reads disagree, nothing is deleted and the copy is kept,** since which read went wrong isn't known. It's `verificationFailed`.
   - This tightens a rule, so it would be a minor version after 1.0.0. USB's packet CRC already catches errors on the wire, so only a fault in the OP-1 or ImageCaptureCore could cause it, and a fault that repeats on every read still can't be caught.
   - **The simulator's fault injection is complete:** a corrupted read, an unplug during a request (a SendObject leaves half its data, since what a real OP-1 keeps isn't known), and transfers at 20 MB/s reading and 7 MB/s writing. A transport that reports the device gone now leaves the session disconnected, as a timeout does.
+- **2026-11-17:** step 24a, decided by the owner. macOS is a nice-to-have, so step 24 is split in two.
+  - **`FieldDevice.ConnectionEvent` gains `.couldNotOpen(FieldError)`,** for an OP-1 that ImageCaptureCore found but couldn't open a session with, or whose device info couldn't be read. Until now that error was only logged, so an app saw nothing, as on a Mac where Image Capture already holds the OP-1. Watching goes on, unlike `.notAuthorized`, which ends the stream, so one OP-1 that can't be opened doesn't stop others from connecting.
+  - **Its code is `.deviceRefused` for now,** with ImageCaptureCore's error as `underlying`. Step 24b maps a device held by another app to `.deviceInUse`, once the first Mac run shows how ImageCaptureCore reports it.
+  - Adding a case breaks an exhaustive `switch` over the events. That's allowed before 1.0.0, and the release notes say so.
+  - **FieldCheck on the Mac isn't sandboxed for now.** Which entitlement a sandboxed Mac app needs for ImageCaptureCore (section 9) stays open.

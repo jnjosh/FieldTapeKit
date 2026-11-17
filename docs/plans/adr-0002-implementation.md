@@ -442,6 +442,13 @@ Decided by the owner for step 23 (2026-11-16), and recorded in ADR 0002's change
 
 **Tag:** `1.0.0-beta.1`, once this run passes.
 
+Decided by the owner for step 24 (2026-11-17), and recorded in ADR 0002's change log. macOS is a nice-to-have, so the step stays small, in two parts:
+- **24a:**
+  - FieldCheck becomes one target built for iOS and macOS. On the Mac it isn't sandboxed for now, so which entitlement a sandboxed app needs waits until later.
+  - An OP-1 that ImageCaptureCore can't open is reported as the new `ConnectionEvent.couldNotOpen(FieldError)`. Until now that error was dropped. Watching goes on.
+  - **On the OP-1:** the run above on the Mac, with Image Capture open for the last part, to see what ImageCaptureCore reports.
+- **24b:** map what that run showed to `deviceInUse`, run it again on the Mac, and tag.
+
 ---
 
 ## Risks to watch
