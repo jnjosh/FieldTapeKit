@@ -42,7 +42,9 @@ public struct FieldError: Error, Sendable, LocalizedError {
         public static let timedOut = Code("timedOut")
         /// The app isn't allowed to use ImageCaptureCore's devices.
         public static let notAuthorized = Code("notAuthorized")
-        /// Another app holds the OP-1.
+        /// Another app holds the OP-1. Not thrown on firmware 1.7.3: ImageCaptureCore never says so. On a Mac,
+        /// Image Capture shares the OP-1, and Teenage Engineering's FieldKit holds it so that ImageCaptureCore never
+        /// finds it, so it just doesn't connect (ADR 0002, 2026-11-17). Kept for a platform that reports it.
         public static let deviceInUse = Code("deviceInUse")
         /// The OP-1 refused a request, or sent a reply that couldn't be read. `responseCode` says which, if known.
         public static let deviceRefused = Code("deviceRefused")
@@ -183,7 +185,7 @@ public struct FieldError: Error, Sendable, LocalizedError {
         case .localFileFailed:
             "Check there's space, and that the folder you're copying to exists."
         case .deviceInUse:
-            "Quit the other app, such as Teenage Engineering's app or Image Capture on a Mac, then connect the OP-1 again."
+            "Quit the other app, such as FieldKit on a Mac, then connect the OP-1 again."
         default:
             nil
         }

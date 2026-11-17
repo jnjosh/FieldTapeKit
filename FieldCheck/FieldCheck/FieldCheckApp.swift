@@ -27,6 +27,14 @@ struct FieldCheckApp: App {
     }
 }
 
+/// What to do when no OP-1 is connected. On a Mac, FieldKit holding the OP-1 hides it from ImageCaptureCore, with no
+/// error to report (ADR 0002, 2026-11-17).
+#if os(macOS)
+let connectPrompt = "Put the OP-1 in MTP mode and connect it with USB. Quit FieldKit first, or the OP-1 won't appear."
+#else
+let connectPrompt = "Put the OP-1 in MTP mode and connect it with USB."
+#endif
+
 extension URL {
     /// Where FieldCheck keeps its logs, reports, copies and pending level 3: Documents, which the Files app shows on
     /// iOS, and a FieldCheck folder in Documents on the Mac, where the app isn't sandboxed yet.
@@ -572,7 +580,7 @@ struct ValidateView: View {
             List {
                 Section("OP-1") {
                     if log.devices.isEmpty {
-                        Text("Put the OP-1 in MTP mode and connect it with USB.")
+                        Text(connectPrompt)
                             .foregroundStyle(.secondary)
                     }
                     ForEach(log.devices) { device in

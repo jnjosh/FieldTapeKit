@@ -560,6 +560,28 @@ What the stalls on the iPad and the Mac have in common, so far:
 
 FieldCheck wrote a second wrong draft ADR, calling three reads incompatible. It isn't kept.
 
+### Image Capture doesn't keep FieldCheck out (2026-11-17)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-17T131359Z.txt`, and a screenshot in `probe-results/mac-image-capture-2026-11-17/`. Image Capture was open with the OP-1 selected, showing "0 items", since it lists only photos and videos. FieldCheck was launched after it, and **connected in 0.17 s and read the device info and storage.** No `couldNotOpen`.
+
+So on macOS, ImageCaptureCore lets two apps hold the OP-1 at once, and ADR 0002's guess that Image Capture would cause `deviceInUse` is wrong. That has two consequences:
+- **Another app can send requests to the OP-1 between ours.** FieldTapeKit's safety rules assume it's the only one changing the OP-1, and nothing tells it when another app is there.
+- **Still to try as the cause of `deviceInUse`:** FieldKit, which reaches the OP-1 through libusb, not ImageCaptureCore, so it may claim the USB interface for itself.
+
+Not yet run: any FieldCheck check while Image Capture holds the OP-1.
+
+### FieldKit holds the OP-1 so that ImageCaptureCore never sees it (2026-11-17)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-17T131642Z.txt`. FieldKit was open and showing the OP-1's files, and the OP-1 said MTP connected. FieldCheck logged nothing after "Watching", with no `couldNotOpen`.
+
+While FieldKit showed the files:
+- **`ioreg` listed the OP-1 as product 0x0102,** MTP mode, with `UsbExclusiveOwner` set to FieldKit's process (`field kit`).
+- **`tools/op1-icc-list.swift` browsed for 10 s** and found only the owner's iPad. ImageCaptureCore didn't report the OP-1 at all.
+
+When the OP-1 was in its normal mode (0x8102), FieldKit kept a user client open on it, beside MIDIServer and usbaudiod.
+
+So **another app holding the OP-1 can't reach FieldTapeKit through ImageCaptureCore.** The OP-1 just never appears. Image Capture shares it, and FieldKit hides it. Detecting FieldKit would take macOS-only IOKit code that finds an 0x0102 device with another exclusive owner, and `UsbExclusiveOwner` isn't a documented property.
+
 ## Entering MTP mode from the app (paused 2026-11-08: possible, a future feature)
 
 **Status:** paused by the user as too fragile for now, and kept as a possible future feature for the framework. What works: detecting a plugged-in OP-1 over USB MIDI, `greet`, and switching it into MTP mode with `mode`, from both the Mac and the iPad. What doesn't yet: on the iPad, ImageCaptureCore never saw the OP-1 after any switch in that session. Even MTP mode entered with the buttons failed until the OP-1 was restarted. Not tested: Leave MTP mode (closing the session), and a full app-triggered switch on a freshly restarted OP-1. To pick this up, start there, and restart the OP-1 whenever it shows connected but the app sees nothing. **The MIDI code was removed from the probe on 2026-11-08,** at the user's request, so it can't recreate the stuck state. That was `OP1MIDI.swift` (the `TESysEx` encoder and the CoreMIDI client), its tests, and the MIDI toggle and Enter and Leave MTP mode buttons. The format and bytes are kept below, and the Mac tools `tools/op1-midi-listen.swift` and `tools/op1-sysex.swift` remain. They only send when run by hand. The probe still logs each device's USB IDs.

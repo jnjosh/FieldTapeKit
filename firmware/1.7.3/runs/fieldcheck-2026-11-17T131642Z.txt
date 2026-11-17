@@ -1,0 +1,2 @@
+[   0.00] FieldCheck 1.0 on Mac, macOS 27.0.1
+[   0.04] Watching for an OP-1 in MTP mode

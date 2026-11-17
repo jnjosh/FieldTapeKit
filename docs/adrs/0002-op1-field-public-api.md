@@ -472,7 +472,7 @@ public struct FieldError: Error, Sendable, LocalizedError {
 ```
 
 - **`insufficientSpace`:** the OP-1 answered a write with Store Full (0x200C), or, once free space is trusted, a check before the first change found too little (section 1).
-- **`deviceInUse`:** another app holds the OP-1, so ImageCaptureCore won't open it for this one. On a Mac that's likely Teenage Engineering's app or Image Capture (section 9). The recovery suggestion names them.
+- **`deviceInUse`:** another app holds the OP-1, so ImageCaptureCore won't open it for this one. Not thrown on 1.7.3, since ImageCaptureCore never says so (section 9, and the change log for 2026-11-17). It's kept for a platform that does.
 
 - **Untyped `throws`, documented per method.** Swift 6 typed throws (`throws(FieldError)`) can't also throw `CancellationError`, and every long transfer here has to cancel the normal Swift way when a view disappears. So methods throw `FieldError` or `CancellationError`, and each method's doc comment lists the codes it can throw, as NIO does.
 - **`LocalizedError`** gives every error a readable description and recovery suggestion, so SwiftUI's `.alert(error:)` works as is. For example, `notAllowed` explains the folder rule, and `tapeLimitReached` says to move a tape off the OP-1 first.
@@ -499,7 +499,10 @@ let device = FieldDevice.simulated {
 ### 9. Platforms, concurrency and packaging
 
 - **Platforms:** iOS 27, iPadOS 27 and macOS 27. The API is the same on all three. Raw PTP to the OP-1 on macOS is **not yet tested**, so the first framework milestone includes a Mac run of the conformance suite. Things to watch on the Mac:
-  - Only one app can hold the device. Teenage Engineering's own Mac app, and macOS's Image Capture, may grab it first, so FieldTapeKit must report that clearly, as `.deviceInUse`, rather than hang. How ImageCaptureCore signals this is unknown until the first Mac run.
+  - **Other apps (seen 2026-11-17):**
+    - **Image Capture shares the OP-1** with FieldTapeKit. Both open it at once, so another app's requests can come between ours, and FieldTapeKit can't tell.
+    - **FieldKit, Teenage Engineering's Mac app, takes the OP-1 for itself** through libusb, so ImageCaptureCore never finds it. FieldTapeKit just sees no OP-1, with no error, and can't report `.deviceInUse`.
+    - Apps should say to quit FieldKit when no OP-1 appears on a Mac.
   - A sandboxed Mac app may need a USB or camera entitlement for ImageCaptureCore. Find out which on the first run.
 - **Concurrency:** `FieldDevice` is an `actor`, because PTP allows one transaction at a time. Every value type is `Sendable`, and nothing depends on the app's default `MainActor` isolation.
 - **Cancellation** is checked between files and between tracks. A read or write already sent can't be cancelled, so it finishes first: up to about 7 s for a full track read, and about 18 s for a write. A cancelled restore deletes the partial file it was sending, reports what it had finished in `changed`, and leaves any archive in place.
@@ -764,3 +767,14 @@ These are possible later features, deliberately left out for now:
   - **Its code is `.deviceRefused` for now,** with ImageCaptureCore's error as `underlying`. Step 24b maps a device held by another app to `.deviceInUse`, once the first Mac run shows how ImageCaptureCore reports it.
   - Adding a case breaks an exhaustive `switch` over the events. That's allowed before 1.0.0, and the release notes say so.
   - **FieldCheck on the Mac isn't sandboxed for now.** Which entitlement a sandboxed Mac app needs for ImageCaptureCore (section 9) stays open.
+- **2026-11-17:** step 24b, decided by the owner: **`deviceInUse` is dropped from step 24, and documented.** On the Mac, neither app that could hold the OP-1 makes ImageCaptureCore report anything:
+  - **Image Capture shares it.** FieldCheck connected while Image Capture had the OP-1 selected.
+  - **FieldKit hides it.** It holds the OP-1 in MTP mode as its exclusive USB owner, and ImageCaptureCore doesn't list it.
+
+  So there's no error to map:
+  - **The code `deviceInUse` stays,** since codes are extensible, but it isn't thrown on 1.7.3.
+  - **`couldNotOpen` stays** for a session that fails to open.
+  - **Rejected:** detecting FieldKit with macOS-only IOKit code, by finding an OP-1 in MTP mode with another exclusive owner. It relies on `UsbExclusiveOwner`, which isn't documented, for a platform that's a nice-to-have.
+  - **Two known limits on the Mac go in the beta's release notes:**
+    - Quit FieldKit, or the OP-1 won't appear.
+    - Another app, such as Image Capture, can talk to the OP-1 while FieldTapeKit does.

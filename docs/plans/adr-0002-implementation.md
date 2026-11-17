@@ -449,6 +449,15 @@ Decided by the owner for step 24 (2026-11-17), and recorded in ADR 0002's change
   - **On the OP-1:** the run above on the Mac, with Image Capture open for the last part, to see what ImageCaptureCore reports.
 - **24b:** map what that run showed to `deviceInUse`, run it again on the Mac, and tag.
 
+Decided by the owner (2026-11-17): **`1.0.0-beta.1` doesn't wait for the full Mac run.** It's tagged on:
+- the iPhone's passes of every level and the conformance suite,
+- the Mac's pass of the read-only conformance suite (2026-11-17),
+- and 24b's Image Capture run.
+
+Level 1 can't pass on the Mac until the chunked-read stall is dealt with (PROBE-NOTES.md, 2026-11-17), so the release notes list that stall as known on the Mac and iPad. The writing conformance and levels 2 and 3 on the Mac come later.
+
+Decided by the owner for step 24b (2026-11-17), and recorded in ADR 0002's change log: **`deviceInUse` is dropped and documented.** On the Mac, Image Capture shares the OP-1, and FieldKit holds it so that ImageCaptureCore never lists it, so neither gives an error to map. The code stays, unused on 1.7.3. FieldCheck's prompt on the Mac says to quit FieldKit, and the beta's release notes list both as known limits.
+
 ---
 
 ## Risks to watch

@@ -297,12 +297,19 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **On the Mac** (macOS 27.0.1, 2026-11-17, logs `fieldcheck-2026-11-17T125328Z.txt` and `T130419Z.txt`), ImageCaptureCore opened the OP-1 with no authorization request.
     - **The read-only conformance suite passed 19 of 19.** Its copies have the SHA-256s of every earlier run.
     - **Level 1 stalled both times,** in a run of chunked GetPartialObject reads: once at 8 MiB and once on the 16 MiB read. Each stalled request came back empty after about 60 s, and so did every request after it until a replug. It's the iPad's stall, and the iPhone hasn't shown it (PROBE-NOTES.md).
-    - Levels 2 and 3, the writing conformance and the Image Capture test haven't run on the Mac.
+    - Levels 2 and 3 and the writing conformance haven't run on the Mac.
+- **Step 24b is done** (2026-11-17). Decided by the owner, recorded in the plan and ADR 0002's change log: **`deviceInUse` is dropped and documented.**
+  - On the Mac, Image Capture shares the OP-1: FieldCheck connected while Image Capture had it.
+  - FieldKit holds the OP-1 in MTP mode as its exclusive USB owner, so ImageCaptureCore never lists it, and FieldTapeKit sees no OP-1 and no error (`ioreg` and `tools/op1-icc-list.swift`, PROBE-NOTES.md).
+  - The code stays, unused on 1.7.3. FieldCheck's prompt on the Mac says to quit FieldKit.
 
 ## Next steps
 
 1. **The stall is this iPad's.** On the iPhone, with the same OP-1, cable and build, all three levels passed with 0 changed (log `fieldcheck-2026-11-16T140744Z.txt`). The iPad Pro still stalls after a restart. Run hardware checks on the iPhone for now, and try the iPad again later, or with another port or cable adapter, to see whether it clears.
-2. Step 24a's run on the Mac (below), then step 24b: `deviceInUse`, and `1.0.0-beta.1`.
+2. **Tag `1.0.0-beta.1`** (RELEASING.md). The beta doesn't wait for the full Mac run (decided by the owner, 2026-11-17, in the plan). Its notes list these known limits:
+   - The chunked-read stall on the Mac and iPad.
+   - On the Mac, quit FieldKit, or the OP-1 won't appear.
+   - On the Mac, another app such as Image Capture can talk to the OP-1 while FieldTapeKit does.
 
 ## Future improvements
 

@@ -24,7 +24,7 @@ struct ExploreView: View {
                     FolderView(device: device, path: FilePath(), log: log)
                 } else {
                     ContentUnavailableView("No OP-1", systemImage: "cable.connector",
-                                           description: Text("Put the OP-1 in MTP mode and connect it with USB."))
+                                           description: Text(connectPrompt))
                 }
             }
             .toolbar {
