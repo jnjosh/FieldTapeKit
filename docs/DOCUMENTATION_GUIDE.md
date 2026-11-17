@@ -10,21 +10,26 @@ Decided by the owner on 2026-11-17. FieldTapeKit isn't open source yet, but it's
 
 - **The simulated-vs-real list (§4)** is in *Testing with the Simulated OP-1*.
 - **Only `FieldTapeKit` gets the full treatment:** its doc comments, a DocC catalog, articles and snippets. `FieldCheckKit` and `FieldTapeConformance` are products only so the FieldCheck app can use them, so they keep doc comments but get no catalog.
-- **No swift-docc-plugin.** FieldTapeKit has no dependencies, not even a build tool (CLAUDE.md), so §9.1's plugin and its `swift package generate-documentation` commands aren't used. Xcode builds and checks the docs instead, with DocC warnings as errors, from the repository root:
+- **No swift-docc-plugin.** FieldTapeKit has no dependencies, not even a build tool (CLAUDE.md), so §9.1's plugin and its `swift package generate-documentation` commands aren't used.
+  - `xcodebuild docbuild` can't embed Snippets: extracting them is the plugin's job.
+  - So [`scripts/build-docs.sh`](../scripts/build-docs.sh) does the plugin's three steps with the Xcode toolchain. It dumps FieldTapeKit's symbol graph with `swift package dump-symbol-graph`, which also compiles every snippet. It extracts the snippets with the toolchain's `snippet-extract`. Then it runs `docc convert` with warnings as errors.
+  - Run it from the repository root:
 
   ```bash
-  DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcodebuild docbuild -scheme FieldTapeKit -destination 'platform=macOS' OTHER_DOCC_FLAGS="--warnings-as-errors"
+  ./scripts/build-docs.sh
   ```
 
+- **Snippets** are in `Snippets/`, one file per topic, sliced for the articles with `// snippet.<name>`. `@Snippet(path:)` takes the path relative to `Snippets/`. Where they can, they run against the simulated OP-1, so `swift run <name>` works. SwiftUI and UIKit examples, Swift Testing tests and previews stay fenced code (§6.1's caveat). So does the README's example, since a README can't embed a snippet: keep it the same as the `copyEverything` slice.
+
 - **There's no CI yet,** so §9.4's check runs before every release, in [RELEASING.md](RELEASING.md).
-- **Release notes go in `CHANGELOG.md`,** in Keep a Changelog format (§8), from phase 3. The tagged commit's message then points to it. Until then, they're in the tagged commit's message, as RELEASING.md says.
+- **Release notes go in [`CHANGELOG.md`](../CHANGELOG.md),** in Keep a Changelog format with a Documentation Diff (§8). Breaking changes are marked **Breaking** under Changed, and a **Known Limits** section says what a release doesn't do yet. The tagged commit's message points to the entry.
 - **Waiting for open source:** hosting (§9.2, §9.3), tutorials (§5.4), badges, `LICENSE`, `CONTRIBUTING.md` and the pull request checklist (§10).
 - **The guide's "File System Semantics" article (§4)** is, for FieldTapeKit, *Keeping Music Safe*, with *The OP-1 Over USB* for the layout and paths: paths matched ignoring case, what a replace does, what's verified, and what happens after a failure. ADR 0002 stays the record of why.
 - **Doc comments here also cite their evidence:** an expectation ID such as `read.cost`, an ADR section, or a date in PROBE-NOTES.md. Keep those: they're how a reader finds out why the OP-1 behaves as described.
 - **The phases:**
   1. Doc comments, with the docs build clean with warnings as errors (2026-11-17).
   2. The DocC catalog, `Sources/FieldTapeKit/FieldTapeKit.docc`: a landing page with Topics, `FieldDevice`'s Topics by task, and nine articles (2026-11-17). Its examples are fenced code until phase 3, checked by compiling them once.
-  3. Snippets that compile, a README and the CHANGELOG.
+  3. Snippets that compile, `scripts/build-docs.sh`, a README and the CHANGELOG (2026-11-17).
 
 ---
 

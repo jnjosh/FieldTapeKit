@@ -39,11 +39,7 @@ Every long call cancels the normal Swift way, by cancelling its task, such as wh
 
 Long calls take an optional `Subprogress`, from a `ProgressManager` the caller owns:
 
-```swift
-let manager = ProgressManager(totalCount: 2)
-let first = try await device.copyTape(tapes[0], to: folder, progress: manager.subprogress(assigningCount: 1))
-let second = try await device.copyTape(tapes[1], to: folder, progress: manager.subprogress(assigningCount: 1))
-```
+@Snippet(path: "Progress", slice: "two")
 
 It's `consuming`, so a subprogress is used once. Each call's documentation says what its units are, usually bytes, and progress moves as each file is done.
 

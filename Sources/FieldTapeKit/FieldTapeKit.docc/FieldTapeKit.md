@@ -12,17 +12,7 @@ FieldTapeKit reads and writes the files on an OP-1 Field in MTP mode, with no dr
 
 People's music often lives only on the OP-1, so the API makes losing it hard to do by accident. Nothing is deleted or overwritten without a verified copy or a person's confirmation, every copy is read back and matched by SHA-256, and a failure stops at once and reports what changed. <doc:KeepingMusicSafe> has the rules.
 
-```swift
-import FieldTapeKit
-
-for try await event in FieldDevice.connections {
-    guard case .connected(let device) = event else { continue }
-    for tape in try await device.tapes() where tape.isSound && !tape.isEmpty {
-        let archive = try await device.copyTape(tape, to: folder)
-        print("Copied \(tape.name) to \(archive.url.lastPathComponent)")
-    }
-}
-```
+@Snippet(path: "WatchingForAnOP1", slice: "copyEverything")
 
 ``FieldDevice/simulated(_:)`` makes an OP-1 that exists only in memory, which runs the same code, for tests and SwiftUI previews.
 

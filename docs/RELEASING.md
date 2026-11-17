@@ -49,10 +49,10 @@ export DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer
 6. **The documentation builds with no DocC warnings** ([DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md)):
 
    ```bash
-   xcodebuild docbuild -scheme FieldTapeKit -destination 'platform=macOS' OTHER_DOCC_FLAGS="--warnings-as-errors"
+   ./scripts/build-docs.sh
    ```
 
-   Every public declaration has a doc comment, and every method documents its parameters, what it returns and what it throws.
+   It also compiles every snippet. Every public declaration has a doc comment, and every method documents its parameters, what it returns and what it throws.
 
 7. **FieldCheck builds for iOS** (run these from `FieldCheck/`):
 
@@ -77,7 +77,7 @@ FieldTapeKit follows Semantic Versioning 2.0.0 (ADR 0002, section 11):
 
 ## Tagging
 
-The release notes go in the message of the commit being tagged: what was added, what changed, everything that broke since the last tag, and anything a tightened safety rule newly refuses. Then:
+The release notes go in [CHANGELOG.md](../CHANGELOG.md): move everything under **Unreleased** into a section for the new version, with today's date. Say what was added and what changed, mark everything that broke since the last tag **Breaking**, say what a tightened safety rule newly refuses, and list the known limits. Add the version's compare link at the bottom. Commit that, with a message that names the version and points to the CHANGELOG, then:
 
 ```bash
 git tag <version>

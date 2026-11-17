@@ -316,6 +316,12 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **Their examples compiled** in a temporary test, and the testing article's example test passed. They become Snippets in phase 3.
   - **The docs build with no DocC warnings,** every link resolves, and the rendered pages were checked in a browser.
   - **Writing the Concurrency article found** that calls on one device can overlap between requests (actor reentrancy), so the article says not to run two calls that change the OP-1 at once on one device.
+- **Documentation, phase 3 of 3 is done** (2026-11-17), so FieldTapeKit is documented to DOCUMENTATION_GUIDE.md:
+  - **Snippets:** the articles' examples are now in `Snippets/`, compiled by every build. Four run against the simulated OP-1 (`swift run CopyingTapes`), and all four were run.
+  - **`scripts/build-docs.sh`:** `xcodebuild docbuild` can't embed Snippets, so the script does the docc plugin's steps with the Xcode toolchain, with no dependency. It fails on any DocC warning or a missing snippet slice, which was checked. RELEASING.md and CLAUDE.md use it.
+  - **README.md:** what it is, requirements, an example, installation, and where the docs are.
+  - **CHANGELOG.md:** Keep a Changelog, back-filled for the four tags, with the docs work under Unreleased. RELEASING.md now puts release notes there.
+  - 470 tests pass on the Mac and 469 on the iOS simulator. FieldCheck builds for iOS and macOS.
 
 ## Next steps
 
@@ -325,7 +331,6 @@ Where the project stands, so a new session can pick it up. Update this when the 
    - **FieldCheck** writes a wrong draft ADR for a stall that ends in an empty answer.
    - **On the Mac:** the writing conformance and levels 2 and 3, and the entitlement a sandboxed app needs.
    - The owner's own app, on top of FieldTapeKit.
-   - **Documentation, phase 3:** Snippets, a README and the CHANGELOG (DOCUMENTATION_GUIDE.md).
    - **Overlapping calls on one device:** only single MTP requests are serialized, so two calls that change the OP-1 can interleave between one's checks and its change. The Concurrency article says to run them one after another.
 
 ## Future improvements

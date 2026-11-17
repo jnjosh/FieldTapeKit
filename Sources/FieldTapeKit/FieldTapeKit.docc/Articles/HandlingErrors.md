@@ -20,18 +20,7 @@ It's a `LocalizedError`, with a description and a recovery suggestion for each c
 
 The most important question after a failure is whether the OP-1 changed. ``FieldError/changed`` answers it:
 
-```swift
-do {
-    let tape = try await device.restoreTape(from: archive, conflict: .replace(archivingExistingTo: backup))
-    show("Restored \(tape.name)")
-} catch let error as FieldError where !error.changed.isEmpty {
-    // The tape on the OP-1 is half restored. The archive at `backup` holds what was there.
-    show("Restore stopped after changing \(error.changed.count) files. Your earlier tape is in \(backup.lastPathComponent).")
-} catch let error as FieldError {
-    // Nothing on the OP-1 changed.
-    show(error.localizedDescription)
-}
-```
+@Snippet(path: "HandlingErrors", slice: "changed")
 
 FieldTapeKit never retries a write, so the app decides what happens next: try again from the same archive, or stop.
 
@@ -39,15 +28,7 @@ FieldTapeKit never retries a write, so the app decides what happens next: try ag
 
 ``FieldError/Code`` is a struct, not an enum, so a later version can add codes without breaking an app's `switch`. Compare with the codes you handle, and keep a default:
 
-```swift
-catch let error as FieldError {
-    switch error.code {
-    case .tapeLimitReached: offerToMoveATapeOff()
-    case .disconnected: showReconnectPrompt()
-    default: show(error)
-    }
-}
-```
+@Snippet(path: "HandlingErrors", slice: "codes")
 
 ### The codes
 

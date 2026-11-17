@@ -20,11 +20,7 @@ A tested firmware has a baseline: a record of every OP-1 behavior FieldTapeKit r
 
 On an untested firmware, such as a new one the day it ships, everything still works, using the profile of the newest tested firmware older than it. Warn the person, so they know:
 
-```swift
-if !device.info.isFirmwareTested {
-    showWarning("FieldTapeKit hasn't been tested on firmware \(device.info.firmware) yet. Keep a copy of anything you restore.")
-}
-```
+@Snippet(path: "WatchingForAnOP1", slice: "firmware")
 
 The safety rules still hold there: nothing is deleted without a verified copy or a confirmation, and every write is read back. What they can't catch is the OP-1 treating something differently after it leaves MTP mode, such as a restored `tape.json`.
 

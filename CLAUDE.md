@@ -71,10 +71,10 @@ DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcodebuild -proj
 DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcodebuild -project OP1Probe.xcodeproj -scheme OP1Probe -destination 'generic/platform=iOS' -allowProvisioningUpdates build
 ```
 
-Build FieldTapeKit's documentation from the root, with DocC warnings as errors. Every public declaration has a doc comment, following [docs/DOCUMENTATION_GUIDE.md](docs/DOCUMENTATION_GUIDE.md):
+Build FieldTapeKit's documentation from the root, with its Snippets, and with DocC warnings as errors. Every public declaration has a doc comment, following [docs/DOCUMENTATION_GUIDE.md](docs/DOCUMENTATION_GUIDE.md). The script uses the Xcode toolchain, with no plugin:
 
 ```bash
-DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcodebuild docbuild -scheme FieldTapeKit -destination 'platform=macOS' OTHER_DOCC_FLAGS="--warnings-as-errors"
+./scripts/build-docs.sh
 ```
 
 There's no linter or formatter yet. The package's tests use Swift Testing. The probe's 21 XCTest tests in `research/OP1ProbeTests` stay as they are. Commands for installing on a device and pulling logs off it are in [research/PROBE-NOTES.md](research/PROBE-NOTES.md).
@@ -310,6 +310,11 @@ proto/short-kebab-description
 ## Project Architecture
 
 ```text
+README.md                   — What FieldTapeKit is, how to add it, and where its documentation is
+CHANGELOG.md                — Release notes, newest first; add to Unreleased as changes land
+Sources/FieldTapeKit/FieldTapeKit.docc/ — The DocC catalog: landing page, Topics and articles
+Snippets/                   — The documentation's code examples, compiled by every build
+scripts/build-docs.sh       — Builds and checks the documentation, with its Snippets
 docs/STATUS.md              — Where the project stands and the next steps; keep it current
 docs/RELEASING.md           — The checks before tagging a release, and how versions are chosen
 docs/DOCUMENTATION_GUIDE.md — The documentation standard, and how FieldTapeKit applies it

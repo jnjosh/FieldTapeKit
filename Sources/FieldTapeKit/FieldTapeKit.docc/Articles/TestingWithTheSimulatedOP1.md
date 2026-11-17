@@ -12,20 +12,7 @@ It ships in the main module, not a test-only one, so an app's SwiftUI previews c
 
 With no contents, it's a firmware 1.7.3 OP-1 with no tapes: every folder, the `readme.txt` files, and both album sides empty. A ``SimulatedContentsBuilder`` adds to that layout:
 
-```swift
-import FieldTapeKit
-
-let device = FieldDevice.simulated {
-    SimulatedTape("2026-220#01", type: .vintage, seconds: [12, 0, 4.5])
-    SimulatedTape("2026-276#01", seconds: [60, 60, 60, 60])
-    Directory("mixdown") {
-        File("side_a.wav", seconds: 69)
-    }
-    Directory("drum") {
-        Directory("user") { File("kick.wav", seconds: 1) }
-    }
-}
-```
+@Snippet(path: "SimulatedOP1", slice: "build")
 
 - ``SimulatedTape`` is a sound tape: four tracks of silence of the lengths given, and a `tape.json` as the OP-1 writes one, with a clip on each recorded track.
 - ``File`` is a file with given bytes, or a WAV of silence in the format the OP-1 uses where it's put: 32-bit in a tape, 16-bit elsewhere.
