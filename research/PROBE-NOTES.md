@@ -509,6 +509,17 @@ Log `firmware/1.7.3/runs/fieldcheck-2026-11-16T140744Z.txt`, the same FieldCheck
 
 So **the stall belongs to this iPad**, iPad Pro on iPadOS 27.2.1: its USB-C port, or a state its MTP stack has kept since the evening of 2026-11-15, which a restart didn't clear. The OP-1, the cable, FieldTapeKit and FieldCheck all work. Not yet known: what on the iPad causes it, and whether it clears by itself.
 
+## The second read before a delete passes on the OP-1 (FieldCheck, iPhone, iOS 27.2, 2026-11-17)
+
+Log `firmware/1.7.3/runs/fieldcheck-2026-11-17T032616Z.txt`, FieldCheck built from `2905747` (step 23). Since step 23, any delete covered by a copy first reads the OP-1 again and matches it to the copy. A mismatch throws before anything is deleted, so each pass means the second read agreed.
+
+- **The writing conformance passed 6 of 6.** `moveTape` moved a duplicate of 2026-286#01 (3,036,280 bytes) off in 3.2 s. The restore with `.replace(archivingExistingTo:)` archived the scratch tape and restored over it in 3.6 s. Every track's SHA-256 is the one from earlier runs.
+- **Level 2 passed 9 of 9, with 0 changed,** in 10.4 s. The long check and the album didn't run, as expected. Its track replace and drum preset removal go through `keepingCopyAt:`. The kept `track_1.wav` has the SHA-256 `write.exact` recorded for it (`0b22dc9e…`). The kept drum preset is the 3,532,220 bytes the OP-1 stored.
+- **Level 3 passed 6 of 6, with 0 changed,** after a reconnect.
+- **No request was slow,** so the second read cost no visible time at these sizes.
+
+The log doesn't list each request, so it can't show the second GetObject itself. What the passes show is that the second read agrees with the copy on real hardware, with no false mismatch. A real mismatch is tested only in the simulator.
+
 ## Entering MTP mode from the app (paused 2026-11-08: possible, a future feature)
 
 **Status:** paused by the user as too fragile for now, and kept as a possible future feature for the framework. What works: detecting a plugged-in OP-1 over USB MIDI, `greet`, and switching it into MTP mode with `mode`, from both the Mac and the iPad. What doesn't yet: on the iPad, ImageCaptureCore never saw the OP-1 after any switch in that session. Even MTP mode entered with the buttons failed until the OP-1 was restarted. Not tested: Leave MTP mode (closing the session), and a full app-triggered switch on a freshly restarted OP-1. To pick this up, start there, and restart the OP-1 whenever it shows connected but the app sees nothing. **The MIDI code was removed from the probe on 2026-11-08,** at the user's request, so it can't recreate the stuck state. That was `OP1MIDI.swift` (the `TESysEx` encoder and the CoreMIDI client), its tests, and the MIDI toggle and Enter and Leave MTP mode buttons. The format and bytes are kept below, and the Mac tools `tools/op1-midi-listen.swift` and `tools/op1-sysex.swift` remain. They only send when run by hand. The probe still logs each device's USB IDs.

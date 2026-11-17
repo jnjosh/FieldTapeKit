@@ -1,0 +1,49 @@
+[   0.00] FieldCheck 1.0 on iPhone, iOS 27.2
+[   0.25] Watching for an OP-1 in MTP mode
+[  22.12] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  22.12] Storage: 6429185024 bytes, 6287243264 free
+[  45.71] Conformance: running, writing checks, making and deleting tapes/conformance. Memory: 55.0 MB, peak 206.4 MB
+[  46.50] Conformance: pass: Creating a tape makes an empty, sound tape, and deleting it frees its slot. tapes/conformance: Studio, 4 blank tracks, tape.json 250 bytes
+[  46.50] Conformance: Memory: 34.5 MB, peak 206.4 MB
+[  49.22] Conformance: pass: Duplicating the smallest tape makes a copy that matches it. 2026-286#01 to conformance, 3036280 bytes. track_1 59fd90f42b49dab48e56c433baaa9dc2439b66c9d04e6eb0f0f8bca645df9da7, track_2 c02a591887eb7c23bd346ad09952e56a6295f34f4f9c628e3976393cb4be956c, track_3 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e, track_4 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e
+[  49.23] Conformance: Memory: 35.4 MB, peak 206.4 MB
+[  51.55] Conformance: pass: Restoring an archive of the smallest tape makes a tape that matches the archive. 2026-286#01.reelarchive to tapes/conformance. track_1 59fd90f42b49dab48e56c433baaa9dc2439b66c9d04e6eb0f0f8bca645df9da7, track_2 c02a591887eb7c23bd346ad09952e56a6295f34f4f9c628e3976393cb4be956c, track_3 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e, track_4 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e
+[  51.55] Conformance: Memory: 36.1 MB, peak 206.4 MB
+[  54.74] Conformance: pass: Moving a duplicate of the smallest tape off makes an archive that matches it, and frees its slot. tapes/conformance to conformance.reelarchive, 3036280 bytes. track_1 59fd90f42b49dab48e56c433baaa9dc2439b66c9d04e6eb0f0f8bca645df9da7, track_2 c02a591887eb7c23bd346ad09952e56a6295f34f4f9c628e3976393cb4be956c, track_3 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e, track_4 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e
+[  54.74] Conformance: Memory: 36.6 MB, peak 206.4 MB
+[  57.43] Conformance: pass: Deleting a duplicate, keeping the smallest tape as its copy, frees its slot. tapes/conformance, keeping tapes/2026-286#01: 3036280 bytes matched by SHA-256 in 0.9 s
+[  57.43] Conformance: Memory: 37.2 MB, peak 206.4 MB
+[  61.07] Conformance: pass: Restoring over the scratch tape, archiving it first and then with a confirmation, matches each archive. 2026-286#01.reelarchive over tapes/conformance, archived first, 3036280 bytes; then the empty tape back with a confirmation. track_1 59fd90f42b49dab48e56c433baaa9dc2439b66c9d04e6eb0f0f8bca645df9da7, track_2 c02a591887eb7c23bd346ad09952e56a6295f34f4f9c628e3976393cb4be956c, track_3 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e, track_4 c86932482c16a0f1a88141536e916b4d91d7764f80645aa9a32cf75dbd20309e
+[  61.07] Conformance: Memory: 38.2 MB, peak 206.4 MB
+[  61.07] Conformance: 6 of 6 without a failure
+[  64.62] Level 2: looking at the OP-1 to plan it
+[  69.23] Level 2: running, copies go in level2-2026-11-17T032725Z
+[  79.69] Level 2: compared with the baseline for firmware 1.7.3, level 2, from the run started 2026-11-15T16:16:35Z
+[  79.80] Level 3 is waiting: leave MTP mode on the OP-1, then enter it again. You can play the scratch tape on the OP-1 in between.
+[  79.85] Level 2: names.maximum pass: The OP-1 took FIELDCK #1-2, 12 characters, as fieldck #1-2, and FIELDCK #2-13, 13 characters, as fieldck #2-13. What it keeps after a reconnect is level 3.
+[  79.85] Level 2: write.folder pass: SendObjectInfo alone made the tape, a folder (0x3001, association type 1) with 0 items in it.
+[  79.85] Level 2: write.exact pass: 5 files, 2,822,826 bytes, each read back byte for byte, again after the write's own check.
+[  79.85] Level 2: write.refused-name pass: track_5.wav was refused with 0x2002, before any data was sent.
+[  79.85] Level 2: rebuild.tape-json pass: After the tracks were written, tape.json read back different from the one written before them.
+[  79.85] Level 2: rebuild.stale-size pass: The rebuilt tape.json is still listed and read at the 250 bytes written. Then track_1.wav was replaced, keeping a copy, and the generated tape.json replaced the stale one, last. Both read back exactly.
+[  79.85] Level 2: tape.track-limit not run: The long check wasn't asked for.
+[  79.85] Level 2: write.preset-converted pass: Both came back as AIFC under the same name, with the samples sent; of 25 s, drum/user/ kept 20.000 s, synth/user/ kept 6.000 s.
+[  79.85] Level 2: write.speed pass: Sent 2.8 MB in 4 writes in 0.7 s, 4.1 MB/s, timed as each write less a read of the same file. On 1.7.3 the probe saw about 7 MB/s.
+[  79.85] Level 2: device.storage pass: Free space fell 10,237,952 bytes for 10,237,744 written, and after the presets were deleted it was 5,646,336 below the start, for the tapes' 5,645,976.
+[  79.85] Level 2: album.write-exact not run: Album writing is off on firmware 1.7.3, so the album wasn't touched.
+[  79.85] Level 2: 9 pass, 0 changed, 0 fail, 2 not run
+[  79.85] Saved fieldcheck-2026-11-17T032725Z.json and fieldcheck-2026-11-17T032725Z.md
+[  84.67] Disconnected
+[  87.50] Connected: OP-1, firmware 1.7.3, serial L1PXE14W
+[  87.50] Storage: 6429185024 bytes, 6281596928 free
+[  87.50] Level 3 is waiting, and can run now
+[  90.34] Level 3: running, after level 2 at 2026-11-17T03:27:25Z
+[  91.44] Level 3: compared with the baseline for firmware 1.7.3, level 3, from the run started 2026-11-15T16:17:28Z
+[  91.44] Level 3: reconnect.handles pass: 6 of the scratch tape's 6 objects have new handles since level 2.
+[  91.44] Level 3: names.maximum pass: After the reconnect, FIELDCK #1-2, 12 characters, is still listed as fieldck #1-2, and FIELDCK #2-13, 13 characters, was cut to fieldck #2-1.
+[  91.44] Level 3: reconnect.renamed pass: The tape is listed lowercase, as fieldck #1-2, and the OP-1 added a 104-byte readme.txt.
+[  91.44] Level 3: reconnect.kept pass: After the reconnect, all 4 tracks read back byte for byte, and tape.json is unchanged.
+[  91.44] Level 3: delete.folder-with-files pass: One DeleteObject on the folder deleted it and its 6 files.
+[  91.44] Level 3: delete.files-then-folder pass: Deleted fieldck #2-1's 6 files, each tape's files and then its folder, and it's gone.
+[  91.44] Level 3: 6 pass, 0 changed, 0 fail, 0 not run
+[  91.44] Saved fieldcheck-2026-11-17T032747Z.json and fieldcheck-2026-11-17T032747Z.md
