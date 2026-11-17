@@ -60,6 +60,12 @@ extension FieldDevice {
     ///   `contents(of:maximumSize:)` apart from `.tooLarge`, or `CancellationError`.
     @discardableResult
     public func copyItem(at source: FilePath, to destination: URL, progress: consuming Subprogress? = nil) async throws -> URL {
+        try await verifiedCopy(of: source, to: destination, progress: progress).url
+    }
+
+    /// As `copyItem(at:to:progress:)`, and also returns the copy's SHA-256, for matching the file on the OP-1 again.
+    func verifiedCopy(of source: FilePath, to destination: URL,
+                      progress: consuming Subprogress? = nil) async throws -> (url: URL, sha256: SHA256.Digest) {
         var manager: ProgressManager?
         switch consume progress {
         case .some(let progress): manager = progress.start(totalCount: 3)
@@ -90,13 +96,25 @@ extension FieldDevice {
                 throw FieldError(.verificationFailed, path: file.path)
             }
             manager?.complete(count: 1)
-            return url
+            return (url, digest)
         } catch {
             throw FieldError.wrapping(error, path: source)
         }
     }
 
     // MARK: Helpers
+
+    /// Reads a file whole from the OP-1 a second time and matches it to a copy's SHA-256, before the file is deleted.
+    /// The copy was checked against the first read, so a read that went wrong would leave a bad copy that passes. A
+    /// second read that agrees rules that out (ADR 0002, safety rule 2).
+    func matchAgain(_ handle: UInt32, at path: FilePath, to sha256: SHA256.Digest) async throws {
+        try Task.checkCancellation()
+        let data = try await session.object(handle)
+        guard SHA256.hash(data: data) == sha256 else {
+            throw FieldError(.verificationFailed, path: path,
+                             reason: "it read differently a second time, so the copy may not hold it, and it wasn't deleted")
+        }
+    }
 
     /// The file at `path`, fresh from the OP-1.
     private func file(at path: FilePath) async throws -> (handle: UInt32, path: FilePath, size: Int) {

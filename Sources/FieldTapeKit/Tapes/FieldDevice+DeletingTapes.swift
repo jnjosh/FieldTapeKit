@@ -36,30 +36,30 @@ extension FieldDevice {
     /// freeing its slot (ADR 0002, section 4).
     ///
     /// The copy is made as `copyTape(_:to:compression:progress:)` makes one, of the tape as it is when the copy
-    /// starts. Then the tape is listed again: if its track sizes or `tape.json` aren't what was archived, it isn't
-    /// deleted. Its files are deleted first, then its folder.
+    /// starts. Then the tape is deleted as `deleteTape(_:keeping:progress:)` deletes one, keeping the archive: each
+    /// track is read from the OP-1 a second time and matched to the archive by SHA-256, so a read that went wrong
+    /// can't leave a bad archive (ADR 0002, safety rule 2). If its track sizes or `tape.json` aren't what was
+    /// archived, it isn't deleted. Its files are deleted first, then its folder.
     ///
     /// If anything fails after the archive is made, or the task is cancelled then, the archive is kept in `folder`.
     /// If a delete fails part way, the error's `changed` lists the files already deleted.
     ///
-    /// - Parameter progress: One unit per byte of the tape's files, completed as each file is in the archive.
+    /// - Parameter progress: One unit per byte of the tape's files as each is in the archive, then one per byte of
+    ///   its tracks as each is matched again.
     /// - Returns: The archive, which holds the only copy of the tape once this returns.
-    /// - Throws: The codes of `copyTape`, `.verificationFailed` if the tape changed after it was archived, or
-    ///   `CancellationError`.
+    /// - Throws: The codes of `copyTape` and `deleteTape(_:keeping:progress:)`, with `.verificationFailed` if the
+    ///   tape changed after it was archived or read differently the second time, or `CancellationError`.
     public func moveTape(_ tape: Tape, to folder: URL, progress: consuming Subprogress? = nil) async throws -> ReelArchive {
-        let archive = try await copyTape(tape, to: folder, progress: progress)
-        let path = FilePath.op1Tapes.appending(archive.name.string)
-        do {
-            guard let now = try await self.tape(named: archive.name), now.isSound,
-                  now.tracks.map(\.size) == archive.tracks.map(\.size), now.manifest?.data == archive.manifest.data else {
-                throw FieldError(.verificationFailed, path: path,
-                                 reason: "it changed on the OP-1 after it was archived, so it wasn't deleted")
-            }
-            try await deleteFolder(of: now)
-            return archive
-        } catch {
-            throw FieldError.wrapping(error, path: path)
+        let trackBytes = tape.tracks.reduce(0) { $0 + $1.size }
+        let copyBytes = trackBytes + (tape.manifest?.data.count ?? 0)
+        var manager: ProgressManager?
+        switch consume progress {
+        case .some(let progress): manager = progress.start(totalCount: copyBytes + trackBytes)
+        case .none: break
         }
+        let archive = try await copyTape(tape, to: folder, progress: manager?.subprogress(assigningCount: copyBytes))
+        try await deleteTape(tape, keeping: .archive(archive), progress: manager?.subprogress(assigningCount: trackBytes))
+        return archive
     }
 
     /// Deletes a tape from the OP-1 once `copy` is shown to hold exactly what it holds, with no prompt
@@ -216,6 +216,22 @@ extension FieldDevice {
         }
         try Task.checkCancellation()
         try await deleteInOrder(Self.deletionOrder((folder.handle, FieldItem(path: folder.path, info: info)), contents: contents))
+    }
+
+    /// Reads each of the tape's tracks from the OP-1, one at a time, and matches it by SHA-256 to the archive's
+    /// record, before the tape is written over. The archive was checked against the first read, so this second one
+    /// is what shows it holds the tape (ADR 0002, safety rule 2).
+    func matchTracks(_ tape: Tape, to archive: ReelArchive, progress: ProgressManager?) async throws {
+        let handles = try await trackHandles(tape)
+        for (index, track) in tape.tracks.enumerated() {
+            try Task.checkCancellation()
+            guard try await trackDigest(tape, track, handle: handles[index]) == archive.tracks[index].sha256 else {
+                throw FieldError(.verificationFailed, path: tape.path,
+                                 reason: "track_\(track.number).wav read differently a second time, so the archive may "
+                                    + "not hold it, and nothing was replaced")
+            }
+            progress?.complete(count: track.size)
+        }
     }
 
     /// Each track's handle, in the tape's order.

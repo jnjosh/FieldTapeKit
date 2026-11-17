@@ -34,8 +34,9 @@ extension FieldDevice {
     /// 1. Everything is checked before anything changes: each track against the 6-minute limit, then for a new
     ///    tape the name against this firmware's rules, a taken name (ignoring case) and a free slot. The archive
     ///    itself was checked when it was opened.
-    /// 2. Over an existing tape, `conflict` covers it: it's archived and verified, or its confirmation is checked.
-    ///    Only the tape's own files may be in its folder. The archive is read again from disk and checked.
+    /// 2. Over an existing tape, `conflict` covers it: it's archived and verified, then each track is read from the
+    ///    OP-1 again and matched to the new archive by SHA-256, or its confirmation is checked. Only the tape's own
+    ///    files may be in its folder. The archive is read again from disk and checked.
     /// 3. Each track is read from the archive and checked against its SHA-256, then written and read back. The
     ///    tracks go first, because the OP-1 rebuilds `tape.json` when a track changes. Over an existing tape, the
     ///    old track is deleted just before, and a track blank on both sides is left as it is.
@@ -58,7 +59,8 @@ extension FieldDevice {
     ///     another name. A tape already on the OP-1 keeps its name, however long.
     ///   - conflict: What to do if the name is taken.
     ///   - progress: One unit per byte of the tape's files, completed as each is written and read back, and over an
-    ///     existing tape that's archived, per byte of it as it's archived.
+    ///     existing tape that's archived, per byte of it as it's archived, then per byte of its tracks as they're
+    ///     matched again.
     /// - Throws: `FieldError` with `.invalidName`, `.alreadyExists`, `.tapeLimitReached`, `.tapeTooLong`,
     ///   `.notAllowed` if the existing tape's folder holds other files or it isn't sound enough to archive,
     ///   `.changedSinceConfirmation`, `.confirmationAlreadyUsed`, `.archiveMismatch` if the archive changed since
@@ -78,12 +80,13 @@ extension FieldDevice {
             case .archiving, .confirmed: existing = try await tape(named: name)
             }
             let archiveBytes = archive.tracks.reduce(archive.manifest.data.count) { $0 + $1.size }
-            let existingBytes = if case .archiving = conflict.rule, let existing {
-                existing.tracks.reduce(existing.manifest?.data.count ?? 0) { $0 + $1.size }
-            } else { 0 }
+            // Over an existing tape that's archived: its files as they're archived, then its tracks as they're matched again.
+            let (existingBytes, existingTrackBytes) = if case .archiving = conflict.rule, let existing {
+                (existing.tracks.reduce(existing.manifest?.data.count ?? 0) { $0 + $1.size }, existing.tracks.reduce(0) { $0 + $1.size })
+            } else { (0, 0) }
             var manager: ProgressManager?
             switch consume progress {
-            case .some(let progress): manager = progress.start(totalCount: archiveBytes + existingBytes)
+            case .some(let progress): manager = progress.start(totalCount: archiveBytes + existingBytes + existingTrackBytes)
             case .none: break
             }
 
@@ -96,7 +99,8 @@ extension FieldDevice {
             case (.archiving(let url), let existing?):
                 let copy = try await copyTape(existing, toExactly: url,
                                               progress: manager?.subprogress(assigningCount: existingBytes))
-                return try await replaceTape(existing, with: archive, coveredBy: copy, progress: manager)
+                return try await replaceTape(existing, with: archive, coveredBy: copy, progress: manager,
+                                             matching: manager?.subprogress(assigningCount: existingTrackBytes))
             case (.fail, _), (.archiving, nil):
                 do {
                     try await checkNewTape(name)
@@ -135,7 +139,8 @@ extension FieldDevice {
     /// Writes the archive over `existing`, file by file, once it's covered: by `copy`, an archive of it just made,
     /// or by `confirmation`. Everything is checked again from a fresh listing before the first delete.
     private func replaceTape(_ existing: Tape, with archive: ReelArchive, coveredBy copy: ReelArchive? = nil,
-                             confirmation: TapeDeletion? = nil, progress: ProgressManager?) async throws -> Tape {
+                             confirmation: TapeDeletion? = nil, progress: ProgressManager?,
+                             matching: consuming Subprogress? = nil) async throws -> Tape {
         guard let folder = try await locate(existing.path) else { throw FieldError(.notFound, path: existing.path) }
         let contents = try await everything(in: folder)
         if let confirmation {
@@ -150,6 +155,12 @@ extension FieldDevice {
                 throw FieldError(.verificationFailed, path: existing.path,
                                  reason: "it changed on the OP-1 after it was archived, so it wasn't replaced")
             }
+            var matched: ProgressManager?
+            switch consume matching {
+            case .some(let matching): matched = matching.start(totalCount: now.tracks.reduce(0) { $0 + $1.size })
+            case .none: break
+            }
+            try await matchTracks(now, to: copy, progress: matched)
         }
         let allowed = Set(profile.tapeFiles.required + profile.tapeFiles.optional)
         let others = contents.filter { $0.item.isDirectory || !allowed.contains($0.item.name.lowercased()) }

@@ -305,6 +305,7 @@ proto/short-kebab-description
 
 ```text
 docs/STATUS.md              — Where the project stands and the next steps; keep it current
+docs/RELEASING.md           — The checks before tagging a release, and how versions are chosen
 docs/plans/adr-0002-implementation.md — The 24-step plan for building ADR 0002, each step committable
 docs/swift-disk-access-guide.md — Research on Swift file APIs, an input to ADR 0002
 docs/adrs/                  — Architecture decisions: 0001 transport, 0002 public API and

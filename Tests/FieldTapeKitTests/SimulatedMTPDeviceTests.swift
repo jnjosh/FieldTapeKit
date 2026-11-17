@@ -144,4 +144,60 @@ import Testing
         }
         #expect(await device.requestCount == 1, "no OpenSession follows")
     }
+
+    // MARK: Faults for the safety rules (ADR 0002, section 8)
+
+    @Test func aCorruptedReadIsTheRightLengthAndHappensOnce() async throws {
+        let (device, handles) = await populated(faults: [.corruptRead(name: "track_1.wav")])
+        let session = session(device)
+        let corrupted = try await session.object(handles.track)
+        #expect(corrupted.count == track.count && corrupted != track)
+        #expect(corrupted.dropLast() == track.dropLast())
+        #expect(try await session.object(handles.track) == track, "the next read is right")
+    }
+
+    @Test func anUnplugMidWriteLeavesHalfTheFileAndFailsEverythingAfter() async throws {
+        let (device, handles) = await populated(faults: [.unplug(during: .sendObject, name: "track_2.wav")])
+        let session = session(device)
+        let dataset = PTPObjectInfo.dataset(storageID: SimulatedMTPDevice.storageID, format: PTPObjectFormat.wav,
+                                            size: UInt32(track.count), parent: handles.tape, filename: "track_2.wav")
+        _ = try await session.sendObjectInfo(storage: SimulatedMTPDevice.storageID, parent: handles.tape, dataset: dataset)
+        await #expect(throws: MTPError.disconnected) { try await session.sendObject(track) }
+        #expect(await device.stored("track_2.wav", in: "2026-220#02") == track.prefix(track.count / 2))
+        #expect(await device.unpluggedAt == 2)
+        #expect(await session.isDisconnected)
+        await #expect(throws: MTPError.disconnected) { try await session.objectHandles(parent: handles.tape) }
+        #expect(await device.sentOperations.count == 2, "a disconnected session sends nothing more")
+    }
+
+    @Test func anUnplugMidReadFailsTheRead() async throws {
+        let (device, handles) = await populated(faults: [.unplug(during: .getObject, name: "track_1.wav")])
+        let session = session(device)
+        #expect(try await session.object(handles.json) == Data("{}".utf8), "another file reads")
+        await #expect(throws: MTPError.disconnected) { try await session.object(handles.track) }
+    }
+
+    @Test func transfersTakeAsLongAsTheirSpeedSays() async throws {
+        let (device, handles) = await populated(faults: [.transfers(readingAt: 10_000, writingAt: 5_000)])
+        let session = MTPSession(transport: device, timeout: .seconds(5), slowAfter: .seconds(5))
+        let clock = ContinuousClock()
+        let read = try await clock.measure { _ = try await session.object(handles.track) }
+        #expect(read >= .milliseconds(100), "1,000 bytes at 10,000 bytes a second")
+        let listing = try await clock.measure { _ = try await session.objectHandles(parent: handles.tape) }
+        #expect(listing < .milliseconds(100), "only data phases are slowed")
+        let dataset = PTPObjectInfo.dataset(storageID: SimulatedMTPDevice.storageID, format: PTPObjectFormat.wav,
+                                            size: UInt32(track.count), parent: handles.tape, filename: "track_2.wav")
+        _ = try await session.sendObjectInfo(storage: SimulatedMTPDevice.storageID, parent: handles.tape, dataset: dataset)
+        let write = try await clock.measure { try await session.sendObject(track) }
+        #expect(write >= .milliseconds(200), "1,000 bytes at 5,000 bytes a second")
+    }
+
+    @Test func recordsEveryOperationSent() async throws {
+        let (device, handles) = await populated()
+        let session = session(device)
+        _ = try await session.deviceInfo()
+        _ = try await session.objectInfo(handles.track)
+        _ = try? await session.send(.getObject, [0xDEAD])
+        #expect(await device.sentOperations == [PTPOperation.getDeviceInfo, .getObjectInfo, .getObject].map(\.rawValue))
+    }
 }

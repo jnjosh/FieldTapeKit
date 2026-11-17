@@ -429,6 +429,8 @@ Decided by the owner for step 22 (2026-11-16), and recorded in ADR 0003's change
 
 **On the OP-1:** nothing new.
 
+Decided by the owner for step 23 (2026-11-16), and recorded in ADR 0002's change log: the corrupted-read fault found that a copy covering a delete was matched only to the one read it was made from, so now what it copied is read from the OP-1 again and matched before the delete. The suite is `SafetyRules` in `Tests/FieldTapeKitTests/SafetyRuleTests.swift`.
+
 ### 24. macOS
 
 **Adds:**

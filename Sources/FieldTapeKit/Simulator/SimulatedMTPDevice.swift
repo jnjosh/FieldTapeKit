@@ -3,8 +3,8 @@ import Foundation
 /// An OP-1 simulated at the MTP level. It decodes real command containers and answers with real datasets,
 /// so the PTP encoding and parsing run in tests (ADR 0002, section 8).
 ///
-/// This step serves the read operations only. Writes are answered with Operation Not Supported until the
-/// file layer needs them.
+/// It serves the operations FieldTapeKit sends, reads and writes, and answers anything else with Operation Not
+/// Supported.
 actor SimulatedMTPDevice: MTPTransport {
     /// Something to go wrong on purpose. Requests are counted from 1, pings included.
     enum Fault: Sendable {
@@ -33,6 +33,20 @@ actor SimulatedMTPDevice: MTPTransport {
         /// After a reconnect, both album sides are the OP-1's own again, whatever was written to them over MTP. It's
         /// one answer to `album.write-kept`, which isn't known yet. Without it, a written side lasts.
         case albumKeepsItsOwn
+        /// GetObject for the file with this name comes back the right length with its last byte changed, once, as a
+        /// read that went wrong between the OP-1 and the app would.
+        case corruptRead(name: String)
+        /// The OP-1 is unplugged during the first request of this operation on the object with this name: that
+        /// request and every one after it fail at once, as ImageCaptureCore fails them for a removed device. A
+        /// SendObject leaves the object holding the first half of its data. What a real OP-1 keeps of a cut-off
+        /// write isn't known, and half is the case that has to be handled.
+        case unplug(during: PTPOperation, name: String)
+        /// Every data phase takes as long as it would at these speeds, in bytes per second: reads with GetObject and
+        /// GetPartialObject, writes with SendObject.
+        case transfers(readingAt: Int, writingAt: Int)
+
+        /// The speeds measured on 1.7.3: about 20 MB/s reading and 7 MB/s writing (PROBE-NOTES.md, 2026-11-08).
+        static let op1Speed = Fault.transfers(readingAt: 20_000_000, writingAt: 7_000_000)
     }
 
     struct Object: Sendable {
@@ -74,6 +88,10 @@ actor SimulatedMTPDevice: MTPTransport {
     private(set) var deleted: [String] = []
     /// The name of every object made with SendObjectInfo, in order.
     private(set) var sentNames: [String] = []
+    /// The operation code of every request, in order, pings included.
+    private(set) var sentOperations: [UInt16] = []
+    /// The request an `unplug` fault fired on, counted as `requestCount` is. Every request after it fails.
+    private(set) var unpluggedAt: Int?
     /// The file SendObjectInfo announced, waiting for its SendObject.
     private var pending: UInt32?
     /// The album as the OP-1 itself holds it, by side name. A side deleted over MTP is back from it after a
@@ -240,6 +258,18 @@ actor SimulatedMTPDevice: MTPTransport {
         let code = try reader.u16()
         let transactionID = try reader.u32()
         let params = try (0..<max(0, (Int(length) - PTPContainer.headerSize) / 4)).map { _ in try reader.u32() }
+        sentOperations.append(code)
+
+        guard unpluggedAt == nil else { throw MTPError.disconnected }
+        if let operation = PTPOperation(rawValue: code), let index = unplugFault(for: operation, params) {
+            faults.remove(at: index)
+            unpluggedAt = request
+            if operation == .sendObject, let handle = pending, let dataOut {
+                pending = nil
+                objects[handle]?.data = Data(dataOut.prefix(dataOut.count / 2))
+            }
+            throw MTPError.disconnected
+        }
 
         for fault in faults {
             switch fault {
@@ -261,7 +291,32 @@ actor SimulatedMTPDevice: MTPTransport {
         }
 
         let (data, responseCode, responseParams) = answer(code, params, dataOut)
+        try await takeTransferTime(code, read: data.count, written: dataOut?.count ?? 0)
         return MTPTransaction(data: data, response: Self.response(responseCode, transactionID: transactionID, params: responseParams))
+    }
+
+    /// The index of an `unplug` fault for this request, if one matches: its operation, on the object it names.
+    private func unplugFault(for operation: PTPOperation, _ params: [UInt32]) -> Int? {
+        let handle = operation == .sendObject ? pending : params.first
+        guard let name = handle.flatMap({ objects[$0]?.name }) else { return nil }
+        return faults.firstIndex { fault in
+            if case .unplug(let during, let target) = fault { during == operation && target == name } else { false }
+        }
+    }
+
+    /// Waits as long as the data phase would take at the speeds of a `transfers` fault, if there is one.
+    private func takeTransferTime(_ code: UInt16, read: Int, written: Int) async throws {
+        for case .transfers(let readingAt, let writingAt) in faults {
+            let bytes: Int, rate: Int
+            switch PTPOperation(rawValue: code) {
+            case .getObject, .getPartialObject: (bytes, rate) = (read, readingAt)
+            case .sendObject: (bytes, rate) = (written, writingAt)
+            default: return
+            }
+            guard bytes > 0, rate > 0 else { return }
+            try await Task.sleep(for: .seconds(Double(bytes) / Double(rate)))
+            return
+        }
     }
 
     /// Waits far longer than any timeout, so the session gives up first. The session drops the request
@@ -339,6 +394,13 @@ actor SimulatedMTPDevice: MTPTransport {
             if let index = faults.firstIndex(where: { if case .shortRead(let name) = $0 { name == object.name } else { false } }) {
                 faults.remove(at: index)
                 return (Data(object.served.dropLast()), Response.ok, [])
+            }
+            if let index = faults.firstIndex(where: { if case .corruptRead(let name) = $0 { name == object.name } else { false } }),
+               !object.served.isEmpty {
+                faults.remove(at: index)
+                var data = object.served
+                data[data.index(before: data.endIndex)] ^= 0xFF
+                return (data, Response.ok, [])
             }
             return (object.served, Response.ok, [])
 

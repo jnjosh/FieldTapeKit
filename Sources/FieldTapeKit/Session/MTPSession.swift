@@ -88,6 +88,11 @@ package actor MTPSession {
             trace?("✕ \(operation): no answer after \(timeout), so the session is disconnected")
             isDisconnected = true
             throw MTPError.disconnected
+        } catch MTPError.disconnected {
+            // The transport found the device gone, as ImageCaptureCore does once it's unplugged.
+            trace?("✕ \(operation): the device is gone, so the session is disconnected")
+            isDisconnected = true
+            throw MTPError.disconnected
         } catch {
             trace?("✕ \(operation): \(error)")
             throw error

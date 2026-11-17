@@ -281,10 +281,17 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - **The fourth run** (log `fieldcheck-2026-11-16T132641Z.txt`): level 1's 16 MiB read stalled, then **answered after 60.5 s**, with the OP-1 fine. The session had already called itself disconnected after 30 s and a failed ping, and stayed that way until a replug. **Decided by the owner:** a request is now noted as slow after 30 s and waited for until 90 s, with no ping (ADR 0002's change log).
   - 433 tests pass on the Mac and 432 on the iOS simulator (301 and 300 FieldTapeKit, 123 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS.
 
+- **Step 23 is done** (2026-11-16), in the simulator only, as the plan asks. Decided by the owner, recorded in the plan and ADR 0002's change log:
+  - **The safety suite,** `SafetyRules` in `Tests/FieldTapeKitTests/SafetyRuleTests.swift`, has one group for each of ADR 0002's seven safety rules, 31 tests in all. `swift test --filter SafetyRules` runs it.
+  - **The simulator's fault injection is complete:** a corrupted read, an unplug during a request, and transfers at the OP-1's 20 MB/s reading and 7 MB/s writing. It also records every operation it's sent, for rule 7. A transport that reports the device gone now leaves the session disconnected.
+  - **A copy that covers a delete is matched to a second read from the OP-1.** The corrupted-read fault found that `moveTape`, a restore with `.replace(archivingExistingTo:)`, and the file layer's `keepingCopyAt:` (which album sides use too) checked the copy only against the one read it came from. Now each reads the OP-1 again first. That costs one more read, about 25 s for a full tape. `moveTape` now deletes through `deleteTape(_:keeping:)`.
+  - **A release checklist,** [RELEASING.md](RELEASING.md): the API check against the last tag, the archive fixtures, the safety suite, every test, and FieldCheck's build. `diagnose-api-breaking-changes` against `1.0.0-alpha.3` finds no breaking changes.
+  - 469 tests pass on the Mac and 468 on the iOS simulator (337 and 336 FieldTapeKit, 123 FieldCheckKit, 9 conformance tests). FieldCheck builds for iOS. The second read hasn't been run on the OP-1 yet: FieldCheck's writing checks move and replace tapes, so a level 2 run on the iPhone would cover it.
+
 ## Next steps
 
 1. **The stall is this iPad's.** On the iPhone, with the same OP-1, cable and build, all three levels passed with 0 changed (log `fieldcheck-2026-11-16T140744Z.txt`). The iPad Pro still stalls after a restart. Run hardware checks on the iPhone for now, and try the iPad again later, or with another port or cable adapter, to see whether it clears.
-2. Step 23: the safety-rule suite.
+2. Step 24: macOS, then `1.0.0-beta.1`.
 
 ## Future improvements
 

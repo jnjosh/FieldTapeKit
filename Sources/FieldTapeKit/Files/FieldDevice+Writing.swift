@@ -16,9 +16,9 @@ public struct ExistingFile: Sendable, Hashable {
     /// Throw `alreadyExists` and change nothing.
     public static let fail = ExistingFile(rule: .fail)
 
-    /// Copy the file that's there to `backup` and verify the copy, then replace it. `backup` must be free, so the
-    /// copy is exactly there: a taken one throws `localFileFailed` before anything changes. If nothing is at the
-    /// path, the write goes ahead and no copy is made.
+    /// Copy the file that's there to `backup`, verify the copy, and match the file on the OP-1 to it again with a
+    /// second read, then replace it. `backup` must be free, so the copy is exactly there: a taken one throws
+    /// `localFileFailed` before anything changes. If nothing is at the path, the write goes ahead and no copy is made.
     public static func replace(keepingCopyAt backup: URL) -> ExistingFile { ExistingFile(rule: .keepingCopy(backup)) }
 
     /// Replace the file a person confirmed losing, from `prepareToRemove(at:)` for the same path. The confirmation
@@ -187,10 +187,10 @@ extension FieldDevice {
                 throw FieldError(.localFileFailed, path: existing.path,
                                  underlying: CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: backup.path]))
             }
-            let copy = try await copyItem(at: existing.path, to: backup)
-            guard copy == backup else {
+            let copy = try await verifiedCopy(of: existing.path, to: backup)
+            guard copy.url == backup else {
                 // The URL was taken after the check, so the copy went elsewhere and the caller wouldn't find it.
-                try? FileManager.default.removeItem(at: copy)
+                try? FileManager.default.removeItem(at: copy.url)
                 throw FieldError(.localFileFailed, path: existing.path,
                                  underlying: CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: backup.path]))
             }
@@ -199,6 +199,7 @@ extension FieldDevice {
                   after.info?.compressedSize == info.compressedSize else {
                 throw FieldError(.verificationFailed, path: existing.path)
             }
+            try await matchAgain(after.handle, at: existing.path, to: copy.sha256)
         case .confirmed(let confirmation):
             let confirmed = confirmation.item.path
             guard !usedConfirmations.contains(confirmation.id) else { throw FieldError(.confirmationAlreadyUsed, path: confirmed) }

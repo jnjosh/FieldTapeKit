@@ -24,7 +24,8 @@ extension FieldDevice {
     /// (ADR 0002, safety rules 1 and 2).
     ///
     /// The copy is made as `copyItem(at:to:progress:)` makes one: never over a local file, and read back and matched
-    /// by SHA-256. If anything fails before the delete, nothing on the OP-1 changes. A folder needs `prepareToRemove`
+    /// by SHA-256. Then the file is read from the OP-1 again and matched to the copy, so a read that went wrong
+    /// can't leave a bad copy. If anything fails before the delete, nothing on the OP-1 changes, and the copy is kept. A folder needs `prepareToRemove`
     /// and a person's confirmation.
     ///
     /// - Returns: The copy's URL, which is `backup` unless that was taken.
@@ -37,15 +38,16 @@ extension FieldDevice {
             try refuseIfOwnedByTheOP1(path)
             guard let before = try await locate(path), let info = before.info else { throw FieldError(.notFound, path: path) }
             guard !info.isFolder else { throw FieldError(.isADirectory, path: before.path) }
-            let copy = try await copyItem(at: before.path, to: backup)
+            let copy = try await verifiedCopy(of: before.path, to: backup)
             // The copy is of the file as it was. If the OP-1 lists it differently now, the copy doesn't cover it.
             guard let after = try await locate(before.path), after.handle == before.handle,
                   after.info?.compressedSize == info.compressedSize else {
                 throw FieldError(.verificationFailed, path: before.path)
             }
+            try await matchAgain(after.handle, at: before.path, to: copy.sha256)
             try Task.checkCancellation()
             try await session.deleteObject(after.handle)
-            return copy
+            return copy.url
         } catch {
             throw FieldError.wrapping(error, path: path)
         }
