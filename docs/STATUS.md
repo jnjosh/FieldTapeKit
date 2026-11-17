@@ -310,6 +310,12 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - `FieldError.Code.timedOut` now says it isn't thrown since 2026-11-16.
   - The docs build with no DocC warnings, using `xcodebuild docbuild` with warnings as errors, with no plugin. RELEASING.md and CLAUDE.md have the command.
   - 470 tests pass on the Mac and 469 on the iOS simulator. FieldCheck builds for iOS and macOS, and the API is unchanged since `1.0.0-beta.1`.
+- **Documentation, phase 2 of 3 is done** (2026-11-17): the DocC catalog, `Sources/FieldTapeKit/FieldTapeKit.docc`.
+  - **A landing page,** with every public type in Topics grouped by task, and `FieldDevice`'s members grouped by task.
+  - **Nine articles:** Getting Started, Integrating with Your App, The OP-1 Over USB, Keeping Music Safe (the safety rules), Testing with the Simulated OP-1 (with the canonical list of how it differs from a real OP-1), Handling Errors, Concurrency, Performance, and Firmware and Versions.
+  - **Their examples compiled** in a temporary test, and the testing article's example test passed. They become Snippets in phase 3.
+  - **The docs build with no DocC warnings,** every link resolves, and the rendered pages were checked in a browser.
+  - **Writing the Concurrency article found** that calls on one device can overlap between requests (actor reentrancy), so the article says not to run two calls that change the OP-1 at once on one device.
 
 ## Next steps
 
@@ -319,7 +325,8 @@ Where the project stands, so a new session can pick it up. Update this when the 
    - **FieldCheck** writes a wrong draft ADR for a stall that ends in an empty answer.
    - **On the Mac:** the writing conformance and levels 2 and 3, and the entitlement a sandboxed app needs.
    - The owner's own app, on top of FieldTapeKit.
-   - **Documentation, phases 2 and 3:** the DocC catalog and articles, then Snippets, a README and the CHANGELOG (DOCUMENTATION_GUIDE.md).
+   - **Documentation, phase 3:** Snippets, a README and the CHANGELOG (DOCUMENTATION_GUIDE.md).
+   - **Overlapping calls on one device:** only single MTP requests are serialized, so two calls that change the OP-1 can interleave between one's checks and its change. The Concurrency article says to run them one after another.
 
 ## Future improvements
 
