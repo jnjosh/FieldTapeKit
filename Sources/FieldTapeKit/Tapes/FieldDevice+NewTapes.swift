@@ -2,10 +2,10 @@ import Foundation
 import System
 
 extension FieldDevice {
-    /// Makes a new, empty tape on the OP-1 and returns it (ADR 0002, section 4).
+    /// Makes a new, empty tape on the OP-1 and returns it.
     ///
-    /// It's a complete tape, not just a folder: four blank tracks (the 44-byte header) and a blank `tape.json` of
-    /// `type`, from the blank Disk Mini tape the probe read (2026-312#01). In order:
+    /// It's a complete tape, not just a folder (ADR 0002, section 4): four blank tracks (the 44-byte header) and a
+    /// blank `tape.json` of `type`, from the blank Disk Mini tape the probe read (2026-312#01). In order:
     /// 1. The name is checked against this firmware's rules, then a fresh listing of `tapes/`: it mustn't be taken,
     ///    ignoring case, and one of the 8 slots must be free.
     /// 2. `tapes/<name>` is made, lowercase.
@@ -13,8 +13,12 @@ extension FieldDevice {
     /// 4. The tape is read again and checked against what was written.
     ///
     /// If anything fails after the folder is made, the half-made tape is deleted once, its files first, then its
-    /// folder. If that fails too, `changed` lists it.
+    /// folder. If that fails too, ``FieldError/changed`` lists it.
     ///
+    /// - Parameters:
+    ///   - name: The new tape's name, which must not be taken, ignoring case.
+    ///   - type: The tape machine. Studio by default, as the OP-1's own new tapes are.
+    /// - Returns: The new tape, read fresh.
     /// - Throws: `FieldError` with `.invalidName`, `.alreadyExists`, `.tapeLimitReached`, `.insufficientSpace`,
     ///   `.verificationFailed`, `.disconnected`, `.timedOut` or `.deviceRefused`, or `CancellationError`.
     public func createTape(named name: TapeName, type: TapeType = .studio) async throws -> Tape {
@@ -32,21 +36,27 @@ extension FieldDevice {
         }
     }
 
-    /// Copies a tape on the OP-1 to a new tape named `name`, and returns the copy. The source is only read.
+    /// Copies a tape on the OP-1 to a new tape, and returns the copy.
     ///
+    /// The source is only read.
     /// The OP-1 has no CopyObject, so each track comes through memory, one at a time: read with one GetObject,
     /// written to the new tape and read back. The copy keeps the source's `tape.json` as it is, `padding` included.
     /// In order:
-    /// 1. The new name and a free slot are checked, as `createTape` checks them.
+    /// 1. The new name and a free slot are checked, as ``createTape(named:type:)`` checks them.
     /// 2. The source is read fresh. One that isn't sound is refused, with its problems.
     /// 3. `tapes/<name>` is made, and each track is copied.
     /// 4. The source is read again. If its files or `tape.json` changed, the copy is refused.
     /// 5. `tape.json` is written last, and the new tape is read again and checked against the source.
     ///
-    /// If anything fails after the folder is made, the half-made tape is deleted once, as `createTape` does.
-    /// Cancelling is checked between files; a read or write already sent finishes first.
+    /// If anything fails after the folder is made, the half-made tape is deleted once, as
+    /// ``createTape(named:type:)`` does. Cancelling is checked between files; a read or write already sent finishes
+    /// first.
     ///
-    /// - Parameter progress: One unit per byte of the source's files, completed as each is written and read back.
+    /// - Parameters:
+    ///   - tape: The tape to copy, from ``tapes()`` or ``tape(named:)``.
+    ///   - name: The copy's name, which must not be taken, ignoring case.
+    ///   - progress: One unit per byte of the source's files, completed as each is written and read back.
+    /// - Returns: The new tape, read fresh.
     /// - Throws: `FieldError` with `.notFound` if the source is gone, `.notAllowed` if it isn't sound,
     ///   `.invalidName`, `.alreadyExists`, `.tapeLimitReached`, `.tapeTooLong`, `.insufficientSpace`,
     ///   `.verificationFailed` if the source changed or the copy doesn't check out, `.disconnected`, `.timedOut` or

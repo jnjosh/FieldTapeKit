@@ -1,11 +1,13 @@
 import System
 
 extension FieldDevice {
-    /// What's directly inside the folder at `path`, in the order the OP-1 lists it. An empty path is the root.
+    /// Lists what's directly inside a folder on the OP-1, in the order the OP-1 lists it.
     ///
     /// Names are matched ignoring case, because the OP-1 stores them lowercase (`names.lowercase`), and every
     /// item comes back as the OP-1 spells it. Sizes are fresh: each call asks the OP-1 again.
     ///
+    /// - Parameter path: The folder, relative to the device root. An empty path is the root.
+    /// - Returns: The folder's items, one level deep.
     /// - Throws: `FieldError` with `.notFound`, `.notADirectory`, `.ambiguousPath`, `.disconnected`, `.timedOut`
     ///   or `.deviceRefused`, or `CancellationError`.
     public func contentsOfDirectory(at path: FilePath) async throws -> [FieldItem] {
@@ -18,8 +20,10 @@ extension FieldDevice {
         }
     }
 
-    /// The item at `path`, or nil if there's nothing there. An empty path is the root, which has no item.
+    /// Looks up the item at a path on the OP-1, ignoring case.
     ///
+    /// - Parameter path: Relative to the device root. An empty path is the root, which has no item.
+    /// - Returns: The item, with fresh info, or nil if there's nothing there.
     /// - Throws: `FieldError` with `.notADirectory` if a folder on the way is a file, with that file as its `path`,
     ///   `.ambiguousPath`,
     ///   `.disconnected`, `.timedOut` or `.deviceRefused`, or `CancellationError`.
@@ -32,9 +36,11 @@ extension FieldDevice {
         }
     }
 
-    /// Whether anything is at `path`.
+    /// Checks whether anything is at a path on the OP-1, ignoring case.
     ///
-    /// - Throws: As `item(at:)`.
+    /// - Parameter path: Relative to the device root.
+    /// - Returns: True if a file or folder is there.
+    /// - Throws: As ``item(at:)``.
     public func fileExists(at path: FilePath) async throws -> Bool {
         try await item(at: path) != nil
     }

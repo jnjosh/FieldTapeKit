@@ -1,23 +1,26 @@
 import Foundation
 import System
 
-/// A tape on the OP-1: its folder in `tapes/`, its four tracks and its `tape.json`, as read when it was listed
-/// (ADR 0002, section 4). It's a snapshot: list again to see a change.
+/// A tape on the OP-1, as read when it was listed: its folder in `tapes/`, its four tracks and its `tape.json`.
+///
+/// It's a snapshot: call ``FieldDevice/tapes()`` again to see a change (ADR 0002, section 4).
 ///
 /// Every folder in `tapes/` is listed as a tape, so a slot is never hidden. One that isn't sound, with `tape.json`
-/// missing or unreadable, a track missing, or track sizes that don't match its clips, says why in `problems`.
+/// missing or unreadable, a track missing, or track sizes that don't match its clips, says why in ``problems``.
 public struct Tape: Sendable, Identifiable, Hashable {
+    /// The tape's name, which is its folder's name.
     public let name: TapeName
     /// `tapes/<name>`.
     public let path: FilePath
     /// The tracks there are, in order: all four on a sound tape, blank ones included.
     public let tracks: [TapeTrack]
-    /// Nil if `tape.json` is missing or can't be read, which `problems` says.
+    /// Nil if `tape.json` is missing or can't be read, which ``problems`` says.
     public let manifest: TapeManifest?
     /// Why the tape isn't sound, or none: missing or unexpected files, an unreadable `tape.json`, or tracks that
     /// don't match its clips (`tape.files`, `tape.json-units`).
     public let problems: [String]
 
+    /// The tape's ``name``, which is unique on the OP-1.
     public var id: TapeName { name }
 
     /// The tape machine it uses, or nil without a readable `tape.json`.
@@ -51,6 +54,7 @@ public struct Tape: Sendable, Identifiable, Hashable {
 public struct TapeTrack: Sendable, Hashable {
     /// 1 to 4.
     public let number: Int
+    /// `tapes/<name>/track_<n>.wav`.
     public let path: FilePath
     /// As listed, header included.
     public let size: Int
@@ -61,6 +65,7 @@ public struct TapeTrack: Sendable, Hashable {
     /// Frames of audio, from frame 0 to the end of the last clip, gaps included.
     public var frames: Int { max(size - WAVHeader.size, 0) / FirmwareProfile.v1_7_3.trackFormat.frameBytes }
 
+    /// The audio after the header, from ``frames``.
     public var duration: Duration { Tape.duration(frames: frames) }
 }
 
@@ -71,5 +76,6 @@ public struct TapeSlots: Sendable, Hashable {
     /// 8 on 1.7.3.
     public let limit: Int
 
+    /// Slots free for a new tape.
     public var available: Int { max(limit - used, 0) }
 }

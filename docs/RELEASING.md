@@ -46,7 +46,15 @@ export DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer
    xcodebuild -scheme FieldTapeKit-Package -destination 'id=0F76E627-D8A1-46BA-A245-C9C5DDE71C80' test
    ```
 
-6. **FieldCheck builds for iOS** (run these from `FieldCheck/`):
+6. **The documentation builds with no DocC warnings** ([DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md)):
+
+   ```bash
+   xcodebuild docbuild -scheme FieldTapeKit -destination 'platform=macOS' OTHER_DOCC_FLAGS="--warnings-as-errors"
+   ```
+
+   Every public declaration has a doc comment, and every method documents its parameters, what it returns and what it throws.
+
+7. **FieldCheck builds for iOS** (run these from `FieldCheck/`):
 
    ```bash
    xcodegen generate
@@ -56,7 +64,7 @@ export DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer
    xcodebuild -project FieldCheck.xcodeproj -scheme FieldCheck -destination 'generic/platform=iOS' -allowProvisioningUpdates build
    ```
 
-7. **The OP-1 run the plan asks for has passed,** if the step has one, and its log is in `firmware/<version>/runs/`. Use the iPhone for now (STATUS.md).
+8. **The OP-1 run the plan asks for has passed,** if the step has one, and its log is in `firmware/<version>/runs/`. Use the iPhone for now (STATUS.md).
 
 ## The version
 

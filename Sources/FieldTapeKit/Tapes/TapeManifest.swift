@@ -1,18 +1,27 @@
 import Foundation
 
-/// The tape machine a tape uses, its `tape_type` (`tape.types`). Not an enum, because a later firmware may add one.
+/// The tape machine a tape uses, its `tape_type` (`tape.types`).
+///
+/// It's not an enum, because a later firmware may add a type. Vintage (1) and Disk Mini (3) are confirmed on the
+/// OP-1; Studio (0) and Porta (2) follow the order the OP-1 lists them in (PROBE-NOTES.md, 2026-11-08).
 public struct TapeType: Sendable, Hashable, RawRepresentable, CustomStringConvertible {
+    /// The value of `tape_type` in `tape.json`.
     public let rawValue: Int
 
+    /// Creates a type from its `tape_type` value, including one this firmware profile doesn't know.
+    ///
+    /// - Parameter rawValue: The value of `tape_type`.
     public init(rawValue: Int) {
         self.rawValue = rawValue
     }
 
-    /// Confirmed on the OP-1 for Vintage (1) and Disk Mini (3); Studio (0) and Porta (2) follow the order the OP-1
-    /// lists them in (PROBE-NOTES.md, 2026-11-08).
+    /// Studio, `tape_type` 0: the default for a new tape.
     public static let studio = TapeType(rawValue: 0)
+    /// Vintage, `tape_type` 1.
     public static let vintage = TapeType(rawValue: 1)
+    /// Porta, `tape_type` 2.
     public static let porta = TapeType(rawValue: 2)
+    /// Disk Mini, `tape_type` 3.
     public static let diskMini = TapeType(rawValue: 3)
 
     /// As the OP-1 names it, or "Type N" for one this firmware profile doesn't know.
@@ -29,7 +38,7 @@ public struct TapeType: Sendable, Hashable, RawRepresentable, CustomStringConver
 
 /// A tape's `tape.json`, with nothing dropped (ADR 0002, section 4).
 ///
-/// The typed properties are the fields the probe decoded. `data` is the file exactly as it was read, and it's what
+/// The typed properties are the fields the probe decoded. ``data`` is the file exactly as it was read, and it's what
 /// FieldTapeKit writes back, so `padding` and any key it doesn't understand go back untouched. Editing a manifest is
 /// out of scope.
 public struct TapeManifest: Sendable, Hashable {
@@ -41,34 +50,43 @@ public struct TapeManifest: Sendable, Hashable {
         public let track: Int
         /// Frames at 44.1 kHz, from the start of the track.
         public let start: Int
+        /// Frames at 44.1 kHz, from the start of the track, where the clip ends. `tape.json` stores it as `stop`.
         public let end: Int
     }
 
     /// The loop, in frames.
     public struct Loop: Sendable, Hashable {
+        /// Whether looping is on, `loop` in `tape.json`.
         public let isOn: Bool
+        /// Where the loop starts, `loop_in`.
         public let start: Int
+        /// Where the loop ends, `loop_out`.
         public let end: Int
     }
 
     /// The file as it was read, byte for byte.
     public let data: Data
+    /// Every clip, on every track, in the order `tape.json` lists them.
     public let clips: [Clip]
+    /// The loop points.
     public let loop: Loop
     /// Beats per minute. `tape.json` stores ten times this, as `tempobpmdecimal`.
     public let tempo: Double
     /// `mixer_params`, as stored: eight numbers, probably the four tracks' levels and then their pans. That's
     /// unconfirmed, so they're given as they are.
     public let mixerParameters: [Double]
+    /// The tape machine, `tape_type`.
     public let type: TapeType
 
     /// Why `tape.json` couldn't be read as a manifest.
     public struct Problem: Error, Sendable, Hashable, CustomStringConvertible {
+        /// What's wrong, such as which key is missing.
         public let description: String
     }
 
     /// Reads a `tape.json`.
     ///
+    /// - Parameter data: The file's bytes, which are kept exactly as they are.
     /// - Throws: `Problem` if it isn't a JSON object with the keys the typed properties come from.
     public init(_ data: Data) throws(Problem) {
         guard let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {

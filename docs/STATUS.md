@@ -303,6 +303,14 @@ Where the project stands, so a new session can pick it up. Update this when the 
   - FieldKit holds the OP-1 in MTP mode as its exclusive USB owner, so ImageCaptureCore never lists it, and FieldTapeKit sees no OP-1 and no error (`ioreg` and `tools/op1-icc-list.swift`, PROBE-NOTES.md).
   - The code stays, unused on 1.7.3. FieldCheck's prompt on the Mac says to quit FieldKit.
 
+- **Documentation, phase 1 of 3 is done** (2026-11-17). The owner asked for FieldTapeKit to be documented as if it were open source, following [DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md), which also records how this project applies it:
+  - Every public declaration in `FieldTapeKit` has a doc comment. 64 were missing.
+  - Every public method documents its parameters, what it returns and what it throws. 57 were missing a section.
+  - Symbols are linked with double backticks, and the known limits are callouts: album writing off, and the chunked-read stall on `contents(of:range:)`.
+  - `FieldError.Code.timedOut` now says it isn't thrown since 2026-11-16.
+  - The docs build with no DocC warnings, using `xcodebuild docbuild` with warnings as errors, with no plugin. RELEASING.md and CLAUDE.md have the command.
+  - 470 tests pass on the Mac and 469 on the iOS simulator. FieldCheck builds for iOS and macOS, and the API is unchanged since `1.0.0-beta.1`.
+
 ## Next steps
 
 1. **Hardware checks run on the iPhone.** The chunked-read stall shows on the iPad Pro and the Mac, never on the iPhone (PROBE-NOTES.md, 2026-11-17).
@@ -311,6 +319,7 @@ Where the project stands, so a new session can pick it up. Update this when the 
    - **FieldCheck** writes a wrong draft ADR for a stall that ends in an empty answer.
    - **On the Mac:** the writing conformance and levels 2 and 3, and the entitlement a sandboxed app needs.
    - The owner's own app, on top of FieldTapeKit.
+   - **Documentation, phases 2 and 3:** the DocC catalog and articles, then Snippets, a README and the CHANGELOG (DOCUMENTATION_GUIDE.md).
 
 ## Future improvements
 

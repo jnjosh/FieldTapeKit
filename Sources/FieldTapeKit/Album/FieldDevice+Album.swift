@@ -5,8 +5,9 @@ import System
 extension FieldDevice {
     /// Both album sides, read fresh: `mixdown/` is listed, and each side's 44-byte WAV header is read.
     ///
-    /// A side that isn't sound is listed too, with its `problems`.
+    /// A side that isn't sound is listed too, with its ``AlbumSide/problems``.
     ///
+    /// - Returns: Both sides, as they are now.
     /// - Throws: `FieldError` with `.notFound` if there's no `mixdown/` folder, `.ambiguousPath`, `.disconnected`,
     ///   `.timedOut` or `.deviceRefused`, or `CancellationError`.
     public func album() async throws -> Album {
@@ -17,8 +18,9 @@ extension FieldDevice {
         }
     }
 
-    /// Copies one side off the OP-1 into a new WAV file in `folder`, checks it, and returns what it holds. The side
-    /// stays on the OP-1, unchanged (ADR 0002, section 5).
+    /// Copies one side off the OP-1 into a new WAV file in a folder, checks it, and returns what it holds.
+    ///
+    /// The side stays on the OP-1, unchanged (ADR 0002, section 5).
     ///
     /// The side is read fresh, then read whole with one GetObject, so all of it is in memory at once: about 10 MB a
     /// minute. The copy is written to a hidden temporary file in `folder`, read back and matched by SHA-256 (safety
@@ -26,8 +28,12 @@ extension FieldDevice {
     /// never goes over a file: a taken name gets a number, as Finder does. Nothing is left in `folder` unless the copy
     /// succeeds.
     ///
-    /// - Parameter progress: One unit per byte of the side, completed once the copy is checked. The read can't report
-    ///   anything in between, and once sent it finishes before a cancel takes effect.
+    /// - Parameters:
+    ///   - side: The side to copy.
+    ///   - folder: The local folder to copy it into. It must exist.
+    ///   - progress: One unit per byte of the side, completed once the copy is checked. The read can't report
+    ///     anything in between, and once sent it finishes before a cancel takes effect.
+    /// - Returns: The copy: its URL, size and SHA-256.
     /// - Throws: `FieldError` with `.notFound` if the side is empty or missing, `.notAllowed` if it isn't sound,
     ///   `.verificationFailed` if what came off doesn't match its listing or the copy doesn't check out,
     ///   `.localFileFailed`, `.disconnected`, `.timedOut` or `.deviceRefused`, or `CancellationError`.
@@ -48,14 +54,19 @@ extension FieldDevice {
         }
     }
 
-    /// Copies every side with audio off the OP-1, as `copySide(_:to:progress:)` does, A first, and returns their
-    /// copies. Empty sides are skipped, so an empty album gives none.
+    /// Copies every side with audio off the OP-1, A first, and returns their copies.
+    ///
+    /// Each side is copied as ``copySide(_:to:progress:)`` copies it. Empty sides are skipped, so an empty album
+    /// gives none.
     ///
     /// Both sides are checked before anything is copied. If a copy fails, the copies already made in this call are
     /// deleted, so nothing is left in `folder` unless all of it succeeds.
     ///
-    /// - Parameter progress: One unit per byte of the sides with audio.
-    /// - Throws: As `copySide(_:to:progress:)`, apart from `.notFound` for an empty side.
+    /// - Parameters:
+    ///   - folder: The local folder to copy the sides into. It must exist.
+    ///   - progress: One unit per byte of the sides with audio.
+    /// - Returns: A copy of each side with audio, A first.
+    /// - Throws: As ``copySide(_:to:progress:)``, apart from `.notFound` for an empty side.
     public func copyAlbum(to folder: URL, progress: consuming Subprogress? = nil) async throws -> [AlbumSideCopy] {
         var copies: [AlbumSideCopy] = []
         do {
@@ -81,10 +92,15 @@ extension FieldDevice {
         }
     }
 
-    /// Whether the side on the OP-1 now holds exactly what `copy` holds: the size first, then, only if the sizes are
-    /// equal, the whole side is read and matched by SHA-256. It compares with whichever side is named, even if `copy`
-    /// came from the other one. A missing side matches nothing.
+    /// Checks whether a side on the OP-1 now holds exactly what a copy holds.
     ///
+    /// The sizes are compared first. Only if they're equal is the whole side read and matched by SHA-256. It compares
+    /// with whichever side is named, even if `copy` came from the other one. A missing side matches nothing.
+    ///
+    /// - Parameters:
+    ///   - side: The side on the OP-1 to compare.
+    ///   - copy: A copy made by ``copySide(_:to:progress:)`` or ``copyAlbum(to:progress:)``.
+    /// - Returns: True if the side holds exactly what the copy holds.
     /// - Throws: `FieldError` with `.verificationFailed` if what came off doesn't match its listing,
     ///   `.disconnected`, `.timedOut` or `.deviceRefused`, or `CancellationError`.
     public func side(_ side: Album.Side, matches copy: AlbumSideCopy) async throws -> Bool {

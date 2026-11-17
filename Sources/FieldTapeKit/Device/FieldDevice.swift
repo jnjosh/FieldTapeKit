@@ -2,24 +2,27 @@ import Foundation
 
 /// A connected OP-1 Field, in MTP mode.
 ///
-/// Get one from `FieldDevice.connections`, or `FieldDevice.simulated()` for tests and previews. A device is
-/// an actor because the OP-1 handles one request at a time. After a disconnect, every call throws
-/// `FieldError.Code.disconnected`, and a reconnect produces a new `FieldDevice`, because the OP-1's object
-/// handles don't survive it.
+/// Get one from ``connections``, or ``simulated(_:)`` for tests and previews. A device is an actor because the OP-1
+/// handles one request at a time. After a disconnect, every call throws ``FieldError/Code/disconnected``, and a
+/// reconnect produces a new `FieldDevice`, because the OP-1's object handles don't survive it.
 public actor FieldDevice: Identifiable {
     /// Identifies one connection. A reconnect gets a new ID.
     public struct ID: Hashable, Sendable {
         let rawValue = UUID()
     }
 
+    /// A change in which OP-1s are connected, from ``connections``.
     public enum ConnectionEvent: Sendable {
+        /// An OP-1 connected in MTP mode and is ready to use.
         case connected(FieldDevice)
+        /// The OP-1 with this ID was unplugged or left MTP mode. Calls on it throw `disconnected`.
         case disconnected(FieldDevice.ID)
         /// An OP-1 was found, but ImageCaptureCore couldn't open a session with it, or its device info couldn't be
         /// read, such as when another app holds it. Watching goes on, and it can be connected again.
         case couldNotOpen(FieldError)
     }
 
+    /// Identifies this connection.
     public nonisolated let id = ID()
     /// What the OP-1 reported when it connected.
     public nonisolated let info: FieldDeviceInfo
@@ -107,6 +110,7 @@ package struct USBIdentity: Sendable, Hashable {
     package static let op1 = USBIdentity(vendorID: 0x2367, productID: 0x0102, name: "OP-1")
 }
 
+/// What an OP-1 reported about itself when it connected.
 public struct FieldDeviceInfo: Sendable, Hashable {
     /// "OP-1" for an OP-1 Field.
     public let model: String
@@ -116,11 +120,13 @@ public struct FieldDeviceInfo: Sendable, Hashable {
     /// firmware everything still works, using the profile of the nearest tested one, so an app can warn the person
     /// (ADR 0002, section 11).
     public let isFirmwareTested: Bool
+    /// The OP-1's serial number, such as "L1PXE14W".
     public let serialNumber: String
     /// Storage as reported when the OP-1 connected.
     public let storage: FieldStorage
 }
 
+/// The OP-1's storage, as GetStorageInfo reported it.
 public struct FieldStorage: Sendable, Hashable {
     /// In bytes.
     public let capacity: Int

@@ -1,8 +1,9 @@
 import Foundation
 import System
 
-/// The OP-1's album: `mixdown/side_a.wav` and `mixdown/side_b.wav`, as read when it was listed (ADR 0002, section 5).
-/// It's a snapshot: list again to see a change.
+/// The OP-1's album, `mixdown/side_a.wav` and `mixdown/side_b.wav`, as read when it was listed.
+///
+/// It's a snapshot: call ``FieldDevice/album()`` again to see a change (ADR 0002, section 5).
 public struct Album: Sendable, Hashable {
     /// Side A or B. A new case would break an app's exhaustive `switch`, so it needs a major version.
     public enum Side: String, Sendable, Hashable, CaseIterable, Codable, CustomStringConvertible {
@@ -15,9 +16,14 @@ public struct Album: Sendable, Hashable {
         public var description: String { "Side \(rawValue.uppercased())" }
     }
 
+    /// Side A, `mixdown/side_a.wav`.
     public let a: AlbumSide
+    /// Side B, `mixdown/side_b.wav`.
     public let b: AlbumSide
 
+    /// Accesses side A or B.
+    ///
+    /// - Parameter side: The side to access.
     public subscript(side: Side) -> AlbumSide {
         switch side {
         case .a: a
@@ -32,15 +38,16 @@ public struct Album: Sendable, Hashable {
 /// One side of the album, as listed: its size, and the format its WAV header states.
 ///
 /// A side that isn't sound, with its file missing, a header that can't be read or doesn't match the file's size, or
-/// another format than the OP-1 records (`album.files`, `album.wav-format`), says why in `problems`. It's listed
-/// anyway, and can't be copied.
+/// another format than the OP-1 records (`album.files`, `album.wav-format`), says why in ``problems``. It's
+/// listed anyway, and can't be copied.
 public struct AlbumSide: Sendable, Hashable {
+    /// Which side this is.
     public let side: Album.Side
     /// `mixdown/side_a.wav` or `mixdown/side_b.wav`.
     public let path: FilePath
     /// As listed, header included. Zero if the file is missing.
     public let size: Int
-    /// From the WAV header, or nil if it can't be read, which `problems` says.
+    /// From the WAV header, or nil if it can't be read, which ``problems`` says.
     public let format: AudioFormat?
     /// Why the side isn't sound, or none.
     public let problems: [String]
@@ -68,16 +75,20 @@ public struct AudioFormat: Sendable, Hashable, CustomStringConvertible {
 
     /// Integer PCM, as the OP-1 records.
     public var isPCM: Bool { wav.encoding == WAVFormat.pcm }
+    /// The samples per second, such as 44,100.
     public var sampleRate: Int { wav.sampleRate }
+    /// The bits per sample: 16 for an album side and 32 for a tape track on firmware 1.7.3.
     public var bitDepth: Int { wav.bitsPerSample }
+    /// The number of channels: 2 on the OP-1.
     public var channels: Int { wav.channels }
 
     /// Such as "PCM, 2 channels, 16 bits, 44100 Hz".
     public var description: String { wav.description }
 }
 
-/// A side copied off the OP-1 into a WAV file, and what it held: an app can store it, and later ask
-/// `side(_:matches:)` whether the side was recorded over since.
+/// A side copied off the OP-1 into a WAV file, and what it held.
+///
+/// An app can store it, and later ask ``FieldDevice/side(_:matches:)`` whether the side was recorded over since.
 public struct AlbumSideCopy: Sendable, Hashable, Codable {
     /// The side it was copied from.
     public let side: Album.Side
@@ -87,5 +98,6 @@ public struct AlbumSideCopy: Sendable, Hashable, Codable {
     public let size: Int
     /// The SHA-256 of the file, in lowercase hex.
     public let sha256: String
+    /// When the copy was made.
     public let copiedAt: Date
 }

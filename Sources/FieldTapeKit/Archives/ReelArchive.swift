@@ -38,9 +38,10 @@ extension UTType {
     public static let reelArchive = UTType(importedAs: "com.jnjosh.fieldtapekit.reelarchive", conformingTo: .archive)
 }
 
-/// One tape kept off the OP-1: a `.reelarchive` file, an Apple Archive of its four tracks and `tape.json` exactly as
-/// they were on the OP-1, and `reel.json`, which records the tape and the size and SHA-256 of every file
-/// (ADR 0002, section 4).
+/// One tape kept off the OP-1, in a `.reelarchive` file.
+///
+/// The file is an Apple Archive of the tape's four tracks and `tape.json`, exactly as they were on the OP-1, and
+/// `reel.json`, which records the tape and the size and SHA-256 of every file (ADR 0002, section 4).
 ///
 /// Opening one checks all of it, so a `ReelArchive` is always one that was complete and undamaged when opened.
 public struct ReelArchive: Sendable, Hashable {
@@ -50,7 +51,16 @@ public struct ReelArchive: Sendable, Hashable {
 
     /// The compression an archive is written with. Uncompressed PCM barely shrinks, so the default is none.
     public enum Compression: Sendable, Hashable {
-        case none, lz4, lzfse, zlib, lzma
+        /// No compression: the fastest, and the default.
+        case none
+        /// LZ4: fast, with little gain on audio.
+        case lz4
+        /// LZFSE, Apple's balance of speed and size.
+        case lzfse
+        /// zlib, the most widely readable.
+        case zlib
+        /// LZMA: the smallest and the slowest.
+        case lzma
 
         var algorithm: ArchiveCompression? {
             switch self {
@@ -72,23 +82,29 @@ public struct ReelArchive: Sendable, Hashable {
         /// Lowercase hex.
         public let sha256: String
 
+        /// Only the 44-byte header, with no audio.
         public var isBlank: Bool { size <= WAVHeader.size }
+        /// The audio after the header.
         public var duration: Duration { Tape.duration(frames: frames) }
         /// Its length in frames, from its size.
         var frames: Int { max(size - WAVHeader.size, 0) / FirmwareProfile.v1_7_3.trackFormat.frameBytes }
     }
 
+    /// Where the archive was opened from or written to. Moving the file doesn't update this.
     public internal(set) var url: URL
     /// The format it was written in.
     public let format: Int
     /// The tape's name on the OP-1 when it was archived.
     public let name: TapeName
+    /// The tape's type, from its `tape.json`.
     public let type: TapeType
     /// The OP-1 it came from.
     public let model: String
+    /// The serial number of the OP-1 it came from.
     public let serialNumber: String
     /// The firmware it was archived on. Restoring onto another isn't refused, so an app can warn.
     public let firmware: String
+    /// When the archive was written.
     public let created: Date
     /// The archived `tape.json`.
     public let manifest: TapeManifest
@@ -98,9 +114,12 @@ public struct ReelArchive: Sendable, Hashable {
     /// To the end of the last clip.
     public var duration: Duration { Tape.duration(frames: manifest.endFrame) }
 
-    /// Opens a `.reelarchive` and checks all of it: it holds exactly a tape's files and `reel.json`, every file's size
-    /// and SHA-256 match `reel.json`, and `tape.json` matches the tracks' sizes.
+    /// Opens a `.reelarchive` and checks all of it.
     ///
+    /// It must hold exactly a tape's files and `reel.json`, every file's size and SHA-256 must match `reel.json`, and
+    /// `tape.json` must match the tracks' sizes. Every file is read once to check it, a little at a time.
+    ///
+    /// - Parameter url: The local `.reelarchive` file.
     /// - Throws: `FieldError` with `.invalidArchive`, `.archiveMismatch`, or `.localFileFailed` if the file can't be
     ///   read.
     public init(contentsOf url: URL) throws(FieldError) {
@@ -173,10 +192,15 @@ public struct ReelArchive: Sendable, Hashable {
         }
     }
 
-    /// Writes one track into `folder` as a WAV file, `<tape name> track_<n>.wav`, checking its SHA-256 on the way.
-    /// It never overwrites a file: a taken name gets a number, as Finder does. Only a little of the track is in
-    /// memory at a time.
+    /// Writes one track into a folder as a WAV file, checking its SHA-256 on the way.
     ///
+    /// The file is named `<tape name> track_<n>.wav`. It never overwrites a file: a taken name gets a number, as
+    /// Finder does. Only a little of the track is in memory at a time.
+    ///
+    /// - Precondition: `number` is 1 to 4.
+    /// - Parameters:
+    ///   - number: The track, 1 to 4.
+    ///   - folder: The local folder to write it into. It must exist.
     /// - Returns: The file written.
     /// - Throws: `FieldError` with `.archiveMismatch` if the track no longer matches (the file isn't kept),
     ///   `.invalidArchive`, or `.localFileFailed`.

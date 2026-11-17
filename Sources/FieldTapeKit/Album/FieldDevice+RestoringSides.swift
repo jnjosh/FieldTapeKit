@@ -1,9 +1,12 @@
 import Foundation
 import System
 
-/// What `restoreSide` does when the side already has audio (ADR 0002, section 5). Replacing covers the side that's
-/// there first, with a verified copy or a person's confirmation (safety rule 1). An empty side is written over
-/// whatever this says, since nothing is lost. Album writing is off on 1.7.3 (`album.write-again`).
+/// What ``FieldDevice/restoreSide(_:from:conflict:progress:)`` does when the side already has audio.
+///
+/// Replacing covers the side that's there first, with a verified copy or a person's confirmation (ADR 0002,
+/// section 5, and safety rule 1). An empty side is written over whatever this says, since nothing is lost.
+///
+/// - Important: Album writing is off on firmware 1.7.3 (`album.write-again`).
 public struct SideConflict: Sendable, Hashable {
     enum Rule: Sendable, Hashable {
         case fail
@@ -13,21 +16,34 @@ public struct SideConflict: Sendable, Hashable {
 
     let rule: Rule
 
-    /// Throw `alreadyExists` and change nothing.
+    /// Throws `alreadyExists` and changes nothing.
     public static let fail = SideConflict(rule: .fail)
 
-    /// Copy the side that's there to exactly `copy`, a WAV file, and verify it, then replace the side. `copy` must
-    /// be free: a taken one throws `localFileFailed` before anything changes. An empty side isn't copied.
+    /// Copies the side that's there to a WAV file and verifies it, then replaces the side.
+    ///
+    /// An empty side isn't copied.
+    ///
+    /// - Parameter copy: Exactly where to put the copy. It must be free: a taken URL throws `localFileFailed` before
+    ///   anything changes.
+    /// - Returns: The rule, to pass as `conflict`.
     public static func replace(copyingExistingTo copy: URL) -> SideConflict { SideConflict(rule: .copying(copy)) }
 
-    /// Replace the side a person confirmed losing, from `prepareToReplace(_:)` for the same side. It's refused if
-    /// it's used, from another connection, or the side changed since, and it's used up once the old side is deleted.
+    /// Replaces a side a person confirmed losing.
+    ///
+    /// It's refused if it's used, from another connection, or the side changed since, and it's used up once the old
+    /// side is deleted.
+    ///
+    /// - Parameter replacement: From ``FieldDevice/prepareToReplace(_:)``, for the same side.
+    /// - Returns: The rule, to pass as `conflict`.
     public static func replace(confirmed replacement: SideReplacement) -> SideConflict { SideConflict(rule: .confirmed(replacement)) }
 }
 
-/// A side a person can confirm losing, from `prepareToReplace(_:)`, for `SideConflict.replace(confirmed:)`. It works
-/// once, only with the `FieldDevice` that made it, and only while the side is as it was then.
+/// A side a person can confirm losing, for ``SideConflict/replace(confirmed:)``.
+///
+/// Get one from ``FieldDevice/prepareToReplace(_:)``. It works once, only with the ``FieldDevice`` that made it, and
+/// only while the side is as it was then.
 public struct SideReplacement: Sendable, Hashable, Identifiable {
+    /// Identifies this confirmation, which works once.
     public let id: UUID
     /// As read fresh when this was made.
     public let side: AlbumSide
@@ -40,9 +56,11 @@ public struct SideReplacement: Sendable, Hashable, Identifiable {
 }
 
 extension FieldDevice {
-    /// Reads a side fresh, for a person to confirm losing it before `restoreSide` replaces it.
+    /// Reads a side fresh, for a person to confirm losing it before a restore replaces it.
     ///
-    /// - Throws: As `album()`.
+    /// - Parameter side: The side that would be replaced.
+    /// - Returns: The confirmation to show the person, then to pass to ``SideConflict/replace(confirmed:)``.
+    /// - Throws: As ``album()``.
     public func prepareToReplace(_ side: Album.Side) async throws -> SideReplacement {
         do {
             return SideReplacement(id: UUID(), side: try await listAlbum().album[side], deviceID: id)
@@ -51,11 +69,11 @@ extension FieldDevice {
         }
     }
 
-    /// Writes the WAV file at `file` as side A or B, and returns the side as the OP-1 lists it.
+    /// Writes a WAV file as side A or B, and returns the side as the OP-1 lists it.
     ///
-    /// **Off on 1.7.3:** it throws `notAllowed` there, before anything is read. A side written over MTP hung the
-    /// OP-1 when it was written again after a reconnect, until it was restarted (`album.write-again`), so album
-    /// writing waits until that's understood (ADR 0002, 2026-11-16).
+    /// - Important: Off on firmware 1.7.3: it throws `notAllowed` there, before anything is read. A side written
+    ///   over MTP hung the OP-1 when it was written again after a reconnect, until it was restarted
+    ///   (`album.write-again`), so album writing waits until that's understood (ADR 0002, 2026-11-16).
     ///
     /// It follows the file layer's replace, and stops at the first failure (ADR 0002, sections 5 and 6):
     /// 1. Everything is checked before anything changes. The file must be what the OP-1 records: the 44-byte
@@ -68,7 +86,12 @@ extension FieldDevice {
     /// more is written: the side's file may be missing, `changed` lists it, and the copy or confirmation covers what
     /// was there (safety rule 6). A copy made for `conflict` is kept, even if the restore fails.
     ///
-    /// - Parameter progress: One unit per byte of the new side, completed once it's written and read back.
+    /// - Parameters:
+    ///   - side: The side to write.
+    ///   - file: A local WAV file in the OP-1's album format.
+    ///   - conflict: What to do if the side has audio. The default, ``SideConflict/fail``, changes nothing.
+    ///   - progress: One unit per byte of the new side, completed once it's written and read back.
+    /// - Returns: The side as the OP-1 lists it after the write.
     /// - Throws: `FieldError` with `.notAllowed` where album writing is off, for a file in another format, or a
     ///   confirmation for the other side,
     ///   `.tapeTooLong` for one over 6 minutes, `.alreadyExists`, `.changedSinceConfirmation`,

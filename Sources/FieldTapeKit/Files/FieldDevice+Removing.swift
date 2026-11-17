@@ -1,11 +1,13 @@
 import Foundation
 import System
 
-/// A file or folder on the OP-1 that a person can confirm deleting, from `prepareToRemove(at:)` (ADR 0002, section 6).
+/// A file or folder on the OP-1 that a person can confirm deleting.
 ///
-/// Show it to the person, then pass it to `removeItem(_:)`. It works once, only on the connection that made it,
-/// and only while the item and everything in it are as they were when it was made.
+/// Get one from ``FieldDevice/prepareToRemove(at:)``, show it to the person, then pass it to
+/// ``FieldDevice/removeItem(_:)``. It works once, only on the connection that made it, and only while the item and
+/// everything in it are as they were when it was made (ADR 0002, section 6).
 public struct FileDeletion: Sendable, Hashable, Identifiable {
+    /// Identifies this confirmation, which works once.
     public let id: UUID
     /// As read fresh when this was made.
     public let item: FieldItem
@@ -20,14 +22,17 @@ public struct FileDeletion: Sendable, Hashable, Identifiable {
 }
 
 extension FieldDevice {
-    /// Copies the file at `path` to `backup`, verifies the copy, and only then deletes the file from the OP-1
-    /// (ADR 0002, safety rules 1 and 2).
+    /// Copies a file off the OP-1, verifies the copy, and only then deletes the file from the OP-1.
     ///
-    /// The copy is made as `copyItem(at:to:progress:)` makes one: never over a local file, and read back and matched
-    /// by SHA-256. Then the file is read from the OP-1 again and matched to the copy, so a read that went wrong
-    /// can't leave a bad copy. If anything fails before the delete, nothing on the OP-1 changes, and the copy is kept. A folder needs `prepareToRemove`
-    /// and a person's confirmation.
+    /// The copy is made as ``copyItem(at:to:progress:)`` makes one: never over a local file, and read
+    /// back and matched by SHA-256. Then the file is read from the OP-1 again and matched to the copy, so a read that
+    /// went wrong can't leave a bad copy (ADR 0002, safety rules 1 and 2). If anything fails before the delete,
+    /// nothing on the OP-1 changes, and the copy is kept. A folder needs ``prepareToRemove(at:)`` and a person's
+    /// confirmation.
     ///
+    /// - Parameters:
+    ///   - path: The file on the OP-1, relative to the device root, matched ignoring case.
+    ///   - backup: The local file to copy it to. Its folder must exist.
     /// - Returns: The copy's URL, which is `backup` unless that was taken.
     /// - Throws: `FieldError` with `.notAllowed` for something that belongs to the OP-1, `.isADirectory`,
     ///   `.verificationFailed` if the file changed after it was copied, the codes of `copyItem`, or
@@ -53,8 +58,10 @@ extension FieldDevice {
         }
     }
 
-    /// Reads the item at `path`, and everything in it if it's a folder, so a person can confirm losing exactly that.
+    /// Reads an item, and everything in it if it's a folder, so a person can confirm losing exactly that.
     ///
+    /// - Parameter path: The file or folder on the OP-1, relative to the device root, matched ignoring case.
+    /// - Returns: The confirmation to show the person, then to pass to ``removeItem(_:)``.
     /// - Throws: `FieldError` with `.notFound`, `.notAllowed` for something that belongs to the OP-1, or the codes
     ///   of `item(at:)`, or `CancellationError`.
     public func prepareToRemove(at path: FilePath) async throws -> FileDeletion {
@@ -71,9 +78,10 @@ extension FieldDevice {
     /// Deletes what a person confirmed: a file, or a folder's contents, deepest first, and then the folder.
     ///
     /// It checks first that the confirmation is unused, from this connection, and still matches the OP-1 exactly.
-    /// It's used up as soon as the first delete is sent. If a delete fails partway, the error's `changed` lists
-    /// what was already deleted, and nothing more is tried (ADR 0002, safety rule 6).
+    /// It's used up as soon as the first delete is sent. If a delete fails partway, the error's
+    /// ``FieldError/changed`` lists what was already deleted, and nothing more is tried (ADR 0002, safety rule 6).
     ///
+    /// - Parameter deletion: From ``prepareToRemove(at:)``, shown to the person who confirmed it.
     /// - Throws: `FieldError` with `.changedSinceConfirmation`, `.confirmationAlreadyUsed`, `.disconnected`,
     ///   `.timedOut` or `.deviceRefused`, or `CancellationError`.
     public func removeItem(_ deletion: FileDeletion) async throws {

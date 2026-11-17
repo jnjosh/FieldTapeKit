@@ -2,11 +2,12 @@ import Foundation
 import System
 
 extension FieldDevice {
-    /// Every tape on the OP-1, by name, read fresh: each folder in `tapes/`, its files, and its `tape.json`.
+    /// Lists every tape on the OP-1, read fresh: each folder in `tapes/`, its files, and its `tape.json`.
     ///
-    /// A tape that isn't sound is listed too, with its `problems`, so every slot shows. This reads one small
+    /// A tape that isn't sound is listed too, with its ``Tape/problems``, so every slot shows. This reads one small
     /// `tape.json` per tape and lists each folder, so it takes a request or two per tape.
     ///
+    /// - Returns: Every tape, sorted by name.
     /// - Throws: `FieldError` with `.disconnected`, `.timedOut` or `.deviceRefused`, or `CancellationError`.
     public func tapes() async throws -> [Tape] {
         do {
@@ -21,9 +22,11 @@ extension FieldDevice {
         }
     }
 
-    /// The tape with this name, ignoring case, read fresh, or nil if there isn't one.
+    /// Reads one tape fresh, by name.
     ///
-    /// - Throws: As `tapes()`.
+    /// - Parameter name: The tape's name, matched ignoring case.
+    /// - Returns: The tape, or nil if there isn't one with that name.
+    /// - Throws: As ``tapes()``.
     public func tape(named name: TapeName) async throws -> Tape? {
         let path = FilePath.op1Tapes.appending(name.string)
         do {
@@ -34,9 +37,12 @@ extension FieldDevice {
         }
     }
 
-    /// How many tape slots are used, from a fresh listing of `tapes/`. Every folder there takes one, sound or not.
+    /// Counts the tape slots in use, from a fresh listing of `tapes/`.
     ///
-    /// - Throws: As `tapes()`.
+    /// Every folder there takes a slot, sound or not.
+    ///
+    /// - Returns: The slots used, and the firmware's limit.
+    /// - Throws: As ``tapes()``.
     public func tapeSlots() async throws -> TapeSlots {
         do {
             let used = try await contentsOfDirectory(at: .op1Tapes).filter(\.isDirectory).count

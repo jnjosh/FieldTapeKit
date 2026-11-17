@@ -71,6 +71,12 @@ DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcodebuild -proj
 DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcodebuild -project OP1Probe.xcodeproj -scheme OP1Probe -destination 'generic/platform=iOS' -allowProvisioningUpdates build
 ```
 
+Build FieldTapeKit's documentation from the root, with DocC warnings as errors. Every public declaration has a doc comment, following [docs/DOCUMENTATION_GUIDE.md](docs/DOCUMENTATION_GUIDE.md):
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode-27.2.0.app/Contents/Developer xcodebuild docbuild -scheme FieldTapeKit -destination 'platform=macOS' OTHER_DOCC_FLAGS="--warnings-as-errors"
+```
+
 There's no linter or formatter yet. The package's tests use Swift Testing. The probe's 21 XCTest tests in `research/OP1ProbeTests` stay as they are. Commands for installing on a device and pulling logs off it are in [research/PROBE-NOTES.md](research/PROBE-NOTES.md).
 
 ### Environment Setup
@@ -306,6 +312,7 @@ proto/short-kebab-description
 ```text
 docs/STATUS.md              — Where the project stands and the next steps; keep it current
 docs/RELEASING.md           — The checks before tagging a release, and how versions are chosen
+docs/DOCUMENTATION_GUIDE.md — The documentation standard, and how FieldTapeKit applies it
 docs/plans/adr-0002-implementation.md — The 24-step plan for building ADR 0002, each step committable
 docs/swift-disk-access-guide.md — Research on Swift file APIs, an input to ADR 0002
 docs/adrs/                  — Architecture decisions: 0001 transport, 0002 public API and

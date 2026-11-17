@@ -3,14 +3,17 @@ import Foundation
 import System
 
 extension FieldDevice {
-    /// The whole file at `path`, read with one GetObject.
+    /// Reads a whole file on the OP-1 into memory, with one GetObject.
     ///
     /// The OP-1 charges every read for everything before it in the file (`read.cost`), so whole files are read in
     /// one go (ADR 0002, 2026-11-14). The size is checked fresh first. A file the OP-1 rewrote within this session
     /// still lists and reads at its old size (`rebuild.stale-size`), and nothing over MTP shows that.
     ///
-    /// - Parameter maximumSize: The largest file to hold in memory, 32 MiB by default. A tape track can be 127 MB;
-    ///   `copyItem(at:to:progress:)` copies any size to disk.
+    /// - Parameters:
+    ///   - path: The file, relative to the device root, matched ignoring case.
+    ///   - maximumSize: The largest file to hold in memory, 32 MiB by default. A tape track can be 127 MB;
+    ///     ``copyItem(at:to:progress:)`` copies any size to disk.
+    /// - Returns: The file's bytes.
     /// - Throws: `FieldError` with `.notFound`, `.isADirectory`, `.tooLarge`, `.notADirectory`, `.ambiguousPath`,
     ///   `.disconnected`, `.timedOut` or `.deviceRefused`, or `CancellationError`.
     public func contents(of path: FilePath, maximumSize: Int = 32 << 20) async throws -> Data {
@@ -24,14 +27,23 @@ extension FieldDevice {
         }
     }
 
-    /// The bytes of `range` in the file at `path`, read with one GetPartialObject.
+    /// Reads part of a file on the OP-1, with one GetPartialObject.
     ///
     /// A range that runs past the end gives the bytes up to the end, and one that starts at or past the end gives
     /// empty data. A read costs about what reading from the file's start to the end of the range would
     /// (`read.cost`), so this suits small reads near the start, such as a WAV header.
     ///
+    /// - Warning: On a Mac and on an iPad, a run of these reads deep into a large file has stalled: the read came
+    ///   back empty after about 60 seconds, and so did every later request until the OP-1 was reconnected
+    ///   (2026-11-17). To read a whole file, use ``contents(of:maximumSize:)`` or
+    ///   ``copyItem(at:to:progress:)``.
+    ///
     /// - Precondition: `range.lowerBound` isn't negative.
-    /// - Throws: As `contents(of:maximumSize:)`, apart from `.tooLarge`.
+    /// - Parameters:
+    ///   - path: The file, relative to the device root, matched ignoring case.
+    ///   - range: The byte offsets to read.
+    /// - Returns: The bytes in `range` that the file has.
+    /// - Throws: As ``contents(of:maximumSize:)``, apart from `.tooLarge`.
     public func contents(of path: FilePath, range: Range<Int>) async throws -> Data {
         precondition(range.lowerBound >= 0, "A range on the OP-1 can't start before the file does")
         do {
@@ -46,18 +58,21 @@ extension FieldDevice {
         }
     }
 
-    /// Copies the file at `source` on the OP-1 to `destination` on this device, and returns where it went.
+    /// Copies a file off the OP-1 to this device, and returns where it went.
     ///
     /// It reads the file with one GetObject, so up to one track (127 MB) is held in memory. It never overwrites a
     /// local file: if `destination` is taken, a number is added as Finder does, such as `side_a 2.wav`. The copy is
     /// read back from disk and matched by SHA-256 before it counts (ADR 0002, safety rule 2). If it doesn't match,
     /// it's deleted.
     ///
-    /// - Parameter progress: Three steps: reading from the OP-1, writing, and reading back. The read can't report
-    ///   anything in between, and once sent it finishes before a cancel takes effect: up to about 7 s for a full track.
+    /// - Parameters:
+    ///   - source: The file on the OP-1, relative to the device root, matched ignoring case.
+    ///   - destination: The local file to write. Its folder must exist.
+    ///   - progress: Three steps: reading from the OP-1, writing, and reading back. The read can't report anything
+    ///     in between, and once sent it finishes before a cancel takes effect: up to about 7 s for a full track.
     /// - Returns: The URL written, which is `destination` unless that was taken.
     /// - Throws: `FieldError` with `.verificationFailed`, `.localFileFailed`, or the codes of
-    ///   `contents(of:maximumSize:)` apart from `.tooLarge`, or `CancellationError`.
+    ///   ``contents(of:maximumSize:)`` apart from `.tooLarge`, or `CancellationError`.
     @discardableResult
     public func copyItem(at source: FilePath, to destination: URL, progress: consuming Subprogress? = nil) async throws -> URL {
         try await verifiedCopy(of: source, to: destination, progress: progress).url

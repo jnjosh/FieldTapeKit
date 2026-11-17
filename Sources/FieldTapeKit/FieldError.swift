@@ -6,6 +6,7 @@ import System
 /// Each method's documentation lists the codes it can throw. `changed` is empty whenever the OP-1 wasn't touched,
 /// so "nothing happened" can be told apart from "half-done".
 public struct FieldError: Error, Sendable, LocalizedError {
+    /// What went wrong. Compare it with the codes in ``Code``, such as ``Code/notFound``.
     public let code: Code
     /// The device path the error is about, if any.
     public let path: FilePath?
@@ -13,7 +14,8 @@ public struct FieldError: Error, Sendable, LocalizedError {
     public let responseCode: UInt16?
     /// What was already written or deleted on the OP-1 before the error, if anything.
     public let changed: [FilePath]
-    /// `Error` refines `Sendable` in Swift 6, so this keeps `FieldError` `Sendable`.
+    /// The error behind this one, such as the system's error for `localFileFailed`, or ImageCaptureCore's for
+    /// ``FieldDevice/ConnectionEvent/couldNotOpen(_:)``.
     public let underlying: (any Error)?
     /// Why, for codes whose description needs it, such as the folder rule behind `notAllowed`.
     let reason: String?
@@ -30,6 +32,7 @@ public struct FieldError: Error, Sendable, LocalizedError {
 
     /// Extensible, so a later version can add codes without breaking an app's `switch` (ADR 0002, section 11).
     public struct Code: Sendable, Hashable, CustomStringConvertible {
+        /// The code's name, such as "notFound".
         public let description: String
 
         private init(_ description: String) {
@@ -38,7 +41,8 @@ public struct FieldError: Error, Sendable, LocalizedError {
 
         /// The OP-1 was unplugged, left MTP mode, or stopped answering.
         public static let disconnected = Code("disconnected")
-        /// The OP-1 didn't answer in time, but answered a ping afterwards, so it's still connected.
+        /// The OP-1 didn't answer in time, but is still connected. Not thrown since 2026-11-16: a request that
+        /// gets no answer is waited for, then the session is `disconnected` (ADR 0002's change log).
         public static let timedOut = Code("timedOut")
         /// The app isn't allowed to use ImageCaptureCore's devices.
         public static let notAuthorized = Code("notAuthorized")
@@ -103,6 +107,7 @@ public struct FieldError: Error, Sendable, LocalizedError {
                    reason: reason)
     }
 
+    /// A sentence saying what went wrong, for a person.
     public var errorDescription: String? {
         switch code {
         case .disconnected: "The OP-1 is no longer connected."
@@ -160,6 +165,7 @@ public struct FieldError: Error, Sendable, LocalizedError {
         }
     }
 
+    /// What a person can do about it, or nil if there's nothing to suggest.
     public var recoverySuggestion: String? {
         switch code {
         case .disconnected:

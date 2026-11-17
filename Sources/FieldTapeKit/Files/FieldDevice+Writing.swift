@@ -2,8 +2,10 @@ import CryptoKit
 import Foundation
 import System
 
-/// What a write does when its path is taken. MTP can't replace a file in place, so replacing is delete, then send,
-/// and the file that's there is covered first by a verified copy or a person's confirmation (ADR 0002, safety rule 1).
+/// What a write does when its path is taken.
+///
+/// MTP can't replace a file in place, so replacing is delete, then send, and the file that's there is covered first
+/// by a verified copy or a person's confirmation (ADR 0002, safety rule 1).
 public struct ExistingFile: Sendable, Hashable {
     enum Rule: Sendable, Hashable {
         case fail
@@ -13,26 +15,42 @@ public struct ExistingFile: Sendable, Hashable {
 
     let rule: Rule
 
-    /// Throw `alreadyExists` and change nothing.
+    /// Throws `alreadyExists` and changes nothing.
     public static let fail = ExistingFile(rule: .fail)
 
-    /// Copy the file that's there to `backup`, verify the copy, and match the file on the OP-1 to it again with a
-    /// second read, then replace it. `backup` must be free, so the copy is exactly there: a taken one throws
-    /// `localFileFailed` before anything changes. If nothing is at the path, the write goes ahead and no copy is made.
+    /// Copies the file that's there and verifies the copy, matches the file on the OP-1 to it again with a second
+    /// read, then replaces it.
+    ///
+    /// If nothing is at the path, the write goes ahead and no copy is made.
+    ///
+    /// - Parameter backup: Exactly where to put the copy. It must be free: a taken URL throws `localFileFailed`
+    ///   before anything changes.
+    /// - Returns: The rule, for ``UploadOptions/existing``.
     public static func replace(keepingCopyAt backup: URL) -> ExistingFile { ExistingFile(rule: .keepingCopy(backup)) }
 
-    /// Replace the file a person confirmed losing, from `prepareToRemove(at:)` for the same path. The confirmation
-    /// is checked as `removeItem(_:)` checks one, and used up. If nothing is at the path any more, it's
-    /// `changedSinceConfirmation`.
+    /// Replaces a file a person confirmed losing.
+    ///
+    /// The confirmation is checked as ``FieldDevice/removeItem(_:)`` checks one, and used up. If nothing is at the
+    /// path any more, it's `changedSinceConfirmation`.
+    ///
+    /// - Parameter deletion: From ``FieldDevice/prepareToRemove(at:)``, for the same path.
+    /// - Returns: The rule, for ``UploadOptions/existing``.
     public static func replace(confirmed deletion: FileDeletion) -> ExistingFile { ExistingFile(rule: .confirmed(deletion)) }
 }
 
+/// How a file is written to the OP-1.
 public struct UploadOptions: Sendable {
+    /// What to do if the path is taken. ``ExistingFile/fail`` by default.
     public var existing: ExistingFile
-    /// Read the file back and match it by SHA-256 (ADR 0002, safety rule 2). On by default: harmless matters more
-    /// than fast.
+    /// Whether to read the file back and match it by SHA-256 (ADR 0002, safety rule 2). On by default: harmless
+    /// matters more than fast.
     public var verify: Bool
 
+    /// Creates options for a write.
+    ///
+    /// - Parameters:
+    ///   - existing: What to do if the path is taken. The default changes nothing and throws `alreadyExists`.
+    ///   - verify: Whether to read the file back and match it. On by default.
     public init(existing: ExistingFile = .fail, verify: Bool = true) {
         self.existing = existing
         self.verify = verify
@@ -44,13 +62,13 @@ extension FieldDevice {
     static let albumWritesOff = "album sides aren't written on this firmware: a side written over MTP hangs the OP-1 when "
         + "it's written again after a reconnect, until it's restarted"
 
-    /// Writes `data` as a new file at `path`, or over the file there as `options.existing` says, and returns it as
-    /// the OP-1 lists it.
+    /// Writes data as a file on the OP-1, and returns it as the OP-1 lists it.
     ///
     /// In `synth/user/` and `drum/user/` the OP-1 converts what it receives: it stores AIFC under the name it was
-    /// sent, `.wav` included, and may shorten it (to 20 seconds in `drum/user/` and 6 in `synth/user/`). The item returned is the file as
-    /// stored, and the read-back checks its audio instead of its bytes: the same format, and the same samples as
-    /// the start of what was sent. A preset must be 16-bit PCM, at 44.1 kHz mono or stereo or 22,050 Hz mono.
+    /// sent, `.wav` included, and may shorten it (to 20 seconds in `drum/user/` and 6 in `synth/user/`). The item
+    /// returned is the file as stored, and the read-back checks its audio instead of its bytes: the same format, and
+    /// the same samples as the start of what was sent. A preset must be 16-bit PCM, at 44.1 kHz mono or stereo or
+    /// 22,050 Hz mono.
     ///
     /// Everything is checked before anything is sent: the folder exists, nothing is at the path, the folder allows
     /// the name, and audio is in the format the OP-1 uses there (`WriteRules`). The name is sent lowercase, as the
@@ -63,6 +81,12 @@ extension FieldDevice {
     /// the delete lists the path in `changed`: the old file is gone, and the copy or the confirmation covers it.
     /// There's no automatic retry.
     ///
+    /// - Parameters:
+    ///   - data: The whole file.
+    ///   - path: Where to write it, relative to the device root. Its folder must exist.
+    ///   - options: What to do if the path is taken, and whether to read the file back. By default, a taken path
+    ///     changes nothing, and the file is read back.
+    /// - Returns: The file as the OP-1 lists it after the write.
     /// - Throws: `FieldError` with `.notFound` for a missing folder, `.notADirectory`, `.alreadyExists`,
     ///   `.isADirectory` for a folder at the path, `.notAllowed`, `.tapeTooLong`, `.insufficientSpace`,
     ///   `.verificationFailed`, `.changedSinceConfirmation`, `.confirmationAlreadyUsed`, `.localFileFailed` for the
@@ -71,11 +95,17 @@ extension FieldDevice {
         try await send(data, to: path, options: options, progress: nil)
     }
 
-    /// Copies the file at `source` on this device to a new file at `destination` on the OP-1, as `write` does.
+    /// Copies a file from this device to the OP-1, as ``write(_:to:options:)`` writes one.
+    ///
     /// The whole file is held in memory, because the data phase is sent in one piece.
     ///
-    /// - Parameter progress: Two steps, sending and reading back, or one without verifying.
-    /// - Throws: As `write`, and `.localFileFailed` if `source` can't be read.
+    /// - Parameters:
+    ///   - source: The local file.
+    ///   - destination: Where to write it on the OP-1, relative to the device root. Its folder must exist.
+    ///   - options: As for ``write(_:to:options:)``.
+    ///   - progress: Two steps, sending and reading back, or one without verifying.
+    /// - Returns: The file as the OP-1 lists it after the write.
+    /// - Throws: As ``write(_:to:options:)``, and `.localFileFailed` if `source` can't be read.
     public func copyItem(at source: URL, to destination: FilePath, options: UploadOptions = .init(),
                          progress: consuming Subprogress? = nil) async throws -> FieldItem {
         var manager: ProgressManager?
@@ -92,12 +122,15 @@ extension FieldDevice {
         return try await send(data, to: destination, options: options, progress: manager)
     }
 
-    /// Makes a new tape folder at `path`, which must be directly in `tapes/`, and returns it.
+    /// Makes a new, empty tape folder on the OP-1, and returns it.
     ///
     /// The name must be one FieldTapeKit makes: at most 12 characters, the most the OP-1 keeps, of A–Z, 0–9, `#`,
-    /// `-` and space. It's sent lowercase. One of the 8 tape slots must be free. The OP-1 makes a folder from SendObjectInfo alone
-    /// (`write.folder`).
+    /// `-` and space. It's sent lowercase. One of the 8 tape slots must be free. The OP-1 makes a folder from
+    /// SendObjectInfo alone (`write.folder`). To make a tape with its `tape.json`, use
+    /// ``createTape(named:type:)``.
     ///
+    /// - Parameter path: The new folder, directly in `tapes/`.
+    /// - Returns: The folder as the OP-1 lists it.
     /// - Throws: `FieldError` with `.notAllowed`, `.invalidName`, `.alreadyExists`, `.tapeLimitReached`,
     ///   `.insufficientSpace`, `.disconnected`, `.timedOut` or `.deviceRefused`, or `CancellationError`.
     public func createDirectory(at path: FilePath) async throws -> FieldItem {

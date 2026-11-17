@@ -14,8 +14,9 @@ public struct TapeName: Sendable, Hashable, Comparable, CustomStringConvertible 
     /// The name as the OP-1 stores it, lowercase.
     public let string: String
 
-    /// A name for a new tape.
+    /// Creates a name for a new tape.
     ///
+    /// - Parameter string: The name. It's kept lowercase.
     /// - Throws: `FieldError` with `.invalidName`, saying which characters aren't allowed, or that it's empty or too
     ///   long.
     public init(_ string: String) throws(FieldError) {
@@ -31,8 +32,10 @@ public struct TapeName: Sendable, Hashable, Comparable, CustomStringConvertible 
         self.string = string.lowercased()
     }
 
+    /// The name as the OP-1 stores it.
     public var description: String { string }
 
+    /// Orders names as their strings sort.
     public static func < (lhs: TapeName, rhs: TapeName) -> Bool {
         lhs.string < rhs.string
     }

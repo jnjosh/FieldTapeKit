@@ -3,11 +3,10 @@ import Foundation
 import System
 
 extension FieldDevice {
-    /// Copies a tape off the OP-1 into a new `.reelarchive` in `folder`, checks it, and returns it. The tape stays on
-    /// the OP-1, unchanged (ADR 0002, section 4).
+    /// Copies a tape off the OP-1 into a new `.reelarchive` in a folder, checks it, and returns it.
     ///
-    /// It copies the tape as it is on the OP-1 when the copy starts, which the archive describes, even if that
-    /// differs from `tape`, a listing that may be older. In order:
+    /// The tape stays on the OP-1, unchanged (ADR 0002, section 4). It copies the tape as it is on the OP-1 when the
+    /// copy starts, which the archive describes, even if that differs from `tape`, a listing that may be older. In order:
     /// 1. The tape is read fresh. One that isn't sound is refused, with its problems.
     /// 2. Each track, then `tape.json`, is read with one GetObject and written into a temporary archive in `folder`,
     ///    so only one track is in memory at a time.
@@ -20,8 +19,11 @@ extension FieldDevice {
     /// finishes first, up to about 7 s for a full track.
     ///
     /// - Parameters:
+    ///   - tape: The tape to copy, from ``tapes()`` or ``tape(named:)``.
+    ///   - folder: The local folder to write the archive into. It must exist.
     ///   - compression: None by default, since PCM audio barely shrinks.
     ///   - progress: One unit per byte of the tape's files, completed as each file is in the archive.
+    /// - Returns: The archive, opened and checked.
     /// - Throws: `FieldError` with `.notFound` if the tape is gone, `.notAllowed` if it isn't sound,
     ///   `.verificationFailed` if it changed while being copied or the archive doesn't check out, `.localFileFailed`,
     ///   `.disconnected`, `.timedOut` or `.deviceRefused`, or `CancellationError`.

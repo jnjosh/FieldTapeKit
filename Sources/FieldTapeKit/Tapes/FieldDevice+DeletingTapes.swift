@@ -2,7 +2,8 @@ import CryptoKit
 import Foundation
 import System
 
-/// A copy that lets `deleteTape(_:keeping:)` delete a tape with no prompt (ADR 0002, section 6).
+/// A copy that lets ``FieldDevice/deleteTape(_:keeping:progress:)`` delete a tape with no prompt (ADR 0002,
+/// section 6).
 public enum TapeCopy: Sendable, Hashable {
     /// A `.reelarchive` of the tape, still on disk as it was when it was opened.
     case archive(ReelArchive)
@@ -10,11 +11,13 @@ public enum TapeCopy: Sendable, Hashable {
     case tape(Tape)
 }
 
-/// A tape that a person can confirm deleting, from `prepareToDelete(_:)` (ADR 0002, section 6).
+/// A tape that a person can confirm deleting.
 ///
-/// Show it to the person, then pass it to `deleteTape(_:)`. It works once, only on the connection that made it,
-/// and only while the tape's files and `tape.json` are as they were when it was made.
+/// Get one from ``FieldDevice/prepareToDelete(_:)``, show it to the person, then pass it to
+/// ``FieldDevice/deleteTape(_:)``. It works once, only on the connection that made it, and only while the tape's
+/// files and `tape.json` are as they were when it was made (ADR 0002, section 6).
 public struct TapeDeletion: Sendable, Hashable, Identifiable {
+    /// Identifies this confirmation, which works once.
     public let id: UUID
     /// As read fresh when this was made.
     public let tape: Tape
@@ -26,28 +29,31 @@ public struct TapeDeletion: Sendable, Hashable, Identifiable {
     public var audio: Duration { tape.duration }
     /// How many clips would be lost.
     public var clipCount: Int { tape.manifest?.clips.count ?? 0 }
-    /// A sound tape with every track blank and no clips, such as a new one from `createTape`, so nothing would be
-    /// lost and the prompt can be skipped.
+    /// A sound tape with every track blank and no clips, such as a new one from
+    /// ``FieldDevice/createTape(named:type:)``, so nothing would be lost and the prompt can be skipped.
     public var losesNothing: Bool { tape.isSound && tape.isEmpty }
 }
 
 extension FieldDevice {
-    /// Copies a tape off the OP-1 into a new `.reelarchive` in `folder`, checks it, and only then deletes the tape,
-    /// freeing its slot (ADR 0002, section 4).
+    /// Copies a tape off the OP-1 into a new `.reelarchive`, checks it, and only then deletes the tape, freeing its
+    /// slot.
     ///
-    /// The copy is made as `copyTape(_:to:compression:progress:)` makes one, of the tape as it is when the copy
-    /// starts. Then the tape is deleted as `deleteTape(_:keeping:progress:)` deletes one, keeping the archive: each
+    /// The copy is made as ``copyTape(_:to:compression:progress:)`` makes one, of the tape as it is when the copy
+    /// starts (ADR 0002, section 4). Then the tape is deleted as ``deleteTape(_:keeping:progress:)`` deletes one, keeping the archive: each
     /// track is read from the OP-1 a second time and matched to the archive by SHA-256, so a read that went wrong
     /// can't leave a bad archive (ADR 0002, safety rule 2). If its track sizes or `tape.json` aren't what was
     /// archived, it isn't deleted. Its files are deleted first, then its folder.
     ///
     /// If anything fails after the archive is made, or the task is cancelled then, the archive is kept in `folder`.
-    /// If a delete fails part way, the error's `changed` lists the files already deleted.
+    /// If a delete fails part way, the error's ``FieldError/changed`` lists the files already deleted.
     ///
-    /// - Parameter progress: One unit per byte of the tape's files as each is in the archive, then one per byte of
-    ///   its tracks as each is matched again.
+    /// - Parameters:
+    ///   - tape: The tape to move, from ``tapes()`` or ``tape(named:)``.
+    ///   - folder: The local folder to write the archive into. It must exist.
+    ///   - progress: One unit per byte of the tape's files as each is in the archive, then one per byte of its
+    ///     tracks as each is matched again.
     /// - Returns: The archive, which holds the only copy of the tape once this returns.
-    /// - Throws: The codes of `copyTape` and `deleteTape(_:keeping:progress:)`, with `.verificationFailed` if the
+    /// - Throws: The codes of ``copyTape(_:to:compression:progress:)`` and ``deleteTape(_:keeping:progress:)``, with `.verificationFailed` if the
     ///   tape changed after it was archived or read differently the second time, or `CancellationError`.
     public func moveTape(_ tape: Tape, to folder: URL, progress: consuming Subprogress? = nil) async throws -> ReelArchive {
         let trackBytes = tape.tracks.reduce(0) { $0 + $1.size }
@@ -62,11 +68,10 @@ extension FieldDevice {
         return archive
     }
 
-    /// Deletes a tape from the OP-1 once `copy` is shown to hold exactly what it holds, with no prompt
-    /// (ADR 0002, safety rules 1 and 2).
+    /// Deletes a tape from the OP-1, with no prompt, once a copy is shown to hold exactly what it holds.
     ///
-    /// In order:
-    /// 1. The tape is read fresh. One that isn't sound is refused: it needs `prepareToDelete` and a person.
+    /// In order (ADR 0002, safety rules 1 and 2):
+    /// 1. The tape is read fresh. One that isn't sound is refused: it needs ``prepareToDelete(_:)`` and a person.
     /// 2. The copy's track sizes and `tape.json` are checked against it. Another tape is read fresh too.
     /// 3. Each of the tape's tracks is read from the OP-1, one at a time, and matched by SHA-256 to the archive's
     ///    record, or to the other tape's track, read the same way. A full tape takes about 25 s, twice that with
@@ -74,10 +79,13 @@ extension FieldDevice {
     /// 4. An archive is read again from disk and checked against what it held when it was opened.
     /// 5. The tape is listed again, unchanged, and its files are deleted, then its folder.
     ///
-    /// Nothing changes before the last step. If a delete fails part way, the error's `changed` lists the files
-    /// already deleted. Cancelling is checked between reads.
+    /// Nothing changes before the last step. If a delete fails part way, the error's ``FieldError/changed`` lists
+    /// the files already deleted. Cancelling is checked between reads.
     ///
-    /// - Parameter progress: One unit per byte read from the OP-1, completed as each track is matched.
+    /// - Parameters:
+    ///   - tape: The tape to delete, from ``tapes()`` or ``tape(named:)``.
+    ///   - copy: An archive of the tape, or another tape on the OP-1 that holds the same.
+    ///   - progress: One unit per byte read from the OP-1, completed as each track is matched.
     /// - Throws: `FieldError` with `.notFound` if the tape or the other tape is gone, `.notAllowed` if either isn't
     ///   sound or the copy is the tape itself, `.verificationFailed` if the copy doesn't match or the tape changed,
     ///   `.archiveMismatch` if the archive changed on disk, `.invalidArchive` or `.localFileFailed` if it can't be
@@ -149,9 +157,12 @@ extension FieldDevice {
         }
     }
 
-    /// Reads the tape fresh, and everything in its folder, so a person can confirm losing exactly that. A tape that
-    /// isn't sound can be deleted this way.
+    /// Reads a tape fresh, and everything in its folder, so a person can confirm losing exactly that.
     ///
+    /// A tape that isn't sound can be deleted this way.
+    ///
+    /// - Parameter tape: The tape that would be deleted.
+    /// - Returns: The confirmation to show the person, then to pass to ``deleteTape(_:)``.
     /// - Throws: `FieldError` with `.notFound`, `.disconnected`, `.timedOut` or `.deviceRefused`, or
     ///   `CancellationError`.
     public func prepareToDelete(_ tape: Tape) async throws -> TapeDeletion {
@@ -170,8 +181,9 @@ extension FieldDevice {
     ///
     /// It checks first that the confirmation is unused, from this connection, and that the tape's files and
     /// `tape.json` are still exactly as confirmed. It's used up as soon as the first delete is sent. If a delete
-    /// fails part way, the error's `changed` lists the files already deleted, and nothing more is tried.
+    /// fails part way, the error's ``FieldError/changed`` lists the files already deleted, and nothing more is tried.
     ///
+    /// - Parameter deletion: From ``prepareToDelete(_:)``, shown to the person who confirmed it.
     /// - Throws: `FieldError` with `.changedSinceConfirmation`, `.confirmationAlreadyUsed`, `.disconnected`,
     ///   `.timedOut` or `.deviceRefused`, or `CancellationError`.
     public func deleteTape(_ deletion: TapeDeletion) async throws {

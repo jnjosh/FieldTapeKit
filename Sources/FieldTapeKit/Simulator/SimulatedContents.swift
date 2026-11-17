@@ -1,9 +1,10 @@
 import Foundation
 
 extension FieldDevice {
-    /// An OP-1 that exists only in memory, for tests and SwiftUI previews. It behaves like firmware 1.7.3 at the MTP
-    /// level (ADR 0002, section 8).
+    /// Creates an OP-1 that exists only in memory, for tests and SwiftUI previews.
     ///
+    /// It behaves like firmware 1.7.3 at the MTP level (ADR 0002, section 8), and every call on it runs the same
+    /// code as on a real OP-1.
     /// It starts as a 1.7.3 OP-1 with no tapes: every folder, the `readme.txt` files, and both album sides empty.
     /// What the builder adds goes into that layout, and replaces a file of the same name:
     ///
@@ -14,6 +15,9 @@ extension FieldDevice {
     /// ```
     ///
     /// Names are stored lowercase, as the OP-1 stores them.
+    ///
+    /// - Parameter contents: Folders, files and tapes to add, in a ``SimulatedContentsBuilder``. Nothing by default.
+    /// - Returns: A connected device, which is never in ``FieldDevice/connections``.
     public static func simulated(@SimulatedContentsBuilder _ contents: () -> SimulatedContents = { SimulatedContents() })
         -> FieldDevice {
         let layout = SimulatedNode.merge(contents().nodes, into: SimulatedNode.layout173, path: [])
@@ -21,10 +25,11 @@ extension FieldDevice {
     }
 }
 
-/// What `FieldDevice.simulated { }` builds: folders and files to add to a simulated OP-1.
+/// The folders and files that ``FieldDevice/simulated(_:)`` adds to a simulated OP-1.
 public struct SimulatedContents: Sendable {
     let nodes: [PendingNode]
 
+    /// Creates empty contents, which add nothing.
     public init() {
         nodes = []
     }
@@ -34,11 +39,18 @@ public struct SimulatedContents: Sendable {
     }
 }
 
-/// A folder on a simulated OP-1. One that's already there, such as `mixdown`, gets the contents added to it.
+/// A folder on a simulated OP-1.
+///
+/// One that's already there, such as `mixdown`, gets the contents added to it.
 public struct Directory: Sendable {
     let name: String
     let contents: SimulatedContents
 
+    /// Creates a folder with the given contents.
+    ///
+    /// - Parameters:
+    ///   - name: The folder's name. It's stored lowercase.
+    ///   - contents: The folders, files and tapes in it. Nothing by default.
     public init(_ name: String, @SimulatedContentsBuilder _ contents: () -> SimulatedContents = { SimulatedContents() }) {
         self.name = name
         self.contents = contents()
@@ -50,23 +62,33 @@ public struct File: Sendable {
     let name: String
     let content: PendingNode.Content
 
-    /// A file with these bytes.
+    /// Creates a file with the given bytes.
+    ///
+    /// - Parameters:
+    ///   - name: The file's name. It's stored lowercase.
+    ///   - data: The file's bytes.
     public init(_ name: String, data: Data) {
         self.name = name
         content = .data(data)
     }
 
-    /// A WAV file of silence, in the format the OP-1 uses where it's put: 32-bit for a tape track, and 16-bit,
-    /// as album sides are, anywhere else.
+    /// Creates a WAV file of silence, in the format the OP-1 uses where it's put.
+    ///
+    /// That's 32-bit for a tape track, and 16-bit, as album sides are, anywhere else.
+    ///
+    /// - Parameters:
+    ///   - name: The file's name, such as `side_a.wav`. It's stored lowercase.
+    ///   - seconds: How much silence.
     public init(_ name: String, seconds: Double) {
         self.name = name
         content = .silence(seconds: seconds)
     }
 }
 
-/// A sound tape on a simulated OP-1, in `tapes/`: four tracks of silence, and a `tape.json` as the OP-1 writes one,
-/// with a clip from the start to the end of each recorded track. It's not called `Tape`, which is the tape layer's
-/// type for a tape that's been listed.
+/// A sound tape on a simulated OP-1, in `tapes/`.
+///
+/// It has four tracks of silence, and a `tape.json` as the OP-1 writes one, with a clip from the start to the end of
+/// each recorded track. It's not called `Tape`, which is ``Tape``, a tape that's been listed.
 ///
 /// ```swift
 /// let device = FieldDevice.simulated {
@@ -76,7 +98,12 @@ public struct File: Sendable {
 public struct SimulatedTape: Sendable {
     let node: PendingNode
 
-    /// `seconds` gives each track's length in order, up to four; a track left out, or 0, is blank.
+    /// Creates a tape with tracks of silence.
+    ///
+    /// - Parameters:
+    ///   - name: The tape's folder name. It's stored lowercase, and can be any length, as on an OP-1.
+    ///   - type: The tape machine. Studio by default.
+    ///   - seconds: Each track's length in order, up to four. A track left out, or 0, is blank.
     public init(_ name: String, type: TapeType = .studio, seconds: [Double] = []) {
         let format = FirmwareProfile.v1_7_3.trackFormat
         let frames = (0..<4).map { index in index < seconds.count ? Int((seconds[index] * Double(format.sampleRate)).rounded()) : 0 }
@@ -103,33 +130,44 @@ public struct SimulatedTape: Sendable {
     }
 }
 
+/// Builds the contents of a simulated OP-1 from ``Directory``, ``File`` and ``SimulatedTape`` values.
+///
+/// `if`, `if`-`else`, `switch` and `for` work inside it.
 @resultBuilder
 public enum SimulatedContentsBuilder {
+    /// Adds a folder.
     public static func buildExpression(_ directory: Directory) -> SimulatedContents {
         SimulatedContents([.folder(directory.name, directory.contents.nodes)])
     }
 
+    /// Adds a file.
     public static func buildExpression(_ file: File) -> SimulatedContents {
         SimulatedContents([.file(file.name, file.content)])
     }
 
+    /// Adds a tape.
     public static func buildExpression(_ tape: SimulatedTape) -> SimulatedContents {
         SimulatedContents([tape.node])
     }
 
+    /// Combines the parts of a block, in order.
     public static func buildBlock(_ parts: SimulatedContents...) -> SimulatedContents {
         SimulatedContents(parts.flatMap(\.nodes))
     }
 
+    /// Combines what a `for` loop adds.
     public static func buildArray(_ parts: [SimulatedContents]) -> SimulatedContents {
         SimulatedContents(parts.flatMap(\.nodes))
     }
 
+    /// Adds what an `if` adds, or nothing.
     public static func buildOptional(_ part: SimulatedContents?) -> SimulatedContents {
         part ?? SimulatedContents()
     }
 
+    /// Adds what the first branch of an `if`-`else` or `switch` adds.
     public static func buildEither(first part: SimulatedContents) -> SimulatedContents { part }
+    /// Adds what the second branch of an `if`-`else` or `switch` adds.
     public static func buildEither(second part: SimulatedContents) -> SimulatedContents { part }
 }
 

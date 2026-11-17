@@ -1,8 +1,10 @@
 import Foundation
 import System
 
-/// What `restoreTape` does when a tape with the name is already on the OP-1 (ADR 0002, section 4). Replacing
-/// covers the tape that's there first, with a verified archive or a person's confirmation (safety rule 1).
+/// What ``FieldDevice/restoreTape(from:as:conflict:progress:)`` does when a tape with the name is already on the OP-1.
+///
+/// Replacing covers the tape that's there first, with a verified archive or a person's confirmation (ADR 0002,
+/// section 4, and safety rule 1).
 public struct TapeConflict: Sendable, Hashable {
     enum Rule: Sendable, Hashable {
         case fail
@@ -12,17 +14,25 @@ public struct TapeConflict: Sendable, Hashable {
 
     let rule: Rule
 
-    /// Throw `alreadyExists` and change nothing.
+    /// Throws `alreadyExists` and changes nothing.
     public static let fail = TapeConflict(rule: .fail)
 
-    /// Copy the tape that's there into a `.reelarchive` at exactly `archive`, and verify it, then replace the tape.
-    /// `archive` must be free: a taken one throws `localFileFailed` before anything changes. If no tape has the
-    /// name, it's restored as a new tape and no archive is made.
+    /// Copies the tape that's there into a `.reelarchive` and verifies it, then replaces the tape.
+    ///
+    /// If no tape has the name, it's restored as a new tape and no archive is made.
+    ///
+    /// - Parameter archive: Exactly where to put the archive. It must be free: a taken URL throws
+    ///   `localFileFailed` before anything changes.
+    /// - Returns: The rule, to pass as `conflict`.
     public static func replace(archivingExistingTo archive: URL) -> TapeConflict { TapeConflict(rule: .archiving(archive)) }
 
-    /// Replace the tape a person confirmed losing, from `prepareToDelete(_:)` for the same name. The confirmation
-    /// is checked as `deleteTape(_:)` checks one, and used up. If no tape has the name any more, it's
-    /// `changedSinceConfirmation`.
+    /// Replaces a tape a person confirmed losing.
+    ///
+    /// The confirmation is checked as ``FieldDevice/deleteTape(_:)`` checks one, and used up. If no tape has the
+    /// name any more, it's `changedSinceConfirmation`.
+    ///
+    /// - Parameter deletion: From ``FieldDevice/prepareToDelete(_:)``, for the same name.
+    /// - Returns: The rule, to pass as `conflict`.
     public static func replace(confirmed deletion: TapeDeletion) -> TapeConflict { TapeConflict(rule: .confirmed(deletion)) }
 }
 
@@ -43,24 +53,27 @@ extension FieldDevice {
     /// 4. `tape.json` is written last and read back, so the archived clips, loop, tempo and mix are what's kept.
     /// 5. The tape is listed again and checked against the archive.
     ///
-    /// Restoring onto other firmware than the archive's isn't refused; `archive.firmware` lets an app warn.
+    /// Restoring onto other firmware than the archive's isn't refused; ``ReelArchive/firmware`` lets an app warn.
     ///
     /// A new tape that fails after its folder is made is deleted once, its files first, then its folder. If that
-    /// fails too, `changed` lists it. Cancelling is checked between files.
+    /// fails too, ``FieldError/changed`` lists it. Cancelling is checked between files.
     ///
     /// Over an existing tape there's no rollback (safety rule 6). Once its first file is deleted, cancelling no
-    /// longer stops the restore, so a tape isn't left half-written for that. If anything fails, `changed` lists
-    /// the files already replaced, and the archive or confirmation covers what was there. An archive made in step 2
+    /// longer stops the restore, so a tape isn't left half-written for that. If anything fails,
+    /// ``FieldError/changed`` lists the files already replaced, and the archive or confirmation covers what was there. An archive made in step 2
     /// is kept, even if the restore fails.
     ///
     /// - Parameters:
+    ///   - archive: The tape to restore, opened with ``ReelArchive/init(contentsOf:)`` or made by
+    ///     ``copyTape(_:to:compression:progress:)``.
     ///   - name: The tape's name, or nil for the archived name. A new tape's must be one this firmware keeps, at
     ///     most 12 characters: an archived name that's longer is refused, so the tape can't come back later under
     ///     another name. A tape already on the OP-1 keeps its name, however long.
-    ///   - conflict: What to do if the name is taken.
+    ///   - conflict: What to do if the name is taken. The default, ``TapeConflict/fail``, changes nothing.
     ///   - progress: One unit per byte of the tape's files, completed as each is written and read back, and over an
     ///     existing tape that's archived, per byte of it as it's archived, then per byte of its tracks as they're
     ///     matched again.
+    /// - Returns: The tape as the OP-1 lists it after the restore.
     /// - Throws: `FieldError` with `.invalidName`, `.alreadyExists`, `.tapeLimitReached`, `.tapeTooLong`,
     ///   `.notAllowed` if the existing tape's folder holds other files or it isn't sound enough to archive,
     ///   `.changedSinceConfirmation`, `.confirmationAlreadyUsed`, `.archiveMismatch` if the archive changed since
